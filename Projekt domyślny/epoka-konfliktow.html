@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Epoka Konfliktów — strategia na mapie świata</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="tb-group">
+      <span id="game-title">Epoka Konfliktów</span>
+      <span id="tb-country" class="badge">—</span>
+    </div>
+    <div class="tb-stats">
+      <div class="stat"><label>Rok</label><span id="tb-year">—</span></div>
+      <div class="stat"><label>Tura</label><span id="tb-turn">—</span></div>
+      <div class="stat"><label>Skarbiec</label><span id="tb-treasury">—</span></div>
+      <div class="stat"><label>Dochód/turę</label><span id="tb-income">—</span></div>
+      <div class="stat"><label>Armia</label><span id="tb-army">—</span></div>
+      <div class="stat"><label>Miejsce</label><span id="tb-rank">—</span></div>
+    </div>
+    <div class="tb-group">
+      <select id="map-mode" class="select" title="Tryb mapy (M)"></select>
+      <button id="btn-ranking" class="btn" title="Ranking państw">Ranking</button>
+      <button id="btn-menu" class="btn" title="Menu">Menu</button>
+      <button id="btn-end-turn" class="btn btn-primary">Zakończ turę</button>
+    </div>
+  </header>
+
+  <div id="stage">
+    <canvas id="map"></canvas>
+
+    <aside id="panel">
+      <div id="panel-selected" class="card"></div>
+      <div id="panel-log" class="card grow">
+        <div class="card-head">
+          <h3>Kronika</h3>
+          <button id="btn-log-filter" class="mini-btn" title="Pokaż tylko moje sprawy">Wszystko</button>
+        </div>
+        <div id="log-list" class="scroll"></div>
+      </div>
+    </aside>
+
+    <div id="tooltip" class="hidden"></div>
+    <div id="turn-banner" class="hidden"></div>
+    <div id="thinking" class="hidden"><div class="spinner"></div><span>Państwa AI wykonują ruchy…</span></div>
+  </div>
+
+  <footer id="hints">
+    <span><b>LPM</b> zaznacz / wykonaj rozkaz</span>
+    <span><b>PPM</b> anuluj</span>
+    <span><b>Przeciągnij</b> przesuwanie mapy</span>
+    <span><b>Kółko</b> zoom</span>
+    <span><b>Spacja</b> zakończ turę</span>
+    <span><b>M</b> tryb mapy</span>
+    <span><b>Shift + klik</b> atak/desant na niesąsiadującą prowincję</span>
+    <span id="hint-provinces"></span>
+  </footer>
+</div>
+
+<div id="loader">
+  <div class="loader-box">
+    <h1>Epoka Konfliktów</h1>
+    <p id="loader-stage">Przygotowywanie świata…</p>
+    <div class="bar"><div id="loader-bar"></div></div>
+    <p id="loader-info" class="muted"></p>
+  </div>
+</div>
+
+<div id="modal" class="hidden"><div id="modal-box"></div></div>
+
+<script src="js/data/world-geo.js"></script>
+<script src="js/data/world-cities.js"></script>
+<script src="js/core/util.js"></script>
+<script src="js/core/camera.js"></script>
+<script src="js/world/worldgen.js"></script>
+<script src="js/game/state.js"></script>
+<script src="js/game/logic.js"></script>
+<script src="js/game/ai.js"></script>
+<script src="js/render/renderer.js"></script>
+<script src="js/ui/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
