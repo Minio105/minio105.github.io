@@ -686,6 +686,61 @@ main{max-width:1380px;margin:0 auto;padding:24px 18px 90px}
 }
 @keyframes foil{0%{background-position:180% 0}100%{background-position:-80% 0}}
 
+/* ======================= ✨ EFEKTY NA BRONIACH =======================
+   Rzadkie wykończenia (tęcza, diament, złoto, kosmos, neon) mnożą wartość
+   przedmiotu. Na karcie widać odznakę (--fx), poświatę i przesuwający się
+   błysk. Im rzadszy efekt, tym mocniejszy efekt wizualny.               */
+.fx-badge{
+  position:absolute;top:8px;left:8px;z-index:4;display:inline-flex;align-items:center;gap:3px;
+  font-size:8.5px;font-weight:900;letter-spacing:.4px;text-transform:uppercase;white-space:nowrap;
+  padding:3px 7px;border-radius:20px;color:var(--fx);
+  background:color-mix(in srgb,var(--fx) 20%,rgba(6,10,18,.78));
+  border:1px solid color-mix(in srgb,var(--fx) 55%,transparent);
+  box-shadow:0 0 14px -4px var(--fx);
+}
+.item-card.fx{border-color:color-mix(in srgb,var(--fx) 55%,transparent);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--fx) 32%,transparent),0 16px 34px -20px var(--fx)}
+.item-card.fx::before{opacity:.42;background:radial-gradient(240px 130px at 50% -8%,var(--fx),transparent 70%)}
+.item-card.fx::after{background:linear-gradient(90deg,transparent,var(--fx),transparent)}
+.item-card.fx .item-skin{color:var(--fx);text-shadow:0 0 12px color-mix(in srgb,var(--fx) 55%,transparent)}
+.fx-shine{
+  position:absolute;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;opacity:.28;
+  background:linear-gradient(115deg,transparent 26%,color-mix(in srgb,var(--fx) 55%,transparent) 42%,
+    rgba(255,255,255,.32) 50%,color-mix(in srgb,var(--fx) 55%,transparent) 58%,transparent 74%);
+  background-size:280% 100%;animation:foil 3.6s linear infinite;
+}
+.item-card.fx-diamond .fx-shine,.item-card.fx-cosmic .fx-shine,.item-card.fx-rainbow .fx-shine{opacity:.45;animation-duration:2.6s}
+.item-card.fx-rainbow::after{
+  background:linear-gradient(90deg,#ff5f6d,#ffc371,#38e08a,#4bd6ff,#a855f7,#ff5f6d);
+  background-size:300% 100%;animation:foil 3s linear infinite;
+}
+.item-card.fx-cosmic .item-art{filter:drop-shadow(0 0 12px rgba(168,85,247,.65))}
+.item-card.fx-gold .fx-badge,.item-card.fx-diamond .fx-badge,.item-card.fx-rainbow .fx-badge,
+.item-card.fx-cosmic .fx-badge{animation:fxTwinkle 1.9s ease-in-out infinite}
+@keyframes fxTwinkle{50%{transform:scale(1.08);box-shadow:0 0 20px -2px var(--fx)}}
+.item-card.fx .item-price{color:var(--fx)}
+/* wynik otwarcia — pasek z efektem */
+.result-fx{
+  display:flex;align-items:center;gap:8px;width:fit-content;margin:14px auto 0;
+  padding:8px 16px;border-radius:13px;font-weight:900;font-size:13.5px;color:var(--fx);
+  background:color-mix(in srgb,var(--fx) 16%,#0b1120);
+  border:1px solid color-mix(in srgb,var(--fx) 50%,transparent);
+  box-shadow:0 0 24px -8px var(--fx);animation:fxPulse 1.8s ease-in-out infinite;
+}
+.result-fx.big{font-size:15.5px;text-transform:uppercase;letter-spacing:.6px}
+@keyframes fxPulse{50%{transform:scale(1.045)}}
+/* panel auto-otwierania — mała ikonka efektu w feedzie */
+.af-fx{font-size:12px;line-height:1;filter:drop-shadow(0 0 6px var(--fx))}
+.af-item.fx{background:color-mix(in srgb,var(--fx) 12%,transparent);
+  border-color:color-mix(in srgb,var(--fx) 40%,transparent)}
+.af-item.fx b{color:var(--fx)}
+/* wyróżnienie bloku o efektach w okienku „Zawartość skrzynki” */
+.loot-bonus.lb-fx .lb-ico{filter:drop-shadow(0 0 12px rgba(244,114,182,.8))}
+.loot-bonus.lb-fx b{color:#ffd9f4}
+.loot-bonus.lb-fx em{color:#ffe9fb}
+/* lista ostatnich dropów w statystykach jest gęsta — mniejsza odznaka */
+.recent-list .fx-badge{font-size:7.5px;padding:2px 6px;top:6px;left:6px}
+
 /* ======================= EKWIPUNEK ======================= */
 .inv-toolbar{
   display:flex;align-items:center;gap:11px;flex-wrap:wrap;margin-bottom:18px;
@@ -1080,6 +1135,26 @@ select:hover{border-color:var(--line2)}
 .mission{display:flex;flex-direction:column;gap:12px;padding:16px 17px;border-radius:15px;
   background:linear-gradient(180deg,#121a2c,#0a101c);border:1px solid var(--line);
   animation:cardIn .45s backwards cubic-bezier(.2,.8,.3,1);transition:border-color .25s,box-shadow .25s}
+.mission.hard{border-color:#6d4326;background:linear-gradient(180deg,#1d1424,#0b0a16)}
+.mission.hard .mission-bar i{background:linear-gradient(90deg,#ff8a3d,#ffd166)}
+.mission.hard.done .mission-bar i{background:linear-gradient(90deg,#3ddc84,#8ef0b0)}
+.m-hard{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:900;
+  letter-spacing:.09em;vertical-align:middle;color:#ffd9a8;background:rgba(255,138,61,.16);
+  border:1px solid rgba(255,138,61,.45);text-shadow:0 0 10px rgba(255,138,61,.5)}
+/* 📅 misje tygodniowe — poziom trudności (kolor karty i odznaki) */
+.m-diff{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:99px;font-size:9.5px;font-weight:900;
+  letter-spacing:.04em;vertical-align:middle;white-space:nowrap;color:var(--dc);
+  background:color-mix(in srgb,var(--dc) 16%,transparent);
+  border:1px solid color-mix(in srgb,var(--dc) 48%,transparent);
+  text-shadow:0 0 10px color-mix(in srgb,var(--dc) 60%,transparent)}
+.mission.week{border-color:color-mix(in srgb,var(--dc) 34%,var(--line))}
+.mission.week .mission-bar i{background:linear-gradient(90deg,color-mix(in srgb,var(--dc) 65%,#ffffff),var(--dc))}
+.mission.week.done .mission-bar i{background:linear-gradient(90deg,#3ddc84,#8ef0b0)}
+.mission.week.d-4{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--dc) 20%,transparent)}
+.mission.week.d-4 .mission-ico{filter:drop-shadow(0 0 12px color-mix(in srgb,var(--dc) 70%,transparent))}
+.mission.week.d-1 .mission-ico{filter:drop-shadow(0 0 10px rgba(56,224,138,.5))}
+.mission-grid + .daily-note.wn{margin-top:4px}
+.daily-note.wn .dn-ico{filter:drop-shadow(0 0 12px rgba(75,155,255,.8))}
 .mission.done{border-color:#2f7a45;box-shadow:0 0 34px -18px #45d06a}
 .mission.claimed{opacity:.6}
 .mission-top{display:flex;align-items:flex-start;gap:12px}
@@ -1097,10 +1172,61 @@ select:hover{border-color:var(--line2)}
 .mission-prog{margin-left:auto;font-size:11.5px;font-weight:900;color:var(--dim2);font-variant-numeric:tabular-nums}
 .mission .btn{flex:0 0 auto;padding:10px 17px;font-size:13px}
 .mission .tb-btn{padding:9px 12px}
+.mission .tb-btn small{font-size:10px;font-weight:900;opacity:.7;margin-left:2px}
 .daily-note{display:flex;gap:13px;align-items:flex-start;padding:14px 17px;border-radius:13px;
   font-size:12.5px;line-height:1.65;color:var(--dim);background:#0c1424;border:1px solid var(--line)}
 .daily-note .dn-ico{font-size:21px;line-height:1.2;flex:none;filter:drop-shadow(0 0 12px rgba(255,176,46,.5))}
 .daily-note b{color:var(--acc2)}
+
+/* ======================= 🤖 AUTO-OTWIERANIE ======================= */
+.auto-panel{position:fixed;left:18px;bottom:18px;z-index:58;width:302px;display:none;
+  flex-direction:column;gap:10px;padding:13px 14px;border-radius:15px;
+  background:linear-gradient(180deg,rgba(17,24,39,.97),rgba(8,12,20,.98));
+  border:1px solid var(--line2);box-shadow:0 26px 54px -22px #000,0 0 40px -20px var(--ac,#ffb02e);
+  animation:cardIn .35s backwards cubic-bezier(.2,.8,.3,1)}
+.auto-panel.show{display:flex}
+.ap-head{display:flex;align-items:center;gap:10px}
+.ap-title{font-size:13px;font-weight:800;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ap-title b{color:var(--acc2)}
+.ap-stop{margin-left:auto;flex:none;padding:7px 11px;font-size:11.5px}
+.ap-run{display:flex;gap:11px;flex-wrap:wrap;font-size:11.5px;color:var(--dim)}
+.ap-run b{color:var(--acc2);font-variant-numeric:tabular-nums}
+/* ⚡ turbo + ⏹ limit otwarć */
+.ap-set{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ap-turbo{flex:none;display:inline-flex;align-items:center;gap:5px;padding:6px 9px;border-radius:9px;cursor:pointer;
+  font-family:inherit;font-weight:900;font-size:11px;letter-spacing:.3px;color:var(--dim);
+  background:#0a1120;border:1px solid var(--line);transition:.18s}
+.ap-turbo:hover{border-color:var(--line2);color:var(--txt)}
+.ap-turbo.on{color:#20160a;background:linear-gradient(180deg,var(--ac,#ffb02e),#e08a00);border-color:var(--ac,#ffb02e);
+  box-shadow:0 10px 22px -12px var(--ac,#ffb02e)}
+.ap-limlbl{margin-left:auto;flex:none;font-size:9.5px;font-weight:900;letter-spacing:.6px;
+  text-transform:uppercase;color:var(--dim2)}
+.ap-lims{display:flex;gap:4px;flex:none}
+.ap-lims button{padding:5px 8px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:900;font-size:10.5px;
+  color:var(--dim);background:#0a1120;border:1px solid var(--line);transition:.18s;font-variant-numeric:tabular-nums}
+.ap-lims button:hover{color:var(--txt);border-color:var(--line2)}
+.ap-lims button.on{color:#20160a;background:linear-gradient(180deg,var(--ac,#ffb02e),#e08a00);border-color:var(--ac,#ffb02e)}
+.ap-bar{height:5px;border-radius:99px;background:#0a1120;border:1px solid var(--line);overflow:hidden}
+.ap-bar.hide{display:none}
+.ap-bar i{display:block;height:100%;width:0;border-radius:99px;
+  background:linear-gradient(90deg,var(--ac,#ffb02e),#ffe0a3);transition:width .22s}
+.ap-tb{margin-left:3px;padding:2px 6px;border-radius:6px;font-size:9.5px;font-weight:900;letter-spacing:.4px;
+  color:#20160a;background:linear-gradient(180deg,var(--ac,#ffb02e),#e08a00)}
+.ap-feed{display:flex;flex-direction:column;gap:5px}
+.af-item{display:flex;align-items:center;gap:9px;padding:6px 9px;border-radius:9px;font-size:11.5px;
+  background:#0a1120;border:1px solid var(--line);border-left:3px solid var(--c,#4b69ff);
+  animation:cardIn .3s backwards}
+.af-item .af-name{flex:1;min-width:0;color:var(--txt);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.af-item b{flex:none;color:var(--acc2);font-variant-numeric:tabular-nums}
+.ap-best{padding-top:8px;border-top:1px solid var(--line);font-size:11.5px;color:var(--dim)}
+.ap-best b{color:var(--acc2)}
+/* 🤖 auto w karcie skrzynki — dzieli rząd z 📋 Zawartość (obie pełnego rzędu, po połowie) */
+.btn.ghost.loot-btn,.btn.ghost.auto-btn{flex:1 1 calc(50% - 4px);min-width:0;white-space:nowrap;
+  padding:8px 10px;font-size:11.5px;font-weight:800;letter-spacing:.4px}
+.btn.ghost.auto-btn{display:inline-flex;align-items:center;justify-content:center;gap:5px}
+.btn.ghost.auto-btn.locked{opacity:.6;color:var(--dim2)}
+.btn.ghost.auto-btn .lock{font-size:10px;opacity:.85}
+@media (max-width:640px){ .auto-panel{left:12px;right:auto;bottom:12px;width:min(302px,calc(100% - 24px))} }
 .cnt.ready{background:linear-gradient(180deg,#3ddc84,#1f8f4d);color:#04210f;border-color:#7ff0ad}
 @media (max-width:760px){ .mission-grid{grid-template-columns:1fr} .alb-pick{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))} }
 .fighter.win .slot-card .item-card{
@@ -1247,9 +1373,22 @@ select:hover{border-color:var(--line2)}
     <div class="mission-grid" id="missionGrid"></div>
     <div class="daily-note">
       <span class="dn-ico">🎯</span>
-      <div>Trzy misje na dziś — <b>nowe dostajesz o północy</b>. Nagrodą są monety albo 🍀 czas koniczyny
-      (ta sama, która wypada ze skrzynek). Jedną misję możesz <b>wymienić raz dziennie</b> przyciskiem 🔄.
-      Postęp liczy się z tego, co robisz w grze — także w ⚔️ bitwach i przy otwieraniu hurtem ×10.</div>
+      <div><b>Cztery misje na dziś</b> — trzy spokojne i jedno <b>wyzwanie ★</b>. Nowe dostajesz o północy.
+      Nagrodą są monety albo 🍀 czas koniczyny (ta sama, która wypada ze skrzynek). Dwie misje możesz
+      <b>wymienić w ciągu dnia</b> przyciskiem 🔄. Postęp liczy się z tego, co robisz w grze — otwieranie,
+      sprzedaż, bitwy (także te w 🔁 auto-walce) oraz zakupy w 🚀 ulepszeniach.</div>
+    </div>
+
+    <h2 class="sec-title" style="margin-top:34px">📅 Misje tygodniowe <span class="line"></span><span class="muted" id="weeklyHint"></span></h2>
+    <div class="mission-grid" id="weeklyGrid"></div>
+    <div class="daily-note wn">
+      <span class="dn-ico">📅</span>
+      <div><b>Dziesięć misji na cały tydzień</b> — zestaw startuje, gdy go pierwszy raz zobaczysz, i trwa
+      <b>7 dni</b>, potem losuje się nowy (licznik w nagłówku). Każda misja ma <b>poziom trudności</b>:
+      ⭐ Łatwa, ⭐⭐ Średnia, ⭐⭐⭐ Trudna, ⭐⭐⭐⭐ Ekstremalna — poziomy widać na karcie, a trudniejsze mają
+      <b>znacznie większy cel i większą nagrodę</b> (monety albo dłuższą 🍀 koniczynę). W zestawie są
+      3 łatwe, 3 średnie, 2 trudne i 2 ekstremalne. Dwie misje możesz <b>wymienić w ciągu tygodnia</b> (🔄),
+      a postęp liczy się z tej samej gry co dziennie — w tym ✨ efekty na broniach.</div>
     </div>
   </section>
 </main>
@@ -1336,6 +1475,28 @@ select:hover{border-color:var(--line2)}
   <span class="cp-bar"><i id="cloverBar"></i></span>
 </div>
 
+<!-- 🤖 panel auto-otwierania (pokazywany tylko, gdy auto działa) -->
+<div class="auto-panel" id="autoPanel">
+  <div class="ap-head">
+    <span class="ap-title" id="autoTitle">🤖 Auto</span>
+    <button class="tb-btn ap-stop" id="autoStop" title="Zatrzymaj auto-otwieranie (Esc)">⏹ Stop</button>
+  </div>
+  <div class="ap-run" id="autoRun"></div>
+  <div class="ap-set">
+    <button class="ap-turbo" id="autoTurbo" title="Tryb turbo">⚡ Turbo</button>
+    <span class="ap-limlbl">limit:</span>
+    <div class="ap-lims" id="autoLims">
+      <button data-lim="0" title="Bez limitu — otwieraj, dopóki wystarcza monet">∞</button>
+      <button data-lim="25" title="Zatrzymaj po 25 otwarciach">25</button>
+      <button data-lim="100" title="Zatrzymaj po 100 otwarciach">100</button>
+      <button data-lim="500" title="Zatrzymaj po 500 otwarciach">500</button>
+    </div>
+  </div>
+  <div class="ap-bar hide" id="autoLimBar"><i id="autoLimFill"></i></div>
+  <div class="ap-feed" id="autoFeed"></div>
+  <div class="ap-best" id="autoBest"></div>
+</div>
+
 <div class="particles" id="particles"></div>
 <div id="toasts"></div>
 
@@ -1362,6 +1523,28 @@ const SELL_RATE= 0.90;
    rzadziej lecą noże, a gdy już lecą, są cenniejsze. */
 const KNIFE_DAMP = 0.6;
 const RATIO_EFF  = Object.assign({}, RATIO, { special: RATIO.special / KNIFE_DAMP });
+
+/* =======================================================================
+   1a. ✨ EFEKTY NA BRONIACH — rzadkie wykończenia podbijające wartość
+   -----------------------------------------------------------------------
+   Po wylosowaniu broni losuje się jeszcze efekt (niezależnie od tego, co
+   wypadło). Efekt mnoży wartość przedmiotu, więc taki drop sprzedaje się
+   za dużo więcej, a na karcie widać jego odznakę i poświatę.
+   Droższe tiery mają trochę większą szansę na błysk (FX_TIER_BOOST).
+   Łączna szansa na jakikolwiek efekt ≈ 3,2% (bez boostu tieru).
+   ======================================================================= */
+const FX = [
+  {id:"neon",    icon:"💡", name:"Neonowy",    color:"#38e08a", chance:0.0160, mult:1.8,  glow:"świecące krawędzie"},
+  {id:"gold",    icon:"🥇", name:"Złoty",      color:"#ffd700", chance:0.0090, mult:2.6,  glow:"czyste złoto"},
+  {id:"diamond", icon:"💎", name:"Diamentowy", color:"#a5f3fc", chance:0.0040, mult:4.0,  glow:"krystaliczny blask"},
+  {id:"rainbow", icon:"🌈", name:"Tęczowy",    color:"#f472b6", chance:0.0018, mult:7.0,  glow:"pełne spektrum barw"},
+  {id:"cosmic",  icon:"🌌", name:"Kosmiczny",  color:"#a855f7", chance:0.0007, mult:12.0, glow:"pył gwiazd i pustka"}
+];
+const FX_BY_ID = {};
+FX.forEach(f=>FX_BY_ID[f.id]=f);
+const FX_CHANCE = FX.reduce((a,f)=>a+f.chance,0);   // suma szans (na tierze ×1)
+const FX_TIER_BOOST = {mil:1, restricted:1, classified:1.3, covert:1.6, special:2.2};
+const FX_BIG = 4;                                    // od tego mnożnika odpalamy wielką fetę
 
 const CASES = [
   { id:"start", name:"Skrzynka Startowa", price:100, color:"#3b82f6", icon:"📦",
@@ -1676,8 +1859,408 @@ const NEW_CASES = [
                   ["Nóż Navaja","Wąż","knife"],["Kukri","Lewiatan","knife"]] } }
 ];
 
-CASES.push(...NEW_CASES);
+/* =======================================================================
+   1a3. DRUGA PORCJA BRONI — wchodzi do WSZYSTKICH skrzynek (starych i nowych)
+   Nazwy są unikalne w całej grze (klucz "broń|skin" jest kluczem albumu),
+   a wartość liczy się z nazwy, więc zwrot ze skrzynki się nie zmienia.
+   ======================================================================= */
+const EXTRA_ITEMS_2 = {
+  start: {
+    mil:       [["MP7","Rekrut","smg"],["P2000","Instrukcja","pistol"],["XM1014","Magazynek","shotgun"],
+                ["Tec-9","Trening","pistol"],["Galil AR","Musztra","rifle"]],
+    restricted:[["AK-47","Pierwsza Krew","rifle"],["M4A4","Kurs Podstawowy","rifle"],["SSG 08","Zwiad Terenowy","awp"],
+                ["Five-SeveN","Kaliber","pistol"]],
+    classified:[["M4A1-S","Awans","rifle"],["Desert Eagle","Ostrzeżenie","pistol"],["P90","Mundur","smg"]],
+    covert:    [["AWP","Weteran","awp"],["AK-47","Odznaczenie","rifle"]],
+    special:   [["Nóż Klasyczny","Rekrut","knife"],["Nóż Gut","Polowy","knife"]]
+  },
+  sand: {
+    mil:       [["MP7","Piach","smg"],["Dual Berettas","Karawana Morska","pistol"],["Galil AR","Sucha Wydma","rifle"],
+                ["Nova","Oaza Skąpa","shotgun"],["Tec-9","Skarabeusz","pistol"]],
+    restricted:[["AK-47","Karawana Piasku","rifle"],["AWP","Miraż Górący","awp"],["M4A1-S","Fasada Piaskowa","rifle"],
+                ["SG 553","Noc Sirocco","rifle"]],
+    classified:[["M4A4","Piaskowy Sfinks","rifle"],["Desert Eagle","Złoty Skarabeusz","pistol"],["AWP","Fata Piaskowa","awp"]],
+    covert:    [["AK-47","Faraon","rifle"],["AWP","Pustynny Grzmot","awp"]],
+    special:   [["Nóż Flip","Pustynny","knife"],["Karambit","Piaskowiec","knife"]]
+  },
+  urban: {
+    mil:       [["MP9","Rusztowanie Miejskie","smg"],["P250","Kiosk Ruchu","pistol"],["FAMAS","Wielki Blok","rifle"],
+                ["Nova","Śmietnik","shotgun"],["CZ75-Auto","Kamyk","pistol"]],
+    restricted:[["AK-47","Osiedle Noc","rifle"],["AWP","Dachowiec Nocny","awp"],["M4A1-S","Kamienica","rifle"],
+                ["Glock-18","Klatka Schodowa Noc","pistol"]],
+    classified:[["M4A4","Blok Betonowy","rifle"],["USP-S","Przystanek","pistol"],["P90","Autostrada","smg"]],
+    covert:    [["AWP","Metropolia Nocna","awp"],["AK-47","Szklany Wieżowiec","rifle"]],
+    special:   [["Nóż Przeżycia","Miejski","knife"],["Nóż Paracord","Kamienica Miejska","knife"]]
+  },
+  prism: {
+    mil:       [["MP7","Fiolet Widma","smg"],["P2000","Barwa","pistol"],["Galil AR","Rozszczepione Światło","rifle"],
+                ["Nova","Szkło Kolorowe","shotgun"],["Tec-9","Pigment","pistol"]],
+    restricted:[["AK-47","Dyfrakcja","rifle"],["AWP","Tęczowa Mgła","awp"],["M4A4","Refleks","rifle"],
+                ["R8 Revolver","Barwnik","revolver"]],
+    classified:[["M4A1-S","Holograficzny","rifle"],["Desert Eagle","Bursztyn","pistol"],["AWP","Rozszczepienie Barw","awp"]],
+    covert:    [["AK-47","Pełne Spektrum","rifle"],["M4A4","Pryzmatyczna Mgła","rifle"]],
+    special:   [["Nóż Gut","Barwny","knife"],["Nóż Skeleton","Refrakcja","knife"]]
+  },
+  spectral: {
+    mil:       [["MP9","Seans Nocny","smg"],["P250","Medium Ciemne","pistol"],["Galil AR","Nawiedzony Dwór","rifle"],
+                ["Nova","Zimna Mgła","shotgun"],["Dual Berettas","Ouija","pistol"]],
+    restricted:[["AK-47","Nawiedzenie","rifle"],["AWP","Widmo Puszczy","awp"],["M4A1-S","Poltergeist Nocny","rifle"],
+                ["MAC-10","Zjawa Mroczna","smg"]],
+    classified:[["M4A4","Dwunasta Noc","rifle"],["Desert Eagle","Glitch Cienia","pistol"],["AWP","Gęsta Ektoplazma","awp"]],
+    covert:    [["AK-47","Cmentarna Mgła","rifle"],["AWP","Duch Puszczy","awp"]],
+    special:   [["Nóż Flip","Zjawa","knife"],["Nóż Bowie","Fantom Cienia","knife"]]
+  },
+  chroma: {
+    mil:       [["MP7","Kwasowy Neon","smg"],["P250","Laserowy Róż","pistol"],["Galil AR","Chromowane Światło","rifle"],
+                ["Nova","Ciemna Fuksja","shotgun"],["CZ75-Auto","Elektryczny Róż","pistol"]],
+    restricted:[["AK-47","Kwas z Neona","rifle"],["AWP","Laserowa Wstęga","awp"],["M4A4","Różowy Chrom","rifle"],
+                ["USP-S","Neonowy Metal","pistol"]],
+    classified:[["M4A1-S","Neonowa Mgła","rifle"],["Desert Eagle","Kobaltowy Neon","pistol"],["P90","Kwas Elektryczny","smg"]],
+    covert:    [["AK-47","Neonowy Kwas","rifle"],["AWP","Chromowany Pulsar","awp"]],
+    special:   [["Nóż Huntsman","Kwasowy","knife"],["Nóż Paracord","Różowy Neon","knife"]]
+  },
+  frost: {
+    mil:       [["MP7","Cicha Zamieć","smg"],["P2000","Cienki Szron","pistol"],["Galil AR","Śnieżny Stok","rifle"],
+                ["Nova","Ostry Mróz","shotgun"],["Sawed-Off","Mała Zamieć","shotgun"]],
+    restricted:[["AK-47","Lodowe Kolce","rifle"],["AWP","Zawieja Nocna","awp"],["M4A4","Zamarznięta Skała","rifle"],
+                ["UMP-45","Sopel Lodu","smg"]],
+    classified:[["M4A1-S","Ciemna Korona Lodu","rifle"],["Desert Eagle","Królewski Szron","pistol"],["AWP","Głęboki Lodowiec","awp"]],
+    covert:    [["AK-47","Wieczna Zima","rifle"],["AWP","Absolutne Zero","awp"]],
+    special:   [["Nóż Nomad","Szron Nocny","knife"],["Nóż Stiletto","Cienki Lód","knife"]]
+  },
+  dragon: {
+    mil:       [["MP7","Cichy Żar","smg"],["P2000","Złoty Pyłek","pistol"],["Galil AR","Zwęglona Łuska","rifle"],
+                ["Nova","Smocze Jajo","shotgun"],["Sawed-Off","Gorący Węgiel","shotgun"]],
+    restricted:[["AK-47","Ciemna Łuska","rifle"],["AWP","Złoty Oddech","awp"],["M4A4","Skrzydło Smoka","rifle"],
+                ["R8 Revolver","Ciemna Lawa","revolver"]],
+    classified:[["M4A1-S","Ciemny Płomień","rifle"],["Desert Eagle","Ognisty Pazur","pistol"],["AWP","Legenda Smoka","awp"]],
+    covert:    [["AK-47","Złoty Cesarz","rifle"],["AWP","Smocze Serce","awp"]],
+    special:   [["Nóż Falchion","Smoczy","knife"],["Nóż Skeleton","Złota Łuska","knife"]]
+  },
+  void: {
+    mil:       [["MP7","Ciemny Kwark","smg"],["P2000","Bezgwiezdna Próżnia","pistol"],["Galil AR","Mroczna Antymateria","rifle"],
+                ["Nova","Czarna Mgła","shotgun"],["Dual Berettas","Czerwony Karzeł","pistol"]],
+    restricted:[["AK-47","Wyrwa w Czasie","rifle"],["AWP","Zaćmienie Horyzontu","awp"],["M4A4","Rozpad Kollapsara","rifle"],
+                ["SCAR-20","Grawitacja Ciemna","awp"]],
+    classified:[["M4A1-S","Bezkres Nicości","rifle"],["Desert Eagle","Ciemna Osobliwość","pistol"],["AWP","Ciemna Supernowa","awp"]],
+    covert:    [["AK-47","Mroczny Pulsar","rifle"],["AWP","Ciemna Energia","awp"]],
+    special:   [["Nóż Ursus","Kwazar Nocny","knife"],["Kukri","Antymateria","knife"]]
+  },
+  volcano: {
+    mil:       [["MP7","Żużel","smg"],["P2000","Siarka Ciemna","pistol"],["Galil AR","Ciemny Bazalt","rifle"],
+                ["Nova","Gęsty Popiół","shotgun"],["Dual Berettas","Iskra Wulkanu","pistol"]],
+    restricted:[["AK-47","Gęsta Lawa","rifle"],["AWP","Nocna Erupcja","awp"],["M4A4","Piroklast","rifle"],
+                ["SG 553","Tuf Wulkaniczny","rifle"]],
+    classified:[["M4A1-S","Ciemna Magma","rifle"],["Desert Eagle","Obsydianowy Rdzeń","pistol"],["AWP","Serce Krateru","awp"]],
+    covert:    [["AK-47","Płynąca Lawa","rifle"],["AWP","Wulkaniczna Noc","awp"]],
+    special:   [["Nóż Gut","Bazalt Nocny","knife"],["Nóż Talon","Kaldera","knife"]]
+  },
+  royal: {
+    mil:       [["P2000","Porcelanowy","pistol"],["MP7","Alabastrowy","smg"],["Galil AR","Dworski","rifle"],
+                ["Nova","Kryształ Górski","shotgun"],["Tec-9","Złoty Marmur","pistol"]],
+    restricted:[["AK-47","Dwór Królewski","rifle"],["AWP","Złota Wstęga Króla","awp"],["M4A4","Srebrna Mozaika","rifle"],
+                ["USP-S","Koronacja","pistol"]],
+    classified:[["M4A1-S","Królewski Gobelin","rifle"],["Desert Eagle","Złote Berło","pistol"],["AWP","Tron Carów","awp"]],
+    covert:    [["AK-47","Diamentowa Korona","rifle"],["AWP","Pan Królów","awp"]],
+    special:   [["Nóż Motylkowy","Diamentowy","knife"],["Nóż Skeleton","Król","knife"]]
+  },
+  celestial: {
+    mil:       [["MP7","Cienki Obłok","smg"],["P2000","Świetlik Niebios","pistol"],["Galil AR","Jutrzenka","rifle"],
+                ["Nova","Puch Anioła","shotgun"],["Tec-9","Gwiazdka Poranna","pistol"]],
+    restricted:[["AK-47","Chór Aniołów","rifle"],["AWP","Poranna Zorza","awp"],["M4A4","Srebrne Skrzydło","rifle"],
+                ["USP-S","Złota Aureola","pistol"]],
+    classified:[["M4A1-S","Niebiańska Zbroja","rifle"],["Desert Eagle","Sąd Ostateczny","pistol"],["AWP","Brama Niebios","awp"]],
+    covert:    [["AK-47","Światło Stworzenia","rifle"],["AWP","Archanioł Michał","awp"]],
+    special:   [["Nóż Falchion","Serafin","knife"],["Nóż Navaja","Halo","knife"]]
+  },
+  abyss: {
+    mil:       [["MP7","Gęsty Plankton","smg"],["P2000","Koral Nocny","pistol"],["Galil AR","Ciemny Osad","rifle"],
+                ["Nova","Muszla Głębinowa","shotgun"],["Tec-9","Ciśnienie Głębin","pistol"]],
+    restricted:[["AK-47","Głębina","rifle"],["AWP","Ciemny Kraken","awp"],["M4A4","Latarnia Morska","rifle"],
+                ["SG 553","Bioptyka Głębin","rifle"]],
+    classified:[["M4A1-S","Głębinowa Hydra","rifle"],["Desert Eagle","Szczęka Rekina","pistol"],["AWP","Abysalna Noc","awp"]],
+    covert:    [["AK-47","Absolutna Otchłań","rifle"],["AWP","Lewiatan Cesarz","awp"]],
+    special:   [["Nóż Bowie","Głębia","knife"],["Nóż Nomad","Meduza Głębin","knife"]]
+  },
+  midnight: {
+    mil:       [["MP9","Gwiezdny Pyłek","smg"],["P2000","Ciemna Luna","pistol"],["Galil AR","Cichy Nokturn","rifle"],
+                ["Nova","Wschodzący Księżyc","shotgun"],["Tec-9","Astronomia","pistol"]],
+    restricted:[["AK-47","Noc Polarna","rifle"],["AWP","Konstelacja","awp"],["M4A4","Nocny Teleskop","rifle"],
+                ["USP-S","Świt Nocy","pistol"]],
+    classified:[["M4A1-S","Czarna Noc","rifle"],["Desert Eagle","Krwawe Zaćmienie","pistol"],["AWP","Droga Gwiazd","awp"]],
+    covert:    [["AK-47","Nocny Cesarz","rifle"],["AWP","Nocna Dziura","awp"]],
+    special:   [["Nóż Gut","Księżyc","knife"],["Nóż Ursus","Nokturn","knife"]]
+  },
+  toxic: {
+    mil:       [["MP7","Gęsty Zielony Szlam","smg"],["P2000","Cienki Izotop","pistol"],["Galil AR","Ciemny Mutagen","rifle"],
+                ["Nova","Zielony Wyciek","shotgun"],["Dual Berettas","Antidotum","pistol"]],
+    restricted:[["AK-47","Kwasowy Szlam","rifle"],["AWP","Promieniowanie","awp"],["M4A4","Zielony Reaktor","rifle"],
+                ["SSG 08","Ciemny Geiger","awp"]],
+    classified:[["M4A1-S","Toksyczna Mgła","rifle"],["Desert Eagle","Kwasowy Rdzeń","pistol"],["AWP","Ciemna Zaraza","awp"]],
+    covert:    [["AK-47","Radioaktywna Noc","rifle"],["AWP","Hiper Kwas","awp"]],
+    special:   [["Nóż Klasyczny","Toksyczny Nocny","knife"],["Nóż Stiletto","Szlam Kwasowy","knife"]]
+  },
+  /* dopięcie pul nowych skrzynek (1a4), żeby miały równie dużo dropów w
+     najczęstszych tierach, co starsze skrzynki */
+  neon: {
+    mil:       [["MP7","Kolorowy Dym","smg"],["Galil AR","Dyskoteka","rifle"],["Nova","Glow Stick","shotgun"],
+                ["Dual Berettas","Błyszczące","pistol"]],
+    restricted:[["AK-47","Rave","rifle"],["M4A4","Świecący Parkiet","rifle"]]
+  },
+  storm: {
+    mil:       [["MP9","Błyskawica","smg"],["FAMAS","Wichura","rifle"],["XM1014","Rozpogodzenie","shotgun"],
+                ["CZ75-Auto","Kropla","pistol"]],
+    restricted:[["AK-47","Nawałnica","rifle"],["M4A4","Burzowe Niebo","rifle"]]
+  },
+  relic: {
+    mil:       [["MP7","Stare Wykopalisko","smg"],["Galil AR","Zwoje","rifle"],["Nova","Skorupa","shotgun"],
+                ["Tec-9","Mozaika Starożytna","pistol"]],
+    restricted:[["AK-47","Artefakt","rifle"],["M4A4","Posąg Boga","rifle"]]
+  },
+  samurai: {
+    mil:       [["MP7","Herb Rodu","smg"],["Galil AR","Wojenna Flaga","rifle"],["Nova","Sakura","shotgun"],
+                ["CZ75-Auto","Tusz","pistol"]],
+    restricted:[["AK-47","Pieczęć","rifle"],["M4A4","Zbroja Daimyo","rifle"]]
+  },
+  cyber: {
+    mil:       [["MP7","Obwód","smg"],["Galil AR","Drukarka 3D","rifle"],["Nova","Kamera","shotgun"],
+                ["Dual Berettas","Bity","pistol"]],
+    restricted:[["AK-47","Skan Biometryczny","rifle"],["M4A4","Hologram Wojskowy","rifle"]]
+  },
+  hunter: {
+    mil:       [["MP7","Mchy","smg"],["Galil AR","Żołądź","rifle"],["Nova","Sarna","shotgun"],
+                ["Tec-9","Dzik","pistol"]],
+    restricted:[["AK-47","Ostroga","rifle"],["M4A4","Knieja","rifle"]]
+  },
+  witch: {
+    mil:       [["MP7","Kadzidło","smg"],["Galil AR","Fioletowy Wywar","rifle"],["Nova","Nietoperz","shotgun"],
+                ["Dual Berettas","Świeca","pistol"]],
+    restricted:[["AK-47","Zaklęcie","rifle"],["M4A4","Księga Zaklęć","rifle"]]
+  },
+  phoenix: {
+    mil:       [["MP7","Pióra","smg"],["Galil AR","Węgiel Drzewny","rifle"],["Nova","Ogniste Jajo","shotgun"],
+                ["Tec-9","Znicz","pistol"]],
+    restricted:[["AK-47","Ptasi Pazur","rifle"],["M4A4","Ognista Burza","rifle"]]
+  }
+};
+
+/* =======================================================================
+   1a4. TRZECIA FALA SKRZYNEK — 8 nowych, od 200 do 1 250 000 🪙
+   Ceny wypełniają luki między istniejącymi skrzynkami, a każda ma własny
+   motyw, kolor i pulę broni. Zwrot liczy się sam z ceny (itemValue).
+   ======================================================================= */
+const NEW_CASES_2 = [
+  { id:"neon", name:"Skrzynka Neonowa", price:200, color:"#4ade80", icon:"🪩",
+    sub:"Klub, lasery i świecące krawędzie",
+    odds:{mil:.800, restricted:.160, classified:.030, covert:.0075, special:.0025},
+    items:{
+      mil:       [["MP9","Neonowy Pył","smg"],["P250","Fluorescencja","pistol"],["Galil AR","Lasery","rifle"],
+                  ["Nova","Świecąca Rura","shotgun"],["Tec-9","Parkiet","pistol"],["MAC-10","Stroboskop","smg"]],
+      restricted:[["AK-47","Neon Klub","rifle"],["AWP","Laser Show","awp"],["M4A1-S","Fioletowy Neon","rifle"],
+                  ["USP-S","Koktajl","pistol"],["MP5-SD","Ultrafiolet","smg"]],
+      classified:[["AK-47","Świecąca Krawędź","rifle"],["Desert Eagle","Neonowy Szyld","pistol"],
+                  ["P90","Klubowe Lasery","smg"],["M4A4","Fluor","rifle"]],
+      covert:    [["AWP","Neonowa Noc","awp"],["AK-47","Elektryczny Neon","rifle"],["M4A1-S","Świetlna Rura","rifle"]],
+      special:   [["Nóż Flip","Neonowy","knife"],["Nóż Gut","Fluorescencyjny","knife"],["Karambit","Klubowy","knife"]] } },
+
+  { id:"storm", name:"Skrzynka Burzy", price:450, color:"#64748b", icon:"⛈️",
+    sub:"Pioruny, chmury i elektryczne wyładowania",
+    odds:{mil:.780, restricted:.175, classified:.035, covert:.008, special:.002},
+    items:{
+      mil:       [["MP7","Elektryczność","smg"],["P2000","Kropla Deszczu","pistol"],["FAMAS","Front Atmosferyczny","rifle"],
+                  ["Nova","Grad","shotgun"],["SSG 08","Wiatr","awp"],["PP-Bizon","Chmura Burzowa","smg"]],
+      restricted:[["M4A1-S","Wyładowanie","rifle"],["USP-S","Monsun","pistol"],["AWP","Piorun Kulisty","awp"],
+                  ["SG 553","Turbulencja","rifle"],["MAC-10","Sztorm","smg"]],
+      classified:[["AK-47","Burza","rifle"],["Desert Eagle","Grom","pistol"],["AWP","Czarna Chmura","awp"],
+                  ["P90","Cyklon","smg"]],
+      covert:    [["AWP","Oko Cyklonu","awp"],["AK-47","Piorunowy","rifle"],["M4A4","Sztormowa Fala","rifle"]],
+      special:   [["Nóż Huntsman","Piorun","knife"],["Nóż Bowie","Sztorm","knife"],["Kukri","Grom Wichru","knife"]] } },
+
+  { id:"relic", name:"Skrzynka Relikwii", price:900, color:"#c2410c", icon:"🏺",
+    sub:"Starożytne skarby i zapomniani bogowie",
+    odds:{mil:.770, restricted:.180, classified:.038, covert:.0092, special:.0028},
+    items:{
+      mil:       [["MP9","Hieroglif","smg"],["P250","Papirus","pistol"],["Galil AR","Glina","rifle"],
+                  ["Nova","Amfora","shotgun"],["CZ75-Auto","Moneta","pistol"],["XM1014","Pył Wykopalisk","shotgun"]],
+      restricted:[["AK-47","Sarkofag","rifle"],["AWP","Obelisk","awp"],["M4A1-S","Marmur Zeusa","rifle"],
+                  ["R8 Revolver","Skarbiec","revolver"],["Negev","Kolos","lmg"]],
+      classified:[["AK-47","Klątwa Faraona","rifle"],["AWP","Złota Maska","awp"],["P90","Labirynt","smg"],
+                  ["M4A4","Ruiny","rifle"]],
+      covert:    [["AWP","Oko Horusa","awp"],["AK-47","Gniew Bogów","rifle"],["M4A1-S","Zaginiona Cywilizacja","rifle"]],
+      special:   [["Karambit","Relikwia","knife"],["Nóż Talon","Faraon","knife"],["Nóż Przeżycia","Wykopalisko","knife"]] } },
+
+  { id:"samurai", name:"Skrzynka Samuraja", price:2000, color:"#7f1d1d", icon:"🎎",
+    sub:"Katany, jedwab i droga wojownika",
+    odds:{mil:.760, restricted:.185, classified:.040, covert:.011, special:.004},
+    items:{
+      mil:       [["MP9","Jedwab","smg"],["P250","Lakier","pistol"],["Galil AR","Bambus","rifle"],
+                  ["Nova","Ryżowe Pole","shotgun"],["Tec-9","Origami","pistol"],["Dual Berettas","Wachlarz","pistol"]],
+      restricted:[["AK-47","Katana","rifle"],["AWP","Długi Łuk","awp"],["M4A1-S","Zbroja Ronina","rifle"],
+                  ["USP-S","Herbata","pistol"],["FAMAS","Shogun","rifle"]],
+      classified:[["AK-47","Droga Wojownika","rifle"],["Desert Eagle","Tsuba","pistol"],["AWP","Góra Fudżi","awp"],
+                  ["P90","Kirigami","smg"]],
+      covert:    [["AWP","Oddech Smoka Wschodu","awp"],["AK-47","Honor Samuraja","rifle"],["M4A4","Cesarska Zbroja","rifle"]],
+      special:   [["Karambit","Samuraj","knife"],["Nóż Motylkowy","Jedwabny","knife"],["Nóż Skeleton","Ronin","knife"]] } },
+
+  { id:"cyber", name:"Skrzynka Cyber", price:5000, color:"#22d3ee", icon:"🧬",
+    sub:"Implanty, sieci neuronowe i zimna stal",
+    odds:{mil:.700, restricted:.220, classified:.056, covert:.018, special:.006},
+    items:{
+      mil:       [["MP9","Implant","smg"],["P250","Serwomotor","pistol"],["FAMAS","Krzem","rifle"],
+                  ["Nova","Dioda","shotgun"],["Tec-9","Nanorurka","pistol"],["MAC-10","Skaner","smg"]],
+      restricted:[["AK-47","Neuron","rifle"],["AWP","Predykcja","awp"],["M4A1-S","Cyberoko","rifle"],
+                  ["USP-S","Kod Źródłowy","pistol"],["MP5-SD","Serwerownia","smg"],["M249","Egzoszkielet","lmg"]],
+      classified:[["AK-47","Sztuczna Inteligencja","rifle"],["Desert Eagle","Hologram Taktyczny","pistol"],
+                  ["AWP","Sieć Neuronowa","awp"],["P90","Firewall","smg"]],
+      covert:    [["AWP","Rdzeń Procesora","awp"],["AK-47","Nadpisany Kod","rifle"],["M4A4","Chłodzenie Cieczą","rifle"]],
+      special:   [["Nóż Paracord","Cybernetyczny","knife"],["Nóż Nomad","Implant Nocny","knife"],["Sztylet Cieni","Nano","knife"]] } },
+
+  { id:"hunter", name:"Skrzynka Łowcy", price:16000, color:"#65a30d", icon:"🐺",
+    sub:"Trop, instynkt i las pełen oczu",
+    odds:{mil:.660, restricted:.240, classified:.070, covert:.022, special:.008},
+    items:{
+      mil:       [["MP9","Wilczy Trop","smg"],["P250","Porost","pistol"],["Galil AR","Kora","rifle"],
+                  ["Nova","Ściółka","shotgun"],["SSG 08","Gałąź","awp"],["Sawed-Off","Mech","shotgun"]],
+      restricted:[["AK-47","Wilcze Oczy","rifle"],["AWP","Zasadzka","awp"],["M4A1-S","Leśny Instynkt","rifle"],
+                  ["Desert Eagle","Kieł","pistol"],["UMP-45","Trop Nocny","smg"],["XM1014","Sidła","shotgun"]],
+      classified:[["AK-47","Alfa","rifle"],["AWP","Nocne Łowy","awp"],["M4A4","Gęstwina","rifle"],
+                  ["R8 Revolver","Wilcza Jagoda","revolver"]],
+      covert:    [["AWP","Wataha","awp"],["AK-47","Biały Wilk","rifle"],["M4A1-S","Drapieżnik","rifle"]],
+      special:   [["Nóż Ursus","Łowca","knife"],["Nóż Nomad","Wilk","knife"],["Kukri","Pazur Bestii","knife"]] } },
+
+  { id:"witch", name:"Skrzynka Wiedźmy", price:120000, color:"#d946ef", icon:"🔮",
+    sub:"Klątwy, eliksiry i fioletowy dym",
+    odds:{mil:.600, restricted:.270, classified:.090, covert:.032, special:.008},
+    items:{
+      mil:       [["MP9","Mgła Rytuału","smg"],["P250","Zioła","pistol"],["Galil AR","Kocioł","rifle"],
+                  ["Nova","Kruczy Piasek","shotgun"],["CZ75-Auto","Amulet","pistol"],["XM1014","Kości Rzutu","shotgun"]],
+      restricted:[["AK-47","Klątwa","rifle"],["AWP","Kruk","awp"],["M4A1-S","Sabat","rifle"],
+                  ["USP-S","Eliksir","pistol"],["MP7","Laleczka","smg"],["Negev","Wrzący Kocioł","lmg"]],
+      classified:[["AK-47","Czarna Msza","rifle"],["Desert Eagle","Księga Cieni","pistol"],["AWP","Wiedźmi Krąg","awp"],
+                  ["P90","Fioletowy Dym","smg"],["R8 Revolver","Rytuał Krwi","revolver"]],
+      covert:    [["AWP","Wiedźma","awp"],["AK-47","Klątwa Wieków","rifle"],["M4A4","Noc Sabatu","rifle"],
+                  ["Desert Eagle","Ametystowe Oko","pistol"]],
+      special:   [["Karambit","Wiedźmi","knife"],["Nóż Falchion","Klątwa Nocna","knife"],["Nóż Navaja","Rytuał","knife"],
+                  ["Sztylet Cieni","Cień Wiedźmy","knife"]] } },
+
+  { id:"phoenix", name:"Skrzynka Feniksa", price:1250000, color:"#f97316", icon:"🦅",
+    sub:"Ognisty ptak, wieczny powrót i popiół w garści",
+    odds:{mil:.020, restricted:.500, classified:.320, covert:.130, special:.030},
+    items:{
+      mil:       [["P250","Popiół Feniksa","pistol"],["MP9","Żar Feniksa","smg"],["Galil AR","Spopielony","rifle"],
+                  ["Nova","Gniazdo Ognia","shotgun"],["Tec-9","Iskra Feniksa","pistol"]],
+      restricted:[["AK-47","Skrzydło Ognia","rifle"],["AWP","Słoneczny Ptak","awp"],["M4A1-S","Wieczny Powrót","rifle"],
+                  ["Desert Eagle","Pióro Feniksa","pistol"],["USP-S","Węgle","pistol"],["AUG","Wschód Słońca","rifle"],
+                  ["Negev","Płonące Gniazdo","lmg"]],
+      classified:[["AK-47","Feniks","rifle"],["AWP","Ognisty Powrót","awp"],["M4A4","Popiół i Płomień","rifle"],
+                  ["P90","Solare","smg"],["R8 Revolver","Samospalenie","revolver"]],
+      covert:    [["AK-47","Serce Feniksa","rifle"],["AWP","Nieśmiertelny Ptak","awp"],["M4A1-S","Zmartwychwstanie","rifle"],
+                  ["Desert Eagle","Wieczny Żar","pistol"]],
+      special:   [["Karambit","Feniks","knife"],["Nóż Motylkowy","Ogniste Pióro","knife"],["Nóż Talon","Popiół Ognia","knife"],
+                  ["Bayonet","Zmartwychwstanie Ptaka","knife"]] } }
+];
+
+const NEW_CASES_3 = [
+  { id:"star", name:"Skrzynka Gwiazd", price:2500000, color:"#fde047", icon:"🌟",
+    sub:"Błysk supernowych, pył gwiazdowy i ostrza z nieba",
+    odds:{mil:.050, restricted:.550, classified:.280, covert:.095, special:.025},
+    items:{
+      mil:       [["MP9","Pył Gwiazdowy","smg"],["P250","Supernowa","pistol"],["Galil AR","Jutrzenka","rifle"],
+                  ["Nova","Kometa","shotgun"],["Tec-9","Meteor","pistol"]],
+      restricted:[["AK-47","Gwiazda Północy","rifle"],["AWP","Zorza Polarna","awp"],["M4A1-S","Srebrny Pył","rifle"],
+                  ["Desert Eagle","Archanioł","pistol"],["USP-S","Aureola","pistol"],["AUG","Serafin","rifle"],
+                  ["Negev","Chór Niebios","lmg"]],
+      classified:[["AK-47","Tron Niebios","rifle"],["AWP","Pióro Anioła","awp"],["M4A4","Boski Ornament","rifle"],
+                  ["P90","Hymn Kosmiczny","smg"],["R8 Revolver","Relikwia Gwiazd","revolver"]],
+      covert:    [["AK-47","Anielski Blask","rifle"],["AWP","Niebiańska Brama","awp"],["M4A1-S","Święta Zbroja","rifle"],
+                  ["Desert Eagle","Boski Wyrok","pistol"]],
+      special:   [["Karambit","Niebiański","knife"],["Nóż Motylkowy","Anioł","knife"],["Nóż Talon","Święty","knife"],
+                  ["Bayonet","Skrzydło","knife"],["Nóż Skeleton","Gwiazda","knife"]] } },
+
+  { id:"power", name:"Skrzynka Mocy", price:5000000, color:"#a855f7", icon:"⚡",
+    sub:"Czysta energia, przepięcia i ostrza naładowane prądem",
+    odds:{mil:.030, restricted:.500, classified:.320, covert:.120, special:.030},
+    items:{
+      mil:       [["MP9","Prąd","smg"],["P250","Iskra","pistol"],["Galil AR","Napięcie","rifle"],
+                  ["Nova","Wyładowanie","shotgun"],["Tec-9","Kondensator","pistol"]],
+      restricted:[["AK-47","Burza Energii","rifle"],["AWP","Piorun Kulisty","awp"],["M4A1-S","Cyberoko","rifle"],
+                  ["Desert Eagle","Grom","pistol"],["USP-S","Monsun","pistol"],["AUG","Wschód Słońca","rifle"],
+                  ["M249","Egzoszkielet","lmg"],["SG 553","Turbulencja","rifle"]],
+      classified:[["AK-47","Sztuczna Inteligencja","rifle"],["AWP","Sieć Neuronowa","awp"],["M4A4","Chłodzenie Cieczą","rifle"],
+                  ["P90","Firewall","smg"],["R8 Revolver","Supernowa","revolver"]],
+      covert:    [["AWP","Rdzeń Procesora","awp"],["AK-47","Nadpisany Kod","rifle"],["M4A1-S","Zmartwychwstanie","rifle"],
+                  ["Desert Eagle","Wieczny Żar","pistol"]],
+      special:   [["Karambit","Cybernetyczny","knife"],["Nóż Motylkowy","Implant Nocny","knife"],["Nóż Talon","Nano","knife"],
+                  ["Bayonet","Piorun","knife"],["Sztylet Cieni","Nano","knife"]] } },
+
+
+
+
+  { id:"apoc", name:"Skrzynka Apokalipsy", price:20000000, color:"#7f1d1d", icon:"💀",
+    sub:"Koniec świata, popiół i ostrza z otchłani",
+    odds:{mil:.005, restricted:.400, classified:.380, covert:.165, special:.050},
+    items:{
+      mil:       [["P250","Popiół Końca","pistol"],["MP9","Zgliszcza","smg"],["Galil AR","Zniszczenie","rifle"]],
+      restricted:[["AK-47","Zgliszcza Świata","rifle"],["AWP","Koniec Czasu","awp"],["M4A1-S","Apokalipsa","rifle"],
+                  ["Desert Eagle","Sąd Ostateczny","pistol"],["USP-S","Zmierzch","pistol"],["AUG","Zniszczenie","rifle"],
+                  ["Negev","Popiół Ziemi","lmg"],["SCAR-20","Żar Końca","awp"]],
+      classified:[["AK-47","Koniec Świata","rifle"],["AWP","Otchłań Końca","awp"],["M4A4","Zniszczenie Duszy","rifle"],
+                  ["P90","Apokalipsa Nocy","smg"],["R8 Revolver","Sąd Ostateczny","revolver"],
+                  ["MAG-7","Popiół Ziemi","shotgun"]],
+      covert:    [["AK-47","Serce Apokalipsy","rifle"],["AWP","Lewiatan Końca","awp"],["M4A1-S","Czarna Głębia Końca","rifle"],
+                  ["Desert Eagle","Żarłacz Końca","pistol"],["M4A4","Wiry Końca","rifle"]],
+      special:   [["Karambit","Apokalipsa","knife"],["Nóż Motylkowy","Koniec Świata","knife"],["Sztylet Cieni","Otchłań","knife"],
+                  ["Nóż Navaja","Zniszczenie","knife"],["Kukri","Koniec Czasu","knife"],["Nóż Bowie","Popiół","knife"]] } },
+
+  { id:"secret10", name:"Skrzynka Sekretna", price:10000000, color:"#1e293b", icon:"🔐", secret:true,
+    sub:"Zamknięta na siedem kłódek. W środku tylko to, czego nikt nie powinien mieć.",
+    odds:{mil:.001, restricted:.350, classified:.400, covert:.199, special:.050},
+    items:{
+      mil:       [["P250","Ostatni Oddech","pistol"]],
+      restricted:[["AK-47","Złota Harmonia Legendy","rifle"],["AWP","Królewska Wstęga Legendy","awp"],
+                  ["M4A1-S","Srebrny Dwór Legendy","rifle"],["Desert Eagle","Monarcha Legendy","pistol"],
+                  ["USP-S","Berło Legendy","pistol"],["AUG","Korona Legendy","rifle"],
+                  ["Negev","Królewski Dwór","lmg"],["SCAR-20","Żar Legendy","awp"]],
+      classified:[["AK-47","Tron Legendy","rifle"],["AWP","Berło Carów Legendy","awp"],["M4A4","Carska Mozaika Legendy","rifle"],
+                  ["P90","Diadem Legendy","smg"],["R8 Revolver","Regalia Legendy","revolver"],
+                  ["MAG-7","Złota Mozaika","shotgun"]],
+      covert:    [["AK-47","Królewski Rubin Legendy","rifle"],["AWP","Cesarska Korona Legendy","awp"],
+                  ["M4A1-S","Złoty Ornament Legendy","rifle"],["Desert Eagle","Cesarstwo Legendy","pistol"],
+                  ["M4A4","Diamentowa Korona","rifle"],["AWP","Pan Królów Legendy","awp"]],
+      special:   [["Karambit","Królewski Legendarny","knife"],["Nóż Motylkowy","Tron Legendy","knife"],
+                  ["Nóż Talon","Cesarstwo Legendy","knife"],["Bayonet","Monarcha Legendy","knife"],
+                  ["Nóż Skeleton","Król Legendy","knife"],["Nóż Gut","Legendarny","knife"],
+                  ["Nóż Flip","Diamentowy Legendarny","knife"]] } },
+
+  { id:"secret50", name:"Skrzynka Legendarna", price:50000000, color:"#fbbf24", icon:"👑", secret:true,
+    sub:"Szczyt. Tylko dla tych, którzy nie mają już czego szukać. Najrzadsze ostrza na świecie.",
+    odds:{mil:.001, restricted:.350, classified:.400, covert:.199, special:.050},
+    items:{
+      mil:       [["P250","Ostatni Oddech","pistol"]],
+      restricted:[["AK-47","Złota Harmonia Legendy","rifle"],["AWP","Królewska Wstęga Legendy","awp"],
+                  ["M4A1-S","Srebrny Dwór Legendy","rifle"],["Desert Eagle","Monarcha Legendy","pistol"],
+                  ["USP-S","Berło Legendy","pistol"],["AUG","Korona Legendy","rifle"],
+                  ["Negev","Królewski Dwór","lmg"],["SCAR-20","Żar Legendy","awp"]],
+      classified:[["AK-47","Tron Legendy","rifle"],["AWP","Berło Carów Legendy","awp"],["M4A4","Carska Mozaika Legendy","rifle"],
+                  ["P90","Diadem Legendy","smg"],["R8 Revolver","Regalia Legendy","revolver"],
+                  ["MAG-7","Złota Mozaika","shotgun"]],
+      covert:    [["AK-47","Królewski Rubin Legendy","rifle"],["AWP","Cesarska Korona Legendy","awp"],
+                  ["M4A1-S","Złoty Ornament Legendy","rifle"],["Desert Eagle","Cesarstwo Legendy","pistol"],
+                  ["M4A4","Diamentowa Korona","rifle"],["AWP","Pan Królów Legendy","awp"]],
+      special:   [["Karambit","Królewski Legendarny","knife"],["Nóż Motylkowy","Tron Legendy","knife"],
+                  ["Nóż Talon","Cesarstwo Legendy","knife"],["Bayonet","Monarcha Legendy","knife"],
+                  ["Nóż Skeleton","Król Legendy","knife"],["Nóż Gut","Legendarny","knife"],
+                  ["Nóż Flip","Diamentowy Legendarny","knife"]] } }
+];
+
+CASES.push(...NEW_CASES, ...NEW_CASES_2, ...NEW_CASES_3);
 CASES.sort((a,b)=>a.price - b.price);
+
+/* druga porcja broni wchodzi do wszystkich skrzynek — także tych nowych */
+CASES.forEach(c=>{
+  const e = EXTRA_ITEMS_2[c.id]; if(!e) return;
+  for (const t of TIERS) if (e[t]) c.items[t].push(...e[t]);
+});
 
 /* =======================================================================
    1b. ULEPSZENIA (trwałe perki kupowane za monety)
@@ -1731,7 +2314,11 @@ const UPGRADES = [
   { id:"bulk", icon:"📦", name:"Hurt", max:8,
     desc:"Rabat na otwieranie ×10 i na bitwy 5×5. Przydatne, gdy wolisz otwierać hurtem zamiast pojedynczo.",
     costs:[5000,18000,65000,220000,800000,2500000,9000000,32000000],
-    fmt:l => l ? "−"+Math.round(BULK_STEP*l*100)+"% ceny przy ×10" : "bez rabatu przy ×10" }
+    fmt:l => l ? "−"+Math.round(BULK_STEP*l*100)+"% ceny przy ×10" : "bez rabatu przy ×10" },
+  { id:"auto", icon:"🤖", name:"Auto-otwieranie", max:1,
+    desc:"Odblokowuje przycisk 🤖 Auto przy każdej skrzynce — gra otwiera ją za Ciebie jedno po drugim, dopóki wystarcza monet (albo wciśniesz ⏹ Stop). Otwarcia liczą się jak zwykłe: kupony, 🍀 koniczyna, misje dzienne, album i ekwipunek działają normalnie. W panelu auto-otwierania znajdziesz ⚡ tryb turbo (4 otwarcia na sekundę) i ⏹ limit otwarć (∞ / 25 / 100 / 500).",
+    costs:[12500],
+    fmt:l => l ? "auto-otwieranie skrzynek: odblokowane" : "auto-otwieranie: zablokowane" }
 ];
 const UP_BY_ID = Object.fromEntries(UPGRADES.map(u=>[u.id,u]));
 const upCost = (id, lvl) => UP_BY_ID[id].costs[lvl];
@@ -2107,12 +2694,37 @@ function itemValue(caseDef, tier, key){
   VALUE_CACHE.set(ck, val);
   return val;
 }
+/* ✨ losowanie efektu — droższe tiery mają go trochę częściej */
+function rollFx(tier){
+  const boost = FX_TIER_BOOST[tier] || 1;
+  const r = Math.random();
+  let acc = 0;
+  for(const f of FX){ acc += f.chance*boost; if(r < acc) return f.id; }
+  return null;
+}
+const fxOf    = it => (it && it.fx && FX_BY_ID[it.fx]) || null;
+const fxMult  = it => { const f = fxOf(it); return f ? f.mult : 1; };
+const fxBoostTxt = f => "+" + Math.round((f.mult-1)*100) + "% wartości";
+/* polski przecinek w mnożniku: 1,8 zamiast 1.8 */
+const fxM = f => String(f.mult).replace(".", ",");
+const fxClass = it => { const f = fxOf(it); return f ? " fx fx-"+f.id : ""; };
+function fxBadge(it){
+  const f = fxOf(it);
+  if(!f) return "";
+  return `<span class="fx-badge" title="${f.name} — ${f.glow} · ${fxBoostTxt(f)}">${f.icon} ${f.name} ×${fxM(f)}</span>`;
+}
+/* ile razy w tym zapisie wypadł dany efekt */
+const fxCount = id => numFrom((state.stats && state.stats.fx && state.stats.fx[id]) || 0);
+
 function makeItem(caseDef, tier){
   const [w,n,art] = pick(caseDef.items[tier]);
+  const fx = rollFx(tier);
+  const f = fx ? FX_BY_ID[fx] : null;
   return {
     uid: "i"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
     w, n, art, tier, caseId: caseDef.id,
-    value: Math.round(itemValue(caseDef, tier, w+"|"+n) * valueBoost()),
+    fx,                                    // ✨ efekt (null, gdy brak)
+    value: Math.round(itemValue(caseDef, tier, w+"|"+n) * valueBoost() * (f ? f.mult : 1)),
     ts: Date.now()
   };
 }
@@ -2134,10 +2746,11 @@ const LEGACY_KEYS = ["caseOpenerSave_v2","caseOpenerSave_v1"];
 const START_COINS = 5000;
 let state = {
   coins: START_COINS, inv: [], recent: [], battles: [],
-  stats:{opened:0, spent:0, earned:0, sold:0, knives:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, best:null, cases:{}},
+  stats:{opened:0, spent:0, earned:0, sold:0, knives:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{}},
   up: UP_ZERO(),
-  album:{}, albumClaimed:{}, missions:null,
-  sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, battleCase:"start", battleSize:1
+  album:{}, albumClaimed:{}, missions:null, weekly:null,
+  sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, battleCase:"start", battleSize:1,
+  autoTurbo:false, autoLimit:0
 };
 
 /* unikatowy identyfikator tej karty — pozwala wykryć grę w dwóch oknach */
@@ -2152,6 +2765,10 @@ let lastSavedCoins = null;      // stan monet w chwili ostatniego zapisu
 let otherTabWarned = false;
 
 function markDirty(){ dirty = true; }
+
+/* Bezpieczna liczba z zapisu. Uwaga: |0 ucina wszystko powyżej 2^31 — a znaczniki
+   czasu (ms) i duże statystyki już dawno ten limit przekraczają, więc parsujemy normalnie. */
+function numFrom(v){ return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.round(v)) : 0; }
 function validInv(inv){
   return (Array.isArray(inv)?inv:[]).filter(i=>i && typeof i.value==="number" && i.tier && TIER[i.tier]);
 }
@@ -2173,13 +2790,38 @@ function mergeFrom(other){
   state.inv = [...byUid.values()].sort((a,b)=>(b.ts||0)-(a.ts||0));
 
   const s = other.stats || {}, m = state.stats;
-  m.opened = Math.max(m.opened|0, s.opened|0);
-  m.spent  = Math.max(m.spent|0,  s.spent|0);
-  m.earned = Math.max(m.earned|0, s.earned|0);
-  m.sold   = Math.max(m.sold|0,   s.sold|0);
-  m.knives = Math.max(m.knives|0, s.knives|0);
+  m.opened = Math.max(numFrom(m.opened), numFrom(s.opened));
+  m.spent  = Math.max(numFrom(m.spent),  numFrom(s.spent));
+  m.earned = Math.max(numFrom(m.earned), numFrom(s.earned));
+  m.sold   = Math.max(numFrom(m.sold),   numFrom(s.sold));
+  m.knives = Math.max(numFrom(m.knives), numFrom(s.knives));
   if (s.best && (!m.best || s.best.value > m.best.value)) m.best = s.best;
-  Object.entries(s.cases||{}).forEach(([k,v])=>{ m.cases[k] = Math.max(m.cases[k]||0, v|0); });
+  Object.entries(s.cases||{}).forEach(([k,v])=>{ m.cases[k] = Math.max(numFrom(m.cases[k]), numFrom(v)); });
+  // ✨ efekty na broniach — bierzemy większą liczbę z obu okien (nic nie ginie)
+  const ofx = (s.fx && typeof s.fx === "object" && !Array.isArray(s.fx)) ? s.fx : {};
+  m.fx = (m.fx && typeof m.fx === "object" && !Array.isArray(m.fx)) ? m.fx : {};
+  Object.keys(ofx).forEach(k=>{ m.fx[k] = Math.max(numFrom(m.fx[k]), numFrom(ofx[k])); });
+  m.fxTotal = Math.max(numFrom(m.fxTotal), numFrom(s.fxTotal));
+
+  // 📅 misje tygodniowe — ta sama pula: scalamy postęp i odebrania
+  const ow = other.weekly;
+  if(ow && typeof ow === "object" && Array.isArray(ow.list) && ow.list.length){
+    if(!state.weekly || !Array.isArray(state.weekly.list) || !state.weekly.list.length){
+      state.weekly = ow;                                   // nie mamy nic — bierzemy z drugiej karty
+    } else if(numFrom(ow.start) > numFrom(state.weekly.start)){
+      state.weekly = ow;                                   // nowszy zestaw wygrywa
+    } else if(numFrom(ow.start) === numFrom(state.weekly.start)){
+      const mine = state.weekly.list;
+      ow.list.forEach(x=>{
+        if(!x) return;
+        const m2 = mine.find(y=>y && y.kind===x.kind && (y.goal|0)===(x.goal|0));
+        if(!m2) return;
+        m2.prog = Math.max(m2.prog|0, x.prog|0);
+        m2.claimed = m2.claimed || !!x.claimed;
+      });
+      state.weekly.rerolls = Math.max(numFrom(state.weekly.rerolls), numFrom(ow.rerolls));
+    }
+  }
 
   // monety: przyjmujemy wersję z nowszego zapisu, ale TYLKO jeśli sami
   // nie zmieniliśmy monet od ostatniego zapisu (inaczej cofnęlibyśmy sobie zakupy)
@@ -2218,8 +2860,9 @@ function snapshot(){
     battles:state.battles, battleCase:state.battleCase, battleSize:state.battleSize,
     up:state.up,
     sound:state.sound, fast:state.fast, bonusAt:state.bonusAt, rescueAt:state.rescueAt,
+    autoTurbo:state.autoTurbo === true, autoLimit:autoLimitSan(state.autoLimit),
     cloverUntil:state.cloverUntil||0,
-    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions };
+    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly };
 }
 
 /* Zapis z weryfikacją + wykrywaniem gry w dwóch oknach.
@@ -2299,9 +2942,12 @@ function load(){
   state.fast   = d.fast === true;
   state.bonusAt= d.bonusAt || 0;
   state.rescueAt = d.rescueAt || 0;
-  state.cloverUntil = Math.max(0, d.cloverUntil|0);
+  state.cloverUntil = numFrom(d.cloverUntil);   // ⚠ bez |0 — inaczej koniczyna „ginęła” przy odświeżeniu
+  state.autoTurbo = d.autoTurbo === true;       // ⚡ tryb turbo (ustawienie, nie stan biegu)
+  state.autoLimit = autoLimitSan(d.autoLimit);  // ⏹ limit otwarć (0 = bez limitu)
   albumLoad(d);                    // 📖 album kolekcji (migruje stare zapisy)
   missionsLoad(d);                 // 🎯 misje dzienne (nowe, gdy zmienił się dzień)
+  weeklyLoad(d);                   // 📅 misje tygodniowe (nowe co 7 dni)
   state.up = Object.assign(UP_ZERO(), d.up||{});
   UPGRADES.forEach(u=>{ state.up[u.id] = Math.max(0, Math.min(u.max, state.up[u.id]|0)); });
   const known = new Set(UPGRADES.map(u=>u.id));
@@ -2370,7 +3016,7 @@ function beep(freq, dur, type, vol, when){
   o.start(t0); o.stop(t0+(dur||0.06)+0.03);
 }
 function sfxTick(){ beep(1250 + Math.random()*420, 0.03, "square", 0.022); }
-function sfxWin(tier){
+function sfxWin(tier, fx){
   const sets = {
     special:    [523,659,784,1046,1318,1568,2093],
     covert:     [523,659,784,1046,1318],
@@ -2380,6 +3026,12 @@ function sfxWin(tier){
   };
   (sets[tier]||sets.mil).forEach((f,i)=>beep(f, 0.26, "triangle", 0.055, i*0.085));
   if (tier==="special"||tier==="covert") beep(120, 0.7, "sine", 0.09, 0);
+  /* ✨ rzadki efekt dorzuca własny błysk na koniec fanfary */
+  if (fx==="diamond"||fx==="rainbow"||fx==="cosmic"){
+    beep(1568,0.22,"triangle",0.05,0.55); beep(2093,0.34,"triangle",0.045,0.73); beep(2637,0.42,"sine",0.04,0.95);
+  } else if (fx){
+    beep(1318,0.2,"triangle",0.045,0.46); beep(1760,0.28,"triangle",0.04,0.62);
+  }
 }
 function sfxCoin(){ beep(940,0.055,"triangle",0.05); beep(1420,0.1,"triangle",0.045,0.06); }
 function sfxClover(){ beep(1180,0.07,"triangle",0.042); beep(1580,0.07,"triangle",0.038,0.085); beep(2100,0.16,"triangle",0.034,0.17); }
@@ -2491,14 +3143,17 @@ function renderShop(){
   const kn = upLvl("knives");
   if(kn) active.push("🔪 Łowca Noży "+kn+"/"+UP_BY_ID.knives.max);
   if(cloverActive()) active.push("🍀 Koniczyna "+Math.ceil(cloverLeft()/1000)+" s — "+cloverDesc());
+  if(autoOpen) active.push("🤖 Auto: "+esc(autoOpen.name)+" — "+autoOpen.n+" "+plural(autoOpen.n,"otwarcie","otwarcia","otwarć"));
   $("#shopHint").innerHTML = [
     state.coins < cheapest ? "Brakuje monet — użyj przycisku 🎁 Bonus" : "★ Noże są rzadsze, ale warte więcej",
+    "✨ Efekty na broniach mnożą wartość: "+FX.map(f=>f.icon+"×"+fxM(f)).join(" · "),
     active.join(" · ") + (active.length ? " — szanse już z ulepszeniami" : "")
   ].filter(Boolean).join(" &nbsp;·&nbsp; ");
   $("#caseGrid").innerHTML = CASES.map((c,i)=>{
     const ten = Math.round(c.price * (1 - bulkRate())) * 10;
     const can = state.coins>=c.price, can10 = state.coins>=ten;
     const tier = caseTier(c);
+    const aOn = !!autoOpen && autoOpen.id===c.id, aUnl = autoUnlocked();
     return `<div class="case-card tier-${tier}" data-skin="${c.id}" style="--cc:${c.color};animation-delay:${i*70}ms" data-case="${c.id}">
       <span class="case-tag">${TIER_NAME[tier]}</span>
       <div class="crate">
@@ -2527,6 +3182,12 @@ function renderShop(){
         <button class="btn primary open-btn" data-open="${c.id}" ${can?"":"disabled"}>Otwórz</button>
         <button class="btn ghost" data-open10="${c.id}" title="Otwórz 10 skrzynek (🪙 ${fmt(ten)} łącznie)" ${can10?"":"disabled"}>×10</button>
         <button class="btn ghost loot-btn" data-loot="${c.id}" title="Zobacz wszystkie bronie w tej skrzynce">📋 Zawartość</button>
+        <button class="btn ghost auto-btn${aOn?" on":""}${aUnl?"":" locked"}" data-auto="${c.id}"
+          title="${aUnl
+            ? (aOn ? "Zatrzymaj auto-otwieranie"
+                   : "Otwieraj tę skrzynkę automatycznie — "+(autoTurboOn() ? "⚡ ok. 4 otwarcia / s" : "1 otwarcie / "+autoStepTxt()+" s")
+                     +(autoLimit() ? " · limit "+autoLimit()+" otwarć" : " · bez limitu"))
+            : "Ulepszenie 🤖 Auto-otwieranie (🪙 12 500) — zakładka 🚀 Ulepszenia"}">${aOn?"⏹ Stop":"🤖 Auto"}${aUnl?"":' <span class="lock">🔒</span>'}</button>
       </div>
     </div>`;
   }).join("");
@@ -2537,8 +3198,10 @@ $("#caseGrid").addEventListener("click", e=>{
   if(lo){ showLoot(lo.dataset.loot); return; }
   const o1 = e.target.closest("[data-open]");
   const o10 = e.target.closest("[data-open10]");
+  const au = e.target.closest("[data-auto]");
   if(o1) openCase(o1.dataset.open, o1.closest(".case-card"));
   if(o10) openMany(o10.dataset.open10, 10);
+  if(au) switchAuto(au.dataset.auto);
 });
 
 /* =======================================================================
@@ -2556,6 +3219,12 @@ function showLoot(caseId){
       <b>Czterolistna koniczyna — szansa ${(CLOVER_CHANCE*100).toFixed(1)}%</b>
       Wypada <em>dodatkowo</em> przy otwarciu skrzynki (także przy ×10) i na ${Math.round(CLOVER_DUR/1000)} s
       daje większe szanse na noże i dobre bronie: ${cloverDesc()}.
+    </span></div>` +
+    `<div class="loot-bonus lb-fx"><i class="lb-ico">✨</i><span class="lb-txt">
+      <b>Rzadkie efekty na broniach — razem ok. ${(FX_CHANCE*100).toFixed(1)}% na drop</b>
+      Zdobycz może dostać efekt, który mnoży jej wartość i widać go na karcie:
+      ${FX.map(f=>f.icon+" <em>"+f.name+"</em> ×"+fxM(f)+" ("+(f.chance*100).toFixed(2)+"%)").join(" · ")}.
+      Droższe tiery mają trochę większą szansę na błysk, a mnożnik działa od razu przy sprzedaży.
     </span></div>` + TIERS.map(t=>{
     const pool = c.items[t]||[];
     if(!pool.length) return "";
@@ -2642,6 +3311,21 @@ $("#upGrid").addEventListener("click", e=>{
 const STRIP_LEN = 64, WIN_INDEX = 54, ITEM_W = 140, GAP = 8, STEP = ITEM_W+GAP;
 let spinning=false, currentWin=null, spinTimer=null, spinRAF=null;
 
+/* Wspólny rdzeń otwarcia: opłata, statystyki, misje i sam drop.
+   Korzysta z niego zwykłe otwarcie (openCase) oraz 🤖 auto-otwieranie. */
+function doOpen(c, free){
+  const paid = free ? 0 : c.price;
+  state.coins -= paid;
+  state.stats.spent += paid;
+  state.stats.opened++;
+  state.stats.cases[c.id] = (state.stats.cases[c.id]||0)+1;
+  missionTrack("open",1,{caseId:c.id});
+  missionTrack("opencase:"+c.id, 1);
+  missionTrack("spend", paid);
+  if(cloverActive()) missionTrack("cloveropen",1);
+  return obtainDrop(c, pickTier(c));      // drop zapisuje się od razu (saveDrop)
+}
+
 function openCase(caseId, cardEl){
   if(spinning) return;
   const c = CASES.find(x=>x.id===caseId);
@@ -2650,18 +3334,10 @@ function openCase(caseId, cardEl){
   if(!free && state.coins < c.price){ sfxErr(); toast("Za mało monet!","bad"); return; }
 
   spinning = true;                        // blokada na czas animacji skrzynki
-  const paid = free ? 0 : c.price;
   if(free) toast("🎟️ <b>Kupon!</b> Otwarcie nic Cię nie kosztowało","good");
-  state.coins -= paid;
-  state.stats.spent += paid;
-  state.stats.opened++;
-  state.stats.cases[c.id] = (state.stats.cases[c.id]||0)+1;
-  missionTrack("open",1);
+  const win = doOpen(c, free);
   renderBalance(); renderShop();
   save();
-
-  const tier = pickTier(c);
-  const win = obtainDrop(c, tier);
 
   if (state.fast){ spinning = false; showResult([win], true); return; }
 
@@ -2762,8 +3438,11 @@ function openMany(caseId, count){
   state.stats.spent += cost;
   state.stats.opened += count;
   state.stats.cases[c.id] = (state.stats.cases[c.id]||0)+count;
-  missionTrack("open", count);
+  missionTrack("open", count, {caseId:c.id});
+  missionTrack("opencase:"+c.id, count);
   missionTrack("open10", 1);
+  missionTrack("spend", cost);
+  if(cloverActive()) missionTrack("cloveropen", count);
   const wins = [];
   for(let i=0;i<count;i++) wins.push(obtainDrop(c, pickTier(c)));
   if(freeN) toast("🎟️ <b>Kupony!</b> " + freeN + " z " + count + " otwarć darmowych","good");
@@ -2772,15 +3451,192 @@ function openMany(caseId, count){
 }
 
 /* =======================================================================
+   9c. 🤖 AUTO-OTWIERANIE (odblokowywane ulepszeniem „Auto-otwieranie”)
+   -----------------------------------------------------------------------
+   Stan trzymamy tylko w sesji (jak 🔁 auto-walka) — nie trafia do zapisu.
+   Każde otwarcie idzie przez doOpen(), więc misje, 🍀 koniczyna, album,
+   kupony i ekwipunek działają dokładnie tak, jak przy ręcznym otwieraniu.
+   ======================================================================= */
+const AUTO_STEP = 700;         // ms między kolejnymi otwarciami
+const AUTO_TURBO_STEP = 250;   // ⚡ turbo: ok. 4 otwarcia na sekundę
+const AUTO_FEED = 6;           // ile ostatnich dropów pokazujemy na panelu
+let autoOpen = null;           // {id,name,color,timer,n,spent,free,best,feed}
+
+const autoUnlocked = () => upLvl("auto") > 0;
+
+/* ⚡⏹ ustawienia auto-otwierania — zapisywane razem z grą (jak dźwięk albo szybkie otwieranie).
+   autoLimitSan jest funkcją (nie const), żeby load() mógł jej użyć niezależnie od kolejności. */
+function autoLimitSan(v){                               // 0 = bez limitu, inaczej dowolna sensowna liczba
+  v = (typeof v === "number" && isFinite(v)) ? Math.round(v) : 0;
+  return (v >= 1 && v <= 100000) ? v : 0;               // panel oferuje ∞ / 25 / 100 / 500
+}
+const autoTurboOn = () => state.autoTurbo === true;
+const autoLimit   = () => autoLimitSan(state.autoLimit);
+const autoStepMs  = () => autoTurboOn() ? AUTO_TURBO_STEP : AUTO_STEP;
+const autoStepTxt = () => String(autoStepMs()/1000).replace(".", ",");   // "0,7" albo "0,25"
+
+function switchAuto(caseId){
+  if(!autoUnlocked()){
+    sfxErr();
+    toast("🤖 <b>Auto-otwieranie</b> — kup ulepszenie w zakładce 🚀","bad");
+    switchView("up");
+    return;
+  }
+  if(autoOpen && autoOpen.id === caseId){ autoStop("zatrzymane"); return; }   // ten sam przycisk = stop
+  if(spinning){ sfxErr(); toast("Najpierw poczekaj na zakończenie otwarcia","bad"); return; }
+  autoStop();                                                                // zmiana skrzynki
+  const c = CASES.find(x=>x.id===caseId);
+  if(!c) return;
+  if(state.coins < c.price){ sfxErr(); toast("Za mało monet na auto-otwieranie","bad"); return; }
+  autoOpen = {id:c.id, name:c.name, color:c.color, timer:null, n:0, spent:0, free:0, best:null, feed:[]};
+  const fe = $("#autoFeed"); if(fe) fe.innerHTML = "";      // nowy bieg = czysta lista dropów
+  sfxWhoosh();
+  renderAutoPanel(); renderShop();
+  autoStep();
+}
+
+function autoStep(){
+  if(!autoOpen) return;
+  const c = CASES.find(x=>x.id===autoOpen.id);
+  if(!c){ autoStop(); return; }
+  const free = Math.random() < couponChance();
+  if(!free && state.coins < c.price){ autoStop("skończyły się monety", true); return; }
+  const win = doOpen(c, free);          // pełne otwarcie + natychmiastowy zapis dropu
+  autoOpen.n++;
+  if(free) autoOpen.free++;
+  autoOpen.spent += free ? 0 : c.price;
+  if(!autoOpen.best || win.value > autoOpen.best.value) autoOpen.best = win;
+  autoOpen.feed.unshift(win);
+  if(autoOpen.feed.length > AUTO_FEED) autoOpen.feed.length = AUTO_FEED;
+  sfxTick();
+  renderBalance();
+  if(currentView === "inv") renderInv();      // odświeżamy tylko widoczne rzeczy
+  if(currentView === "up") renderUp();
+  renderAutoPanel();
+  const lim = autoLimit();
+  if(lim && autoOpen.n >= lim){ autoStop("osiągnięty limit "+lim+" otwarć"); return; }
+  autoOpen.timer = setTimeout(autoStep, autoStepMs());
+}
+
+/* reason = dlaczego zatrzymano (puste = bez komunikatu), bad = pokaż na czerwono,
+   quiet = nie pokazuj nic (np. przy resecie gry) */
+function autoStop(reason, bad, quiet){
+  if(!autoOpen) return;
+  if(autoOpen.timer) clearTimeout(autoOpen.timer);
+  const o = autoOpen;
+  autoOpen = null;
+  renderAutoPanel();
+  renderShop();
+  if(quiet) return;
+  if(o.n){
+    const best = o.best ? " · najlepszy: <b>"+esc(o.best.n)+"</b> 🪙 "+fmt(o.best.value) : "";
+    toast("🤖 Auto-otwieranie"+(reason?" ("+reason+")":"")+" — <b>"+o.n+"</b> "
+      +plural(o.n,"otwarcie","otwarcia","otwarć")+" · wydane 🪙 "+fmt(o.spent)
+      +(o.free?" · 🎟️ "+o.free:"")+best+(autoTurboOn()?" · ⚡ turbo":""), bad?"bad":"good");
+  } else if(reason){
+    toast("🤖 Auto-otwieranie — "+reason, bad?"bad":"good");
+  }
+}
+
+/* pojedynczy wpis na liście ostatnich dropów */
+function afItemHTML(it){
+  const f = fxOf(it);
+  return '<span class="af-item'+(f?' fx':'')+'" data-uid="'+it.uid+'" style="--c:'+TIER[it.tier].color+(f?';--fx:'+f.color:'')+'">'+
+    (f?'<span class="af-fx" title="'+f.name+' '+fxBoostTxt(f)+'">'+f.icon+'</span>':'')+
+    '<span class="af-name">'+esc(it.w)+' · '+esc(it.n)+'</span>'+
+    '<b>🪙 '+fmt(it.value)+'</b></span>';
+}
+
+/* Lista dropów dokładana od góry — istniejące wpisy nie animują się od nowa.
+   Przy ⚡ turbo (4 otwarcia na sekundę) pełne przerysowanie migałoby. */
+function renderAutoFeed(){
+  const el = $("#autoFeed");
+  if(!el || !autoOpen) return;
+  const feed = autoOpen.feed;
+  if(!el.children.length){ el.innerHTML = feed.map(afItemHTML).join(""); return; }
+  const top = feed[0];
+  if(top && el.firstElementChild && el.firstElementChild.dataset.uid !== top.uid){
+    el.insertAdjacentHTML("afterbegin", afItemHTML(top));
+    while(el.children.length > AUTO_FEED) el.lastElementChild.remove();
+  }
+}
+
+function renderAutoPanel(){
+  const p = $("#autoPanel");
+  if(!p) return;
+  /* ustawienia ⚡⏹ trzymamy w zgodzie z zapisem nawet wtedy, gdy panel jest schowany */
+  const turbo = autoTurboOn(), lim = autoLimit();
+  const tb = $("#autoTurbo");
+  if(tb){
+    tb.classList.toggle("on", turbo);
+    tb.title = turbo ? "Tryb turbo WŁĄCZONY — ok. 4 otwarcia na sekundę (kliknij, żeby wyłączyć)"
+                     : "Tryb turbo — ok. 4 otwarcia na sekundę zamiast 1 / "+autoStepTxt()+" s";
+  }
+  const lims = $("#autoLims");
+  if(lims) Array.from(lims.children).forEach(b=>b.classList.toggle("on", (+b.dataset.lim|0) === lim));
+  if(!autoOpen){ p.classList.remove("show"); return; }
+  p.classList.add("show");
+  p.style.setProperty("--ac", autoOpen.color || "#ffb02e");
+  $("#autoTitle").innerHTML = '🤖 Auto: <b>'+esc(autoOpen.name)+'</b>'+(turbo ? ' <span class="ap-tb">⚡ turbo</span>' : '');
+  $("#autoRun").innerHTML =
+    '<span>otwarć <b>'+autoOpen.n+(lim ? ' / '+lim : '')+'</b></span>'+
+    (lim ? '' : '<span>limit <b>∞</b></span>')+
+    '<span>wydane <b>🪙 '+fmt(autoOpen.spent)+'</b></span>'+
+    (autoOpen.free ? '<span>🎟️ darmowe <b>'+autoOpen.free+'</b></span>' : '');
+  const bar = $("#autoLimBar"), fill = $("#autoLimFill");
+  if(bar){
+    bar.classList.toggle("hide", !lim);
+    if(lim && fill) fill.style.width = Math.min(100, 100*autoOpen.n/lim)+"%";
+  }
+  renderAutoFeed();
+  $("#autoBest").innerHTML = autoOpen.best
+    ? 'najlepszy drop: <b>'+esc(autoOpen.best.n)+'</b> — 🪙 '+fmt(autoOpen.best.value)
+    : 'pierwsze otwarcie za chwilę…';
+}
+$("#autoStop").addEventListener("click", ()=>autoStop("zatrzymane"));
+
+/* ⚡ tryb turbo — przyspiesza auto-otwieranie w trakcie biegu (zmiana działa od następnego otwarcia) */
+$("#autoTurbo").addEventListener("click", ()=>{
+  state.autoTurbo = !autoTurboOn();
+  markDirty(); save();
+  renderAutoPanel(); renderShop();
+  sfxTick();
+  toast(state.autoTurbo
+    ? "⚡ <b>Tryb turbo</b> — ok. <b>4</b> otwarcia na sekundę"
+    : "⚡ Tryb turbo wyłączony — 1 otwarcie / "+autoStepTxt()+" s", "good");
+});
+
+/* ⏹ limit otwarć — auto zatrzyma się samo po wybranej liczbie otwarć */
+$("#autoLims").addEventListener("click", e=>{
+  const b = e.target.closest("[data-lim]");
+  if(!b) return;
+  state.autoLimit = autoLimitSan(+b.dataset.lim);
+  markDirty(); save();
+  renderAutoPanel(); renderShop();
+  if(!state.autoLimit){ toast("♾️ Auto-otwieranie <b>bez limitu</b> otwarć","good"); return; }
+  toast("⏹ Auto-otwieranie zatrzyma się po <b>"+state.autoLimit+"</b> otwarciach","good");
+  if(autoOpen && autoOpen.n >= state.autoLimit) autoStop("osiągnięty limit "+state.autoLimit+" otwarć");
+});
+
+/* =======================================================================
    10. KARTY / EKWIPUNEK
    ======================================================================= */
 function noteDrop(item){
   item.ts = item.ts || Date.now();
-  state.recent.unshift({w:item.w,n:item.n,tier:item.tier,value:item.value,uid:item.uid,ts:item.ts});
+  state.recent.unshift({w:item.w,n:item.n,tier:item.tier,value:item.value,uid:item.uid,ts:item.ts,fx:item.fx||null});
   state.recent = state.recent.slice(0,24);
   if(item.tier==="special"){ state.stats.knives++; missionTrack("knife",1); }
+  if(item.tier==="covert" || item.tier==="special") missionTrack("covert",1);
+  if(item.fx){                                  // ✨ rzadki efekt — liczymy do statystyk
+    const st = state.stats;
+    st.fx = (st.fx && typeof st.fx === "object" && !Array.isArray(st.fx)) ? st.fx : {};
+    st.fx[item.fx] = numFrom(st.fx[item.fx]) + 1;
+    st.fxTotal = numFrom(st.fxTotal) + 1;
+    missionTrack("fx", 1);                      // 📅 misje tygodniowe na efekty
+    if(FX_BY_ID[item.fx] && FX_BY_ID[item.fx].mult >= FX_BIG) missionTrack("fxbig", 1);
+  }
   if(!state.stats.best || item.value>state.stats.best.value)
-    state.stats.best = {w:item.w,n:item.n,tier:item.tier,value:item.value};
+    state.stats.best = {w:item.w,n:item.n,tier:item.tier,value:item.value,fx:item.fx||null};
 }
 
 /* obsługa zdobytego przedmiotu: trafia do ekwipunku i jest od razu zapisany */
@@ -2804,10 +3660,13 @@ function addToInv(item){
 function itemCardHTML(item, extra){
   const t = TIER[item.tier];
   const h = hash(item.w+item.n+item.uid);
+  const f = fxOf(item);
   const foil = (item.tier==="special"||item.tier==="covert") ? '<div class="art-foil"></div>' : "";
-  return `<div class="item-card tier-${item.tier} ${extra||""}" style="--c:${t.color}" data-uid="${item.uid}">
+  return `<div class="item-card tier-${item.tier}${fxClass(item)} ${extra||""}" style="--c:${t.color}${f?";--fx:"+f.color:""}" data-uid="${item.uid}">
     ${foil}
+    ${f?'<div class="fx-shine"></div>':""}
     ${item.tier==="special" ? '<span class="star">★</span>' : ""}
+    ${fxBadge(item)}
     <div class="item-art">${weaponSVG(item, h.toString(36))}</div>
     <div class="item-body">
       <div class="item-weapon">${esc(item.w)}</div>
@@ -2820,9 +3679,12 @@ function itemCardHTML(item, extra){
   </div>`;
 }
 function invCardHTML(item, i){
-  return `<div class="item-card tier-${item.tier}" style="--c:${TIER[item.tier].color};animation-delay:${Math.min(i*22,420)}ms" data-uid="${item.uid}">
+  const f = fxOf(item);
+  return `<div class="item-card tier-${item.tier}${fxClass(item)}" style="--c:${TIER[item.tier].color}${f?";--fx:"+f.color:""};animation-delay:${Math.min(i*22,420)}ms" data-uid="${item.uid}">
     ${(item.tier==="special"||item.tier==="covert") ? '<div class="art-foil"></div>' : ""}
+    ${f?'<div class="fx-shine"></div>':""}
     ${item.tier==="special" ? '<span class="star">★</span>' : ""}
+    ${fxBadge(item)}
     <div class="item-art">${weaponSVG(item, hash(item.uid).toString(36))}</div>
     <div class="item-body">
       <div class="item-weapon">${esc(item.w)}</div>
@@ -2865,6 +3727,7 @@ function sellItem(uid){
   state.inv.splice(idx,1);
   state.coins += price; state.stats.earned += price; state.stats.sold++;
   missionTrack("sell",1);
+  missionTrack("sellvalue", price);
   sfxCoin(); renderBalance(); renderInv(); renderShop(); save();
   toast("Sprzedano <b>"+esc(it.n)+"</b> za 🪙 "+fmt(price),"good");
 }
@@ -2880,6 +3743,7 @@ $("#sellAll").addEventListener("click", ()=>{
   if(!confirm("Sprzedać WSZYSTKIE przedmioty ("+state.inv.length+") za 🪙 "+fmt(gain)+"?")) return;
   state.coins += gain; state.stats.earned += gain; state.stats.sold += state.inv.length;
   missionTrack("sell", state.inv.length);
+  missionTrack("sellvalue", gain);
   state.inv = [];
   sfxCoin(); renderBalance(); renderInv(); renderShop(); save();
   toast("Sprzedano wszystko za 🪙 "+fmt(gain),"good");
@@ -2896,6 +3760,7 @@ $("#sellCheap").addEventListener("click", ()=>{
   state.inv = state.inv.filter(i=>!ids.has(i.uid));
   state.coins += gain; state.stats.earned += gain; state.stats.sold += toSell.length;
   missionTrack("sell", toSell.length);
+  missionTrack("sellvalue", gain);
   sfxCoin(); renderBalance(); renderInv(); renderShop(); save();
   toast("Sprzedano "+toSell.length+" szt. za 🪙 "+fmt(gain),"good");
 });
@@ -2912,12 +3777,14 @@ function showResult(items, single){
   if(single){
     const it = items[0];
     const big = it.tier==="special"||it.tier==="covert"||it.tier==="classified";
+    const f = fxOf(it);
     $("#resBody").innerHTML = `
       <div class="rare-banner ${hasKnife?"show":""}">★ RZADKI SPECJALNY DROP ★</div>
       <div class="result-stage" style="--c:${TIER[it.tier].color}">
-        ${big?'<div class="rays"></div><div class="glowdisc"></div><div class="shockwave"></div>':''}
+        ${(big||f)?'<div class="rays"></div><div class="glowdisc"></div><div class="shockwave"></div>':''}
         <div class="result-glow">${itemCardHTML(it)}</div>
       </div>
+      ${f?`<div class="result-fx${f.mult>=FX_BIG?" big":""}" style="--fx:${f.color}">${f.icon} ${f.name} efekt — ${fxBoostTxt(f)}</div>`:""}
       <div class="result-meta muted">Wartość: <b style="color:var(--acc);font-size:15px">🪙 ${fmt(it.value)}</b></div>
       <div class="result-actions">
         <button class="btn gold" data-sell-one="${it.uid}">Sprzedaj za 🪙 ${fmt(itemSell(it))}</button>
@@ -2927,22 +3794,29 @@ function showResult(items, single){
   } else {
     const totalVal = items.reduce((s,i)=>s+i.value,0);
     const totalSell = items.reduce((s,i)=>s+itemSell(i),0);
+    const fxs = items.filter(i=>i.fx);
     $("#resBody").innerHTML = `
       <div class="multi-grid">${items.map(i=>itemCardHTML(i)).join("")}</div>
       <div class="result-meta muted">Suma wartości: <b style="color:var(--acc)">🪙 ${fmt(totalVal)}</b>
-        &nbsp;·&nbsp; sprzedaż: <b style="color:var(--ok)">🪙 ${fmt(totalSell)}</b></div>
+        &nbsp;·&nbsp; sprzedaż: <b style="color:var(--ok)">🪙 ${fmt(totalSell)}</b>${fxs.length?" &nbsp;·&nbsp; ✨ "+fxs.map(i=>FX_BY_ID[i.fx].icon).join(" "):""}</div>
       <div class="result-actions">
         <button class="btn gold" data-sell-many="${ids.join(",")}">Sprzedaj wszystko (🪙 ${fmt(totalSell)})</button>
         <button class="btn" data-keep="1">Zatrzymaj</button>
       </div>`;
   }
   $("#resultOverlay").classList.add("show");
-  sfxWin(best.tier);
+  const bf = fxOf(best);
+  sfxWin(best.tier, bf ? bf.id : null);
 
   if(best.tier==="special"){ confetti(["#ffd700","#fff3b0","#ffb02e","#ffffff"]); setTimeout(confetti,320); shakeScreen(); }
   else if(best.tier==="covert"){ confetti(["#eb4b4b","#ff9a9a","#ffd700","#ffffff"]); shakeScreen(); }
   else if(best.tier==="classified"){ confetti([TIER.classified.color,"#ffffff","#c77dff"]); }
   else if(best.tier==="restricted" && single){ burst(window.innerWidth/2, window.innerHeight*0.42, TIER.restricted.color); }
+
+  if(bf){                                    // ✨ rzadki efekt — własna feta
+    setTimeout(()=>confetti([bf.color,"#ffffff",bf.color]), 120);
+    if(bf.mult >= FX_BIG){ setTimeout(confetti, 380); setTimeout(confetti, 640); shakeScreen(); }
+  }
 }
 
 function shakeScreen(){
@@ -2963,6 +3837,7 @@ $("#resBody").addEventListener("click", e=>{
       if(i>=0){ gain += itemSell(state.inv[i]); state.inv.splice(i,1); n++; } });
     state.coins += gain; state.stats.earned += gain; state.stats.sold += n;
     missionTrack("sell", n);
+    missionTrack("sellvalue", gain);
     sfxCoin(); renderBalance(); renderShop(); renderInv(); save();
     $("#resultOverlay").classList.remove("show");
     toast("Sprzedano "+n+" przedmiotów za 🪙 "+fmt(gain),"good");
@@ -3115,13 +3990,17 @@ function fight(caseId){
   state.stats.spent += total;
   state.stats.battles = (state.stats.battles|0) + 1;
   missionTrack("battle",1);
+  missionTrack("spend", total);
 
   let gain = 0;
   if(res > 0){                                 // wygrana: wszystkie dropy do ekwipunku
     state.stats.battleWins = (state.stats.battleWins|0) + 1;
     missionTrack("win",1);
+    if(n === 5) missionTrack("winbig",1);
+    if(autoBattle) missionTrack("autowin",1);
     my.forEach(addToInv); ai.forEach(addToInv);
     gain = sumVal(my) + sumVal(ai);
+    missionTrack("battleearn", gain);
   }
   // Remis i przegrana nie oddają stawki — inaczej bitwa byłaby opłacalniejsza
   // niż zwykłe otwieranie (darmowa pula przy identycznym zestawie dropów).
@@ -3329,7 +4208,9 @@ function renderStats(){
     ["Bilans netto", (net>=0?"+":"")+"🪙 "+fmtShort(net), net>=0?"pos":"neg", false],
     ["Zdobyte noże ★", fmt(s.knives), s.knives>0?"pos":"", false],
     ["Ekwipunek", fmt(state.inv.length)+" szt.", "wartość 🪙 "+fmtShort(invVal), false],
-    ["Najlepszy drop", best?esc(best.n):"—", best?"🪙 "+fmtShort(best.value)+" · "+TIER[best.tier].name:"", false],
+    ["Najlepszy drop", best?esc(best.n):"—",
+      best?("🪙 "+fmtShort(best.value)+" · "+TIER[best.tier].name+
+        (best.fx&&FX_BY_ID[best.fx]?" · "+FX_BY_ID[best.fx].icon+" "+FX_BY_ID[best.fx].name:"") ):"" , false],
     ["Średnio na skrzynkę", s.opened?"🪙 "+fmtShort(s.spent/s.opened):"—", "", false]
   ];
   if((s.rescues|0) > 0)
@@ -3339,10 +4220,18 @@ function renderStats(){
       "skuteczność "+Math.round((s.battleWins|0)/s.battles*100)+"%", (s.battleWins|0)>0?"pos":"neg"]);
   if((s.clovers|0) > 0)
     boxes.push(["🍀 Czterolistne koniczyny", fmt(s.clovers)+"×", "lepsze szanse · "+(cloverActive()?"aktywna teraz":"nieaktywna"), cloverActive()?"pos":""]);
+  const fxTot = numFrom(s.fxTotal);
+  boxes.push(["✨ Efekty na broniach", fxTot ? fmt(fxTot)+"×" : "—",
+    fxTot ? FX.filter(f=>fxCount(f.id)).map(f=>f.icon+" "+fmt(fxCount(f.id))).join(" · ")
+          : "rzadkie wykończenia mnożące wartość dropu",
+    fxTot ? "pos" : ""]);
   boxes.push(["📖 Album — postęp", fmt(albumHave())+" / "+fmt(ALBUM_TOTAL)+" skinów",
     (s.albums|0)+" "+plural(s.albums|0,"skompletowana skrzynka","skompletowane skrzynki","skompletowanych skrzynek")]);
   boxes.push(["🎯 Misje dzienne", fmt(((state.missions&&state.missions.list)||[]).filter(m=>m.claimed).length)+" / "+
     fmt(((state.missions&&state.missions.list)||[]).length), "nowe misje o północy", false]);
+  const wkl = (state.weekly && state.weekly.list) || [];
+  boxes.push(["📅 Misje tygodniowe", fmt(wkl.filter(m=>m.claimed).length)+" / "+fmt(wkl.length),
+    wkl.length ? "nowe misje za "+wUntilNew() : "brak", false]);
   $("#statGrid").innerHTML = boxes.map((b,i)=>
     `<div class="stat-box" style="animation-delay:${i*45}ms"><label>${b[0]}</label>
       <b class="${b[2]==="pos"?"pos":b[2]==="neg"?"neg":""}">${b[1]}</b>
@@ -3357,7 +4246,10 @@ function renderStats(){
   $("#recentList").innerHTML = perCase + (state.recent.length
     ? state.recent.map((r,i)=>{
         const t = TIER[r.tier];
-        return `<div class="item-card tier-${r.tier}" style="--c:${t.color};animation-delay:${i*35}ms">
+        const rf = r.fx ? FX_BY_ID[r.fx] : null;
+        return `<div class="item-card tier-${r.tier}${rf?" fx fx-"+rf.id:""}" style="--c:${t.color}${rf?";--fx:"+rf.color:""};animation-delay:${i*35}ms">
+          ${rf?'<div class="fx-shine"></div>':""}
+          ${rf?`<span class="fx-badge" title="${rf.name} · ${fxBoostTxt(rf)}">${rf.icon} ${rf.name} ×${fxM(rf)}</span>`:""}
           <div class="item-art">${weaponSVG({w:r.w,n:r.n,art:guessArt(r.w),tier:r.tier}, hash(r.uid).toString(36))}</div>
           <div class="item-body">
             <div class="item-weapon">${esc(r.w)}</div>
@@ -3496,7 +4388,7 @@ setInterval(grantRescue, 500);
    przesuwa szanse w stronę noży i dobrych skinów. Kolejne koniczyny
    wydłużają działanie, zamiast je nadpisywać.
    ======================================================================= */
-const CLOVER_CHANCE = 0.032;   // 3,2% szansy na koniczynę przy każdym zdobytym przedmiocie
+const CLOVER_CHANCE = 0.004;   // 0,4% szansy na koniczynę przy każdym zdobytym przedmiocie (rzadki bonus)
 const CLOVER_DUR    = 80000;   // czas działania: 80 sekund
 const CLOVER_BOOST  = {mil:0, restricted:0.12, classified:0.28, covert:0.35, special:0.40};
 
@@ -3579,13 +4471,15 @@ $("#resetBtn").addEventListener("click", ()=>{
   localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SAVE_BAK);
   LEGACY_KEYS.forEach(k=>localStorage.removeItem(k));
   state.coins = START_COINS; state.inv = []; state.recent = [];
-  state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,best:null,cases:{}};
+  state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,fx:{},fxTotal:0,best:null,cases:{}};
   state.up = UP_ZERO();
   state.bonusAt = 0; state.rescueAt = 0; state.cloverUntil = 0;
   state.battles = []; state.battleCase = "start"; state.battleSize = 1;
   state.album = {}; state.albumClaimed = {}; albumCase = null;
   rollMissions();
+  rollWeekly();                           // 📅 świeży zestaw misji tygodniowych
   autoBattle = false; if(autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
+  autoStop("", false, true);              // 🤖 auto-otwieranie też przerywamy
   lastBalance = null;
   save();
   renderBalance(true); renderShop(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
@@ -3600,6 +4494,7 @@ document.addEventListener("keydown", e=>{
     else if($("#battleOverlay").classList.contains("show")) $("#battleClose").click();
     else if($("#resultOverlay").classList.contains("show")) $("#resClose").click();
     else if($("#spinOverlay").classList.contains("show")) $("#spinClose").click();
+    else if(autoOpen) autoStop("zatrzymane");       // 🤖 Esc zatrzymuje auto-otwieranie
   }
 });
 
@@ -3770,20 +4665,299 @@ $("#albPick").addEventListener("click", e=>{
   renderAlbum();
 });
 
-/* ------------------------- 🎯 misje dzienne ------------------------- */
+/* ------------------------- 🎯 misje dzienne -------------------------
+   Każda misja ma:
+     g      - grupa: "easy" (3 losowane co dzień) albo "hard" (1 wyzwanie)
+     on     - nazwa zdarzenia(i) z gry, które ją zaliczają (może być funkcją misji)
+     min/max- cel (liczba) albo funkcja licząca cel od stanu gracza
+     mk     - dla misji z parametrami: zwraca {goal, p:{...}}
+     filter - dodatkowy warunek zaliczenia (np. próg wartości dropu)
+     mult   - mnożnik nagrody
+   Zdarzenia wysyłane z gry: missionTrack("nazwa", ile, dane)
+   ------------------------------------------------------------------ */
+/* Koniczyna jest rzadka (0,4% na przedmiot), więc misje z nią związaną dostają tylko
+   gracze, którzy otwierają naprawdę dużo — dla nich znalezienie koniczyny jest realne. */
+const CLOVER_MISSION_MIN = 400;
 const MISSION_KINDS = {
-  open:    {icon:"📦", min:12, max:26, mult:1,   txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}`},
-  open10:  {icon:"🔟", min:1,  max:3,  mult:1.3, txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem ×10`},
-  battle:  {icon:"⚔️", min:3,  max:7,  mult:1,   txt:n=>`Stocz <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
-  win:     {icon:"🏆", min:2,  max:4,  mult:1.5, txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
-  sell:    {icon:"💰", min:12, max:25, mult:1,   txt:n=>`Sprzedaj <b>${n}</b> ${plural(n,"przedmiot","przedmioty","przedmiotów")}`},
-  bonus:   {icon:"🎁", min:3,  max:6,  mult:1,   txt:n=>`Odbierz <b>${n}</b> ${plural(n,"raz","razy","razy")} darmowy bonus`},
-  discover:{icon:"📖", min:4,  max:9,  mult:1.4, txt:n=>`Odkryj <b>${n}</b> ${plural(n,"nowy skin","nowe skiny","nowych skinów")} w albumie`},
-  upgrade: {icon:"🚀", min:1,  max:1,  mult:1.2, txt:()=>`Kup <b>1</b> ulepszenie w zakładce 🚀`},
-  knife:   {icon:"★",  min:1,  max:1,  mult:2.5, txt:()=>`Wylosuj <b>★ nóż</b> z dowolnej skrzynki`},
-  clover:  {icon:"🍀", min:1,  max:1,  mult:2,   txt:()=>`Znajdź <b>🍀 czterolistną koniczynę</b>`}
+  /* ---------------- grupa „easy” ---------------- */
+  open:     {g:"easy", icon:"📦", min:12, max:26, mult:1,   on:"open",
+             txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}`},
+  open10:   {g:"easy", icon:"🔟", min:1,  max:3,  mult:1.3, on:"open10",
+             txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem ×10`},
+  battle:   {g:"easy", icon:"⚔️", min:3,  max:7,  mult:1,   on:"battle",
+             txt:n=>`Stocz <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
+  win:      {g:"easy", icon:"🏆", min:2,  max:4,  mult:1.5, on:"win",
+             txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
+  sell:     {g:"easy", icon:"💰", min:12, max:25, mult:1,   on:"sell",
+             txt:n=>`Sprzedaj <b>${n}</b> ${plural(n,"przedmiot","przedmioty","przedmiotów")}`},
+  bonus:    {g:"easy", icon:"🎁", min:3,  max:6,  mult:1,   on:"bonus",
+             txt:n=>`Odbierz <b>${n}</b> ${plural(n,"raz","razy","razy")} darmowy bonus`},
+  upgrade:  {g:"easy", icon:"🚀", min:1,  max:2,  mult:1.3, on:"upgrade",
+             avail:()=>UPGRADES.some(u=>upLvl(u.id) < u.max),
+             txt:n=>`Kup <b>${n}</b> ${plural(n,"ulepszenie","ulepszenia","ulepszeń")} w zakładce 🚀`},
+  discover: {g:"easy", icon:"📖", min:4,  max:9,  mult:1.5, on:"discover",
+             avail:()=>albumHave() < ALBUM_TOTAL,
+             txt:n=>`Odkryj <b>${n}</b> ${plural(n,"nowy skin","nowe skiny","nowych skinów")} w albumie`},
+  spend:    {g:"easy", icon:"🧾", min:()=>mMoney(.03,5000,20000000), max:()=>mMoney(.05,9000,30000000), mult:1.2, on:"spend",
+             txt:n=>`Wydaj <b>🪙 ${fmt(n)}</b> na skrzynki i bitwy`},
+  sellvalue:{g:"easy", icon:"💵", min:()=>mMoney(.02,3000,15000000), max:()=>mMoney(.04,5000,22000000), mult:1.2, on:"sellvalue",
+             txt:n=>`Sprzedaj przedmioty za <b>🪙 ${fmt(n)}</b>`},
+  opencase: {g:"easy", icon:"🗃️", mult:1.3, on:m=>["opencase:"+(m.p && m.p.case)],
+             /* cel dobierany do ceny skrzynki, żeby misja nie była „przepłacona” */
+             mk:()=>{
+               const aff = CASES.filter(c=>c.price <= Math.max(1000, state.coins*0.06));
+               const c = pick(aff.length ? aff : [CASES[0]]);
+               const target = Math.min(30000000, Math.max(2000, state.coins*0.06));
+               return {goal:Math.max(3, Math.min(25, Math.round(target/Math.max(1,c.price)))), p:{case:c.id}};
+             },
+             validate:p=>!!(p && CASES.some(c=>c.id===p.case)),
+             txt:(n,p)=>{ const c = CASES.find(x=>x.id===(p && p.case));
+               return `Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")} — <b>${c?esc(c.name):"?"}</b>`; }},
+  cloveropen:{g:"easy", icon:"🍀", min:5, max:12, mult:1.4, on:"cloveropen",
+             avail:()=>(state.stats.opened||0) >= CLOVER_MISSION_MIN,
+             txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}, gdy działa <b>🍀 koniczyna</b>`},
+
+  /* ---------------- grupa „hard” (jedno wyzwanie dziennie) ---------------- */
+  knife:    {g:"hard", icon:"★",  min:1, max:1, mult:2.5, on:"knife",
+             txt:()=>`Wylosuj <b>★ nóż</b> z dowolnej skrzynki`},
+  clover:   {g:"hard", icon:"🍀", min:1, max:1, mult:2,   on:"clover",
+             avail:()=>(state.stats.opened||0) >= CLOVER_MISSION_MIN,
+             txt:()=>`Znajdź <b>🍀 czterolistną koniczynę</b>`},
+  covert:   {g:"hard", icon:"🔥", min:1, max:2, mult:2.2, on:"covert",
+             txt:n=>`Wylosuj <b>${n}</b> ${plural(n,"przedmiot","przedmioty","przedmiotów")} z tieru <b>Covert lub lepszego</b>`},
+  winbig:   {g:"hard", icon:"💥", min:1, max:1, mult:1.8, on:"winbig",
+             txt:()=>`Wygraj bitwę w trybie <b>hurtowym ×5</b>`},
+  autowin:  {g:"hard", icon:"🔁", min:1, max:2, mult:1.6, on:"autowin",
+             txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")} w <b>auto-walce</b>`},
+  battleearn:{g:"hard", icon:"🏦", min:()=>mMoney(.02,4000,12000000), max:()=>mMoney(.035,6000,18000000), mult:2, on:"battleearn",
+             txt:n=>`Zgarnij <b>🪙 ${fmt(n)}</b> z wygranych bitew`},
+
+  /* ---------------- grupa „week" (📅 misje tygodniowe) ----------------
+     min/max to wartości dla poziomu ⭐ ŁATWA — poziom trudności mnoży cel
+     (goalK) i nagrodę (rewK) w mkWeekMission(). Zwykła pula dzienna ich nie
+     używa (inna grupa), więc nie zmieniają codziennych losowań.           */
+  wopen:      {g:"week", icon:"📦", min:60, max:110, mult:1,  on:"open",
+               txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}`},
+  wopen10:    {g:"week", icon:"🔟", min:4,  max:9,   mult:1.4, on:"open10",
+               txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem ×10`},
+  wspend:     {g:"week", icon:"🧾", min:()=>mMoney(.02,20000,8000000), max:()=>mMoney(.035,35000,14000000), mult:1.2, on:"spend",
+               txt:n=>`Wydaj <b>🪙 ${fmt(n)}</b> na skrzynki i bitwy`},
+  wsell:      {g:"week", icon:"💰", min:50, max:90, mult:1, on:"sell",
+               txt:n=>`Sprzedaj <b>${n}</b> ${plural(n,"przedmiot","przedmioty","przedmiotów")}`},
+  wsellvalue: {g:"week", icon:"💵", min:()=>mMoney(.015,12000,6000000), max:()=>mMoney(.03,24000,11000000), mult:1.2, on:"sellvalue",
+               txt:n=>`Sprzedaj przedmioty za <b>🪙 ${fmt(n)}</b>`},
+  wbattle:    {g:"week", icon:"⚔️", min:12, max:22, mult:1, on:"battle",
+               txt:n=>`Stocz <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
+  wwin:       {g:"week", icon:"🏆", min:8, max:15, mult:1.4, on:"win",
+               txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
+  wwinbig:    {g:"week", icon:"💥", min:2, max:4, mult:1.5, on:"winbig",
+               txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")} w trybie <b>hurtowym ×5</b>`},
+  wbattleearn:{g:"week", icon:"🏦", min:()=>mMoney(.012,10000,5000000), max:()=>mMoney(.025,20000,10000000), mult:1.4, on:"battleearn",
+               txt:n=>`Zgarnij <b>🪙 ${fmt(n)}</b> z wygranych bitew`},
+  wknife:     {g:"week", icon:"★",  min:1, max:2, mult:2, on:"knife",
+               txt:n=>`Wylosuj <b>${n}</b> ${plural(n,"nóż","noże","noży")} z dowolnej skrzynki`},
+  wcovert:    {g:"week", icon:"🔥", min:3, max:6, mult:1.5, on:"covert",
+               txt:n=>`Wylosuj <b>${n}</b> ${plural(n,"przedmiot","przedmioty","przedmiotów")} z tieru <b>Covert lub lepszego</b>`},
+  wdiscover:  {g:"week", icon:"📖", min:12, max:22, mult:1.4, on:"discover",
+               avail:()=>albumHave() < ALBUM_TOTAL,
+               txt:n=>`Odkryj <b>${n}</b> ${plural(n,"nowy skin","nowe skiny","nowych skinów")} w albumie`},
+  wbonus:     {g:"week", icon:"🎁", min:8, max:15, mult:1, on:"bonus",
+               txt:n=>`Odbierz <b>${n}</b> ${plural(n,"raz","razy","razy")} darmowy bonus`},
+  wfx:        {g:"week", icon:"✨", min:1, max:2, mult:1.8, on:"fx",
+               txt:n=>`Wykręć <b>${n}</b> ${plural(n,"efekt","efekty","efektów")} na broni (✨ 💡🥇💎🌈🌌)`},
+  wfxbig:     {g:"week", icon:"💎", min:1, max:1, mult:2, on:"fxbig",
+               txt:()=>`Upoluj efekt <b>💎 Diamentowy</b> lub lepszy (💎 / 🌈 / 🌌)`},
+  wcloveropen:{g:"week", icon:"🍀", min:20, max:40, mult:1.3, on:"cloveropen",
+               avail:()=>(state.stats.opened||0) >= CLOVER_MISSION_MIN,
+               txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}, gdy działa <b>🍀 koniczyna</b>`},
+  wupgrade:   {g:"week", icon:"🚀", min:1, max:3, mult:1.3, on:"upgrade",
+               avail:()=>UPGRADES.some(u=>upLvl(u.id) < u.max),
+               txt:n=>`Kup <b>${n}</b> ${plural(n,"ulepszenie","ulepszenia","ulepszeń")} w zakładce 🚀`}
 };
-const MISSION_HARD = ["knife","clover"];
+const MISSION_EASY_N = 3;      // ile spokojnych misji dziennie
+const REROLL_MAX = 2;          // ile razy dziennie można wymienić misję
+
+/* =======================================================================
+   14d. 📅 MISJE TYGODNIOWE + POZIOMY TRUDNOŚCI
+   -----------------------------------------------------------------------
+   Tydzień startuje w momencie, gdy gracz pierwszy raz dostaje dany zestaw
+   i trwa 7 dni (potem losuje się nowy). Zestaw to 10 misji: 3 ⭐ łatwe,
+   3 ⭐⭐ średnie, 2 ⭐⭐⭐ trudne i 2 ⭐⭐⭐⭐ ekstremalne. Poziom trudności
+   mnoży CEL (goalK) i NAGRODĘ (rewK) — trudniejsze = dużo więcej monet
+   albo dłuższa 🍀 koniczyna. Postęp liczy się z tych samych zdarzeń co
+   misje dzienne, więc wszystko działa też przy 🤖 auto-otwieraniu.
+   ======================================================================= */
+const WEEK_MS = 7*24*60*60*1000;        // długość tygodnia misji
+const WEEKLY_N = 10;                    // ile misji w zestawie
+const WEEKLY_COMP = [1,1,1,2,2,2,3,3,4,4];   // skład zestawu (poziomy trudności)
+const REROLL_WEEK_MAX = 2;              // ile wymian 🔄 w ciągu tygodnia
+const DIFF = [
+  {id:1, name:"Łatwa",       stars:"⭐",      color:"#38e08a", goalK:1,   rewK:1,   cloverMin:20},
+  {id:2, name:"Średnia",     stars:"⭐⭐",    color:"#4b9bff", goalK:2.2, rewK:1.5, cloverMin:35},
+  {id:3, name:"Trudna",      stars:"⭐⭐⭐",  color:"#ff8a3d", goalK:4.5, rewK:2.2, cloverMin:50},
+  {id:4, name:"Ekstremalna", stars:"⭐⭐⭐⭐", color:"#ff4b6e", goalK:9,   rewK:3.2, cloverMin:75}
+];
+const DIFF_BY_ID = {};
+DIFF.forEach(d=>DIFF_BY_ID[d.id]=d);
+const wDiff = id => DIFF_BY_ID[id] || DIFF[0];
+
+/* nagroda w monetach za misję tygodniową (skalowana do stanu gracza) */
+function wCoinReward(mult, diff){
+  const base = mMoney(0.012, 40000, 20000000);
+  const v = base * (mult||1) * diff.rewK;
+  return Math.max(8000, Math.round(v/1000)*1000);
+}
+function mkWeekMission(kind, diffId){
+  const def = MISSION_KINDS[kind] || MISSION_KINDS.wopen;
+  const diff = wDiff(diffId);
+  let goal = 1, p = null;
+  if(def.mk){
+    const spec = def.mk() || {};
+    if(spec.goal) goal = spec.goal;
+    if(spec.p) p = spec.p;
+  } else {
+    const lo = typeof def.min === "function" ? def.min() : def.min;
+    const hi = typeof def.max === "function" ? def.max() : def.max;
+    goal = lo + Math.floor(Math.random()*((hi-lo)+1));
+  }
+  goal = Math.max(1, Math.round(goal * diff.goalK));
+  const mult = def.mult || 1;
+  const reward = Math.random() < 0.5
+    ? {t:"coins", amount:wCoinReward(mult, diff)}
+    : {t:"clover", ms:diff.cloverMin*60000};
+  const m = {kind, diff:diff.id, goal, prog:0, reward, claimed:false};
+  if(p) m.p = p;
+  return m;
+}
+function rollWeekly(){
+  const pool = missionGroup("week");
+  const kinds = pool.length ? pool : ["wopen"];
+  const diffs = shuffle(WEEKLY_COMP.slice());
+  const n = Math.min(WEEKLY_N, kinds.length);
+  const list = [];
+  for(let i=0;i<n;i++) list.push(mkWeekMission(kinds[i], diffs[i % diffs.length]));
+  state.weekly = {start:Date.now(), list:shuffle(list), rerolls:0};
+  markDirty();
+  return state.weekly;
+}
+function weeklyLoad(d){
+  const w = (d && d.weekly && typeof d.weekly === "object" && Array.isArray(d.weekly.list) && d.weekly.list.length) ? d.weekly : null;
+  if(!w || (Date.now() - numFrom(w.start)) >= WEEK_MS){ rollWeekly(); return; }
+  const list = [];
+  w.list.forEach(x=>{
+    if(!x) return;
+    const def = MISSION_KINDS[x.kind];
+    if(!def) return;                                      // wycofany typ misji
+    const diff = wDiff(x.diff);
+    const p = missionParams(x.p);
+    if(def.validate && !def.validate(p)){ list.push(mkWeekMission(x.kind, diff.id)); return; }
+    const goal = Math.max(1, x.goal|0);
+    const out = {kind:x.kind, diff:diff.id, goal, prog:Math.max(0, Math.min(goal, x.prog|0)), claimed:!!x.claimed,
+      reward:(x.reward && x.reward.t==="clover")
+        ? {t:"clover", ms:Math.max(60000, x.reward.ms|0)}
+        : {t:"coins", amount:Math.max(0, (x.reward && x.reward.amount)|0)}};
+    if(p) out.p = p;
+    list.push(out);
+  });
+  if(!list.length){ rollWeekly(); return; }
+  state.weekly = {start:numFrom(w.start), list, rerolls:Math.min(REROLL_WEEK_MAX, numFrom(w.rerolls))};
+  // dobicie brakujących misji (gdy zestaw powstał przy mniejszej liczbie typów)
+  if(list.length < WEEKLY_N){
+    const used = list.map(x=>x.kind);
+    const extra = shuffle(missionGroup("week").filter(k=>used.indexOf(k)<0));
+    const diffs = shuffle(WEEKLY_COMP.slice());
+    const had = list.length;
+    for(let i=0; i<extra.length && list.length<WEEKLY_N; i++)
+      list.push(mkWeekMission(extra[i], diffs[list.length % diffs.length]));
+    if(list.length > had) markDirty();
+  }
+}
+function wUntilNew(){
+  const st = numFrom(state.weekly && state.weekly.start);
+  const ms = Math.max(0, st + WEEK_MS - Date.now());
+  const dd = Math.floor(ms/86400000), h = Math.floor(ms%86400000/3600000), m = Math.floor(ms%3600000/60000);
+  return dd > 0 ? dd+" dni "+h+" godz." : (h > 0 ? h+" godz. "+m+" min" : m+" min");
+}
+function renderWeekly(){
+  const g = $("#weeklyGrid");
+  if(!g) return;
+  const list = (state.weekly && state.weekly.list) || [];
+  updateWeeklyHint();
+  const left = Math.max(0, REROLL_WEEK_MAX - numFrom(state.weekly && state.weekly.rerolls));
+  g.innerHTML = list.map((m,i)=>{
+    const d = MISSION_KINDS[m.kind] || MISSION_KINDS.wopen;
+    const diff = wDiff(m.diff);
+    const done = m.prog >= m.goal;
+    const rew = m.reward.t==="coins" ? "🪙 "+fmt(m.reward.amount) : "🍀 "+Math.round(m.reward.ms/60000)+" min";
+    return `<div class="mission week d-${diff.id} ${done&&!m.claimed?"done":""} ${m.claimed?"claimed":""}" style="--dc:${diff.color};animation-delay:${i*55}ms">
+      <div class="mission-top"><span class="mission-ico">${d.icon}</span><span class="mission-txt">${d.txt(m.goal, m.p)}
+        <span class="m-diff" title="Poziom ${diff.name} — cele ×${diff.goalK}, nagrody ×${diff.rewK}">${diff.stars} ${diff.name}</span></span></div>
+      <div class="mission-bar"><i style="width:${Math.min(100, 100*m.prog/Math.max(1,m.goal))}%"></i></div>
+      <div class="mission-foot">
+        <span class="mission-rew">Nagroda: <b>${rew}</b></span>
+        <span class="mission-prog">${Math.min(m.prog,m.goal)} / ${m.goal}</span>
+      </div>
+      <div class="mission-foot">${m.claimed
+        ? `<span class="mission-rew">✔ odebrano</span>`
+        : `<button class="btn ${done?"primary":""}" data-wclaim="${i}" ${done?"":"disabled"}>${done?"🎁 Odbierz":"W toku"}</button>
+           <button class="tb-btn" data-wreroll="${i}" ${left?"":"disabled"} title="Wymień misję (zostało ${left} z ${REROLL_WEEK_MAX} w tym tygodniu)">🔄${left?` <small>${left}</small>`:""}</button>`}
+      </div></div>`;
+  }).join("");
+  renderDailyBadge();
+}
+function updateWeeklyHint(){
+  const hint = $("#weeklyHint");
+  if(!hint) return;
+  const list = (state.weekly && state.weekly.list) || [];
+  const left = Math.max(0, REROLL_WEEK_MAX - numFrom(state.weekly && state.weekly.rerolls));
+  const ready = list.filter(m=>m.claimed).length;
+  const coins = list.reduce((a,m)=>a+(m.reward.t==="coins"?m.reward.amount:0),0);
+  hint.innerHTML = `nowe misje za <b>${wUntilNew()}</b> · odebrane <b>${ready}</b> / ${list.length} · wymiany <b>${left}/${REROLL_WEEK_MAX}</b> · w puli nagród <b>🪙 ${fmtShort(coins)}</b>`;
+}
+function claimWeekly(i){
+  const list = (state.weekly && state.weekly.list) || [];
+  const m = list[i];
+  if(!m || m.claimed || m.prog < m.goal){ sfxErr(); return; }
+  m.claimed = true;
+  let msg;
+  if(m.reward.t === "coins"){
+    state.coins += m.reward.amount;
+    msg = "🪙 "+fmt(m.reward.amount);
+    sfxCoin(); renderBalance(); renderShop();
+  } else {
+    state.cloverUntil = Math.max(Date.now(), state.cloverUntil||0) + m.reward.ms;
+    msg = "🍀 koniczyna +"+Math.round(m.reward.ms/60000)+" min";
+    sfxClover(); updateClover();
+  }
+  save();
+  confetti(["#45d06a","#ffd166","#8ee7ff","#ffd700"]);
+  toast("📅 <b>Misja tygodniowa zaliczona!</b> Nagroda: "+msg,"good");
+  renderWeekly();
+}
+function rerollWeekly(i){
+  const list = (state.weekly && state.weekly.list) || [];
+  const m = list[i];
+  if(!m || m.claimed) return;
+  const left = REROLL_WEEK_MAX - numFrom(state.weekly.rerolls);
+  if(left <= 0){ sfxErr(); toast("🔄 Wymiana misji tygodniowej — limit <b>"+REROLL_WEEK_MAX+"</b> na tydzień","bad"); return; }
+  const used = list.map(x=>x.kind);
+  const pool = missionGroup("week");
+  let kind = pick(pool), guard = 0;
+  while(used.indexOf(kind) >= 0 && guard++ < 80) kind = pick(pool);
+  state.weekly.rerolls = numFrom(state.weekly.rerolls) + 1;
+  state.weekly.list[i] = mkWeekMission(kind, m.diff);      // ten sam poziom trudności
+  save(); renderWeekly();
+  toast("🔄 Misja tygodniowa wymieniona <b>"+state.weekly.rerolls+"/"+REROLL_WEEK_MAX+"</b>","good");
+}
+/* tydzień minął w trakcie gry — nowy zestaw */
+function checkWeeklyRoll(){
+  if(state.weekly && Array.isArray(state.weekly.list) && state.weekly.list.length
+     && (Date.now() - numFrom(state.weekly.start)) < WEEK_MS) return;
+  rollWeekly();
+  renderDailyBadge();
+  if(currentView === "daily") renderDaily();
+  toast("📅 <b>Nowe misje tygodniowe!</b> Sprawdź zakładkę 🎯 Misje","good");
+}
 
 function mDayKey(){
   const d = new Date();
@@ -3795,75 +4969,147 @@ function mUntilMidnight(){
   const ms = mid - now, h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000);
   return h>0 ? h+" godz. "+m+" min" : m+" min";
 }
+/* kwota „skalowana” do stanu gracza (z podłogą i sufitem), zaokrąglona do 1000 */
+function mMoney(pct, lo, hi){
+  const v = Math.min(hi, Math.max(lo, state.coins * pct));
+  return Math.max(lo, Math.round(v/1000)*1000);
+}
 function mCoinReward(mult){
-  const base = Math.min(5000000, Math.max(25000, Math.round(state.coins*0.02)));
-  return Math.round(base*mult/1000)*1000;
+  const base = mMoney(0.03, 25000, 30000000);
+  return Math.max(1000, Math.round(base*mult/1000)*1000);
 }
 function mkMission(kind){
   const d = MISSION_KINDS[kind] || MISSION_KINDS.open;
-  const goal = d.min + Math.floor(Math.random()*(d.max-d.min+1));
+  let goal = 1, p = null;
+  if(d.mk){
+    const spec = d.mk() || {};
+    if(spec.goal) goal = spec.goal;
+    if(spec.p) p = spec.p;
+  } else {
+    const lo = typeof d.min === "function" ? d.min() : d.min;
+    const hi = typeof d.max === "function" ? d.max() : d.max;
+    goal = lo + Math.floor(Math.random()*((hi-lo)+1));
+  }
+  goal = Math.max(1, goal|0);
+  const mult = d.mult || 1;
   const reward = Math.random() < 0.55
-    ? {t:"coins", amount:mCoinReward(d.mult)}
-    : {t:"clover", ms:(d.mult>=1.5?10:5)*60000};
-  return {kind, goal, prog:0, reward, claimed:false};
+    ? {t:"coins", amount:mCoinReward(mult)}
+    : {t:"clover", ms:(mult >= 1.8 ? 15 : mult >= 1.4 ? 10 : 5)*60000};
+  const m = {kind, goal, prog:0, reward, claimed:false};
+  if(p) m.p = p;
+  return m;
 }
-/* pula misji — odsiewa te, których nie da się już wykonać */
-function missionPool(){
-  const A = ["open","open10","sell","bonus","battle","win"];
-  if(albumHave() < ALBUM_TOTAL) A.push("discover");
-  if(UPGRADES.some(u=>upLvl(u.id) < u.max)) A.push("upgrade");
-  return A;
+/* pula misji danej grupy — odsiewa te, których nie da się już wykonać */
+function missionGroup(g){
+  return Object.keys(MISSION_KINDS).filter(k=>{
+    const d = MISSION_KINDS[k];
+    if((d.g || "easy") !== g) return false;
+    return !d.avail || d.avail();
+  });
 }
 function shuffle(a){
   for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; const t=a[i]; a[i]=a[j]; a[j]=t; }
   return a;
 }
 function rollMissions(){
-  const A = missionPool();
-  const first = pick(A);
-  const rest = A.filter(k=>k!==first);
-  const list = [mkMission(first), mkMission(rest.length?pick(rest):first), mkMission(pick(MISSION_HARD))];
+  const easy = shuffle(missionGroup("easy"));
+  const hard = missionGroup("hard");
+  const list = easy.slice(0, MISSION_EASY_N).map(mkMission);
+  if(hard.length) list.push(mkMission(pick(hard)));
   state.missions = {date:mDayKey(), list:shuffle(list), rerolls:0};
   markDirty();
   return state.missions;
 }
+/* parametry misji (np. wybrana skrzynka, próg wartości) — tylko proste typy */
+function missionParams(p){
+  if(!p || typeof p !== "object" || Array.isArray(p)) return null;
+  const o = {};
+  Object.keys(p).forEach(k=>{
+    const v = p[k];
+    if(typeof v === "number" || typeof v === "string" || typeof v === "boolean") o[k] = v;
+  });
+  return Object.keys(o).length ? o : null;
+}
 function missionsLoad(d){
   const m = (d && d.missions && typeof d.missions === "object" && Array.isArray(d.missions.list)) ? d.missions : null;
   if(m && m.date === mDayKey() && m.list.length){
-    state.missions = {date:m.date, rerolls:m.rerolls|0,
-      list:m.list.filter(x=>x && MISSION_KINDS[x.kind]).map(x=>{
-        const goal = Math.max(1, x.goal|0);
-        return {kind:x.kind, goal, prog:Math.max(0, Math.min(goal, x.prog|0)), claimed:!!x.claimed,
-          reward:(x.reward && x.reward.t==="clover")
-            ? {t:"clover", ms:Math.max(60000, x.reward.ms|0)}
-            : {t:"coins", amount:Math.max(0, (x.reward && x.reward.amount)|0)}};
-      })};
-    if(!state.missions.list.length) rollMissions();
+    const list = [];
+    m.list.forEach(x=>{
+      if(!x) return;
+      const def = MISSION_KINDS[x.kind];
+      if(!def) return;                                  // wycofany typ misji
+      const p = missionParams(x.p);
+      if(def.validate && !def.validate(p)){ list.push(mkMission(x.kind)); return; }   // np. skrzynka już nie istnieje
+      const goal = Math.max(1, x.goal|0);
+      const out = {kind:x.kind, goal, prog:Math.max(0, Math.min(goal, x.prog|0)), claimed:!!x.claimed,
+        reward:(x.reward && x.reward.t==="clover")
+          ? {t:"clover", ms:Math.max(60000, x.reward.ms|0)}
+          : {t:"coins", amount:Math.max(0, (x.reward && x.reward.amount)|0)}};
+      if(p) out.p = p;
+      list.push(out);
+    });
+    // dobicie brakujących misji (gdy w zapisie jest ich mniej niż dzisiejsza norma,
+    // np. po aktualizacji gry w środku dnia) — bez ruszania postępu już zrobionego
+    const want = MISSION_EASY_N + 1;
+    if(list.length && list.length < want){
+      const used = list.map(x=>x.kind);
+      const extra = shuffle(missionGroup("easy").filter(k=>used.indexOf(k)<0))
+        .concat(shuffle(missionGroup("hard").filter(k=>used.indexOf(k)<0)));
+      const had = list.length;
+      for(let i=0; i<extra.length && list.length<want; i++) list.push(mkMission(extra[i]));
+      if(list.length > had) markDirty();          // dobite misje zapiszemy
+    }
+    state.missions = {date:m.date, rerolls:Math.min(REROLL_MAX, m.rerolls|0), list};
+    if(!list.length) rollMissions();
   } else {
     rollMissions();
   }
 }
-function missionTrack(kind, n){
-  const list = (state.missions && state.missions.list) || [];
-  if(!list.length || !n) return;
-  let changed = false, done = 0;
+/* zdarzenie z gry -> postęp misji.  ev = nazwa, n = ile, data = dodatkowe dane
+   UWAGA: dopasowanie jest DOKŁADNE — nazwy zdarzeń mogą być swoimi podciągami
+   (np. "open" jest podciągiem "open10" i "cloveropen"), więc zawsze porównujemy
+   elementy tablicy, nigdy nie używamy indexOf na łańcuchu. */
+function missionEvents(m, def){
+  const e = typeof def.on === "function" ? def.on(m) : def.on;
+  if(e == null) return null;
+  return Array.isArray(e) ? e : [e];
+}
+/* postęp w JEDNEJ liście misji (dziennej albo tygodniowej) */
+function trackMissionList(list, ev, n, data){
+  const res = {changed:false, done:0};
+  if(!list || !list.length) return res;
   list.forEach(m=>{
-    if(m.kind !== kind || m.claimed || m.prog >= m.goal) return;
+    if(m.claimed || m.prog >= m.goal) return;
+    const def = MISSION_KINDS[m.kind];
+    if(!def || !def.on) return;
+    const evs = missionEvents(m, def);
+    if(!evs || evs.indexOf(ev) < 0) return;
+    if(def.filter && !def.filter(m, data || {})) return;
     m.prog = Math.min(m.goal, (m.prog|0) + n);
-    changed = true;
-    if(m.prog >= m.goal) done++;
+    res.changed = true;
+    if(m.prog >= m.goal) res.done++;
   });
-  if(!changed) return;
+  return res;
+}
+function missionTrack(ev, n, data){
+  if(!n || n <= 0) return;
+  const d = trackMissionList(state.missions && state.missions.list, ev, n, data);
+  const w = trackMissionList(state.weekly && state.weekly.list, ev, n, data);
+  if(!d.changed && !w.changed) return;
   markDirty();
   renderDailyBadge();
   if(currentView === "daily") renderDaily();
-  else if(done) toast("🎯 <b>Misja dzienna gotowa!</b> Odbierz nagrodę w zakładce 🎯 Misje","good");
+  else if(d.done || w.done){
+    if(w.done) toast("📅 <b>Misja tygodniowa gotowa!</b> Odbierz nagrodę w zakładce 🎯 Misje","good");
+    if(d.done) toast("🎯 <b>Misja dzienna gotowa!</b> Odbierz nagrodę w zakładce 🎯 Misje","good");
+  }
 }
 function renderDailyBadge(){
   const b = $("#dailyCount");
   if(!b) return;
-  const list = (state.missions && state.missions.list) || [];
-  const n = list.filter(m=>!m.claimed && m.prog>=m.goal).length;
+  const d = ((state.missions && state.missions.list) || []).filter(m=>!m.claimed && m.prog>=m.goal).length;
+  const w = ((state.weekly && state.weekly.list) || []).filter(m=>!m.claimed && m.prog>=m.goal).length;
+  const n = d + w;
   b.textContent = String(n);
   b.classList.toggle("ready", n>0);
 }
@@ -3872,12 +5118,14 @@ function renderDaily(){
   if(!g) return;
   const list = (state.missions && state.missions.list) || [];
   updateDailyHint();
+  const left = Math.max(0, REROLL_MAX - (state.missions.rerolls|0));
   g.innerHTML = list.map((m,i)=>{
     const d = MISSION_KINDS[m.kind] || MISSION_KINDS.open;
     const done = m.prog >= m.goal;
     const rew = m.reward.t==="coins" ? "🪙 "+fmt(m.reward.amount) : "🍀 "+Math.round(m.reward.ms/60000)+" min";
-    return `<div class="mission ${done&&!m.claimed?"done":""} ${m.claimed?"claimed":""}" style="animation-delay:${i*70}ms">
-      <div class="mission-top"><span class="mission-ico">${d.icon}</span><span class="mission-txt">${d.txt(m.goal)}</span></div>
+    const hard = (d.g || "easy") === "hard";
+    return `<div class="mission ${hard?"hard":""} ${done&&!m.claimed?"done":""} ${m.claimed?"claimed":""}" style="animation-delay:${i*70}ms">
+      <div class="mission-top"><span class="mission-ico">${d.icon}</span><span class="mission-txt">${d.txt(m.goal, m.p)}${hard?' <span class="m-hard">WYZWANIE</span>':""}</span></div>
       <div class="mission-bar"><i style="width:${Math.min(100, 100*m.prog/Math.max(1,m.goal))}%"></i></div>
       <div class="mission-foot">
         <span class="mission-rew">Nagroda: <b>${rew}</b></span>
@@ -3886,16 +5134,18 @@ function renderDaily(){
       <div class="mission-foot">${m.claimed
         ? `<span class="mission-rew">✔ odebrano</span>`
         : `<button class="btn ${done?"primary":""}" data-claim="${i}" ${done?"":"disabled"}>${done?"🎁 Odbierz":"W toku"}</button>
-           <button class="tb-btn" data-reroll="${i}" ${state.missions.rerolls?"disabled":""} title="Wymień misję (raz dziennie)">🔄</button>`}
+           <button class="tb-btn" data-reroll="${i}" ${left?"":"disabled"} title="Wymień misję (zostało ${left} z ${REROLL_MAX} dziś)">🔄${left?` <small>${left}</small>`:""}</button>`}
       </div></div>`;
   }).join("");
   renderDailyBadge();
+  renderWeekly();          // 📅 tygodniowe siedzą w tej samej zakładce
 }
 function updateDailyHint(){
   const hint = $("#dailyHint");
   if(!hint) return;
   const list = (state.missions && state.missions.list) || [];
-  hint.innerHTML = `reset za <b>${mUntilMidnight()}</b> · odebrane <b>${list.filter(m=>m.claimed).length}</b> / ${list.length}`;
+  const left = Math.max(0, REROLL_MAX - (state.missions.rerolls|0));
+  hint.innerHTML = `reset za <b>${mUntilMidnight()}</b> · odebrane <b>${list.filter(m=>m.claimed).length}</b> / ${list.length} · wymiany <b>${left}/${REROLL_MAX}</b>`;
 }
 function claimMission(i){
   const list = (state.missions && state.missions.list) || [];
@@ -3921,15 +5171,16 @@ function rerollMission(i){
   const list = (state.missions && state.missions.list) || [];
   const m = list[i];
   if(!m || m.claimed) return;
-  if(state.missions.rerolls >= 1){ sfxErr(); toast("🔄 Wymiana misji — tylko <b>raz dziennie</b>","bad"); return; }
+  const left = REROLL_MAX - (state.missions.rerolls|0);
+  if(left <= 0){ sfxErr(); toast("🔄 Wymiana misji — limit <b>"+REROLL_MAX+"</b> na dziś","bad"); return; }
   const used = list.map(x=>x.kind);
-  const pool = missionPool().concat(MISSION_HARD);
+  const pool = missionGroup("easy").concat(missionGroup("hard"));
   let kind = pick(pool), guard = 0;
-  while(used.indexOf(kind) >= 0 && guard++ < 40) kind = pick(pool);
-  state.missions.rerolls = 1;
+  while(used.indexOf(kind) >= 0 && guard++ < 60) kind = pick(pool);
+  state.missions.rerolls = (state.missions.rerolls|0) + 1;
   state.missions.list[i] = mkMission(kind);
   save(); renderDaily();
-  toast("🔄 Misja wymieniona","good");
+  toast("🔄 Misja wymieniona <b>"+state.missions.rerolls+"/"+REROLL_MAX+"</b>","good");
 }
 /* nowy dzień w trakcie gry — nowe misje */
 function checkDailyRoll(){
@@ -3945,6 +5196,12 @@ $("#missionGrid").addEventListener("click", e=>{
   if(c) claimMission(+c.dataset.claim);
   else if(r) rerollMission(+r.dataset.reroll);
 });
+$("#weeklyGrid").addEventListener("click", e=>{
+  const c = e.target.closest("[data-wclaim]");
+  const r = e.target.closest("[data-wreroll]");
+  if(c) claimWeekly(+c.dataset.wclaim);
+  else if(r) rerollWeekly(+r.dataset.wreroll);
+});
 
 /* =======================================================================
    15. TRWAŁOŚĆ — autozapis i zapis przy zamykaniu
@@ -3952,7 +5209,9 @@ $("#missionGrid").addEventListener("click", e=>{
 setInterval(()=>{ if(dirty) save(); }, 4000);
 setInterval(()=>{
   checkDailyRoll();      // 🎯 misje przechodzą na nowy dzień też bez przeładowania
+  checkWeeklyRoll();     // 📅 a tygodniowe na nowy tydzień co 7 dni
   updateDailyHint();
+  updateWeeklyHint();
   // siatka bezpieczeństwa: jeśli zapis zniknął/uszkodził się, odbudowujemy go
   // (celowo NIE porównujemy zawartości — to powodowało walkę między kartami)
   if(!isValidSave(readSave(SAVE_KEY))){ dirty = true; save(); }
@@ -3976,6 +5235,9 @@ document.addEventListener("visibilitychange", ()=>{ if(document.hidden && dirty)
    16. START
    ======================================================================= */
 load();
+// świeży gracz (albo zapis bez tych danych) dostaje od razu oba zestawy misji
+if(!state.missions || !Array.isArray(state.missions.list) || !state.missions.list.length) rollMissions();
+if(!state.weekly  || !Array.isArray(state.weekly.list)  || !state.weekly.list.length)  rollWeekly();
 $("#soundBtn").textContent = state.sound ? "🔊" : "🔇";
 $("#fastBtn").classList.toggle("on", state.fast);
 renderBalance(true);
