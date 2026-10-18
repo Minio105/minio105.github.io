@@ -7,7 +7,8 @@
 <title>Centrum gier — wybierz grę</title>
 <style>
 /* ==========================================================================
-   Centrum gier — launcher dla 3 gier (skrzynki, kółko i krzyżyk, Epoka Konfliktów)
+   Centrum gier — launcher dla 4 gier
+   (skrzynki, kółko i krzyżyk, Epoka Konfliktów, Emotes vs Mobs)
    Plik samodzielny: bez internetu, bez zależności. Wystarczy otworzyć w przeglądarce.
    ========================================================================== */
 *{box-sizing:border-box}
@@ -82,6 +83,7 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
 .card:nth-child(1){animation-delay:.04s}
 .card:nth-child(2){animation-delay:.11s}
 .card:nth-child(3){animation-delay:.18s}
+.card:nth-child(4){animation-delay:.25s}
 .card:hover,.card:focus-visible{
   transform:translateY(-5px);
   border-color:color-mix(in srgb, var(--ac) 55%, var(--line));
@@ -130,6 +132,26 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
   clip-path:polygon(0 26%,42% 6%,88% 20%,100% 58%,62% 96%,18% 88%)}
 .mini-map i:nth-child(4){left:18px;top:0;width:52px;height:30px;background:#b5563f;
   clip-path:polygon(12% 30%,66% 4%,100% 44%,74% 92%,20% 84%,0 52%)}
+
+/* 4) Emotes vs Mobs — mini plansza w stylu PvZ (pasy trawnika) */
+.mini-td{position:relative;width:198px;height:96px;border-radius:10px;overflow:hidden;
+  background:#20301a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.mini-td .street{position:absolute;right:0;top:0;width:36px;height:96px;background:#6d6f66;
+  box-shadow:inset 2px 0 0 #565a4e}
+.mini-td .porch{position:absolute;left:14px;top:0;width:20px;height:96px;background:#b0a184}
+.mini-td .wall{position:absolute;left:0;top:0;width:14px;height:96px;background:#7d4b32;
+  box-shadow:inset -2px 0 0 #63382a}
+.mini-td .lawn{position:absolute;left:34px;top:0;width:128px;height:96px;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.06) 0 1px, transparent 1px 14.2px),
+    repeating-linear-gradient(180deg, #57a530 0 19.2px, #4d9727 19.2px 38.4px)}
+.mini-td b{position:absolute;font-size:14px;font-weight:400;line-height:1;
+  filter:drop-shadow(0 3px 5px rgba(0,0,0,.5))}
+.mini-td b.sm{font-size:10px;filter:none}
+.mini-td b.mob{animation:bob 2.4s ease-in-out infinite}
+.mini-td b.m2{animation-delay:-1.2s}
+.mini-td .glow{position:absolute;left:112px;top:42px;width:10px;height:10px;border-radius:50%;
+  border:2px solid #ffd166;box-shadow:0 0 10px rgba(255,209,102,.9)}
 
 .card h2{margin:4px 0 0;font-size:19px;font-weight:900;letter-spacing:-.2px;line-height:1.25}
 .card h2 small{display:block;margin-top:3px;font-size:11.5px;font-weight:800;letter-spacing:.5px;
@@ -201,7 +223,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border-radius:6px;text-a
   <header class="head">
     <div class="mark">★</div>
     <div>
-      <h1>Centrum gier<span class="count">3 gry</span></h1>
+      <h1>Centrum gier<span class="count">4 gry</span></h1>
       <p>Wszystko działa w przeglądarce, offline — bez internetu i bez instalacji. Kliknij kartę, żeby zagrać.</p>
     </div>
   </header>
@@ -267,11 +289,44 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border-radius:6px;text-a
       </div>
     </article>
 
+    <!-- 4. EMOTES VS MOBS -->
+    <article class="card" data-game="emotes" data-href="emotes-vs-mobs.html" tabindex="0" style="--ac:#ff5d8f">
+      <span class="key">4</span>
+      <span class="last">▶ ostatnio grane</span>
+      <div class="prev">
+        <div class="mini-td">
+          <i class="street"></i><i class="porch"></i><i class="wall"></i>
+          <span class="lawn"></span>
+          <b class="sm" style="left:17px;top:3px">🚜</b>
+          <b class="sm" style="left:17px;top:22px">🚜</b>
+          <b class="sm" style="left:17px;top:41px">🚜</b>
+          <b class="sm" style="left:17px;top:60px">🚜</b>
+          <b class="sm" style="left:17px;top:79px">🚜</b>
+          <b style="left:48px;top:2px">😠</b>
+          <b style="left:48px;top:41px">🥶</b>
+          <b style="left:62px;top:60px">💀</b>
+          <b style="left:48px;top:79px">😂</b>
+          <span class="glow"></span>
+          <b style="left:112px;top:40px">💰</b>
+          <b class="mob" style="left:160px;top:1px">👹</b>
+          <b class="mob m2" style="left:170px;top:39px">🧟</b>
+          <b class="mob" style="left:178px;top:60px">👾</b>
+        </div>
+      </div>
+      <h2>Emotes vs Mobs <small>obrona pasów · styl PvZ</small></h2>
+      <p>Moby idą pasami z prawej wprost do Twojego domu. Sadz emote’y na trawie, klikaj monety 💰, ulepszaj drużynę i nie pozwól, żeby ktokolwiek dotarł do domu — kosiarki ratują tylko raz! Tryb zwykły z tablicą wyników albo <b>sandbox</b> z nieskończonym złotem.</p>
+      <div class="tags"><span>😠 10 typów emote’ów</span><span>🧪 sandbox ∞ złoto</span><span>🏆 tablica wyników</span><span>🎨 własne ikony SVG</span><span>🚜 5 kosiarek</span><span>👾 fale + bossy</span></div>
+      <div class="row">
+        <a class="play" href="emotes-vs-mobs.html">▶ Zagraj</a>
+        <a class="newtab" href="emotes-vs-mobs.html" target="_blank" rel="noopener" title="Otwórz w nowej karcie">↗ nowa karta</a>
+      </div>
+    </article>
+
   </section>
 
   <footer>
-    <span>Wskazówka: naciśnij <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd>, żeby uruchomić grę. W grze wróć do tego menu przyciskiem „wstecz” w przeglądarce.</span>
-    <span>Pliki: <code>skrzynki.html</code> · <code>kolo-i-krzyzyk.html</code> · <code>epoka-konfliktow.html</code></span>
+    <span>Wskazówka: naciśnij <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd>, żeby uruchomić grę. W grze wróć do tego menu przyciskiem „wstecz” w przeglądarce.</span>
+    <span>Pliki: <code>skrzynki.html</code> · <code>kolo-i-krzyzyk.html</code> · <code>epoka-konfliktow.html</code> · <code>emotes-vs-mobs.html</code></span>
   </footer>
 </main>
 
