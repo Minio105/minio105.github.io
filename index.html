@@ -7,8 +7,9 @@
 <title>Centrum gier — wybierz grę</title>
 <style>
 /* ==========================================================================
-   Centrum gier — launcher dla 4 gier
-   (skrzynki, kółko i krzyżyk, Epoka Konfliktów, Emotes vs Mobs)
+   Centrum gier — launcher dla 5 gier
+   (skrzynki, kółko i krzyżyk, Epoka Konfliktów, Emotes vs Mobs,
+    Night Shift: The Forgotten)
    Plik samodzielny: bez internetu, bez zależności. Wystarczy otworzyć w przeglądarce.
    ========================================================================== */
 *{box-sizing:border-box}
@@ -84,6 +85,7 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
 .card:nth-child(2){animation-delay:.11s}
 .card:nth-child(3){animation-delay:.18s}
 .card:nth-child(4){animation-delay:.25s}
+.card:nth-child(5){animation-delay:.32s}
 .card:hover,.card:focus-visible{
   transform:translateY(-5px);
   border-color:color-mix(in srgb, var(--ac) 55%, var(--line));
@@ -152,6 +154,25 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
 .mini-td b.m2{animation-delay:-1.2s}
 .mini-td .glow{position:absolute;left:112px;top:42px;width:10px;height:10px;border-radius:50%;
   border:2px solid #ffd166;box-shadow:0 0 10px rgba(255,209,102,.9)}
+
+/* 5) Night Shift — mini monitoring (siatka kamer + para święcących oczu) */
+.mini-cam{position:relative;width:198px;height:96px;border-radius:10px;overflow:hidden;
+  background:linear-gradient(180deg,#0a0e14,#04060a);box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+  display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);
+  gap:3px;padding:6px}
+.mini-cam i{border-radius:3px;background:#0d131c;border:1px solid rgba(255,255,255,.055)}
+.mini-cam i.on{background:rgba(126,231,168,.17);border-color:rgba(126,231,168,.45);
+  box-shadow:inset 0 0 8px rgba(126,231,168,.22)}
+.mini-cam .eyes{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);
+  display:flex;gap:9px}
+.mini-cam .eyes b{width:9px;height:9px;border-radius:50%;background:#ffd27a;
+  box-shadow:0 0 13px #ffb02e, 0 0 4px #fff}
+.mini-cam .scan{position:absolute;left:0;right:0;height:2px;background:rgba(255,255,255,.11);
+  animation:scanmove 3.4s linear infinite}
+@keyframes scanmove{0%{top:2px}100%{top:94px}}
+.mini-cam .rec{position:absolute;left:8px;top:7px;width:6px;height:6px;border-radius:50%;
+  background:#e04b3a;animation:blink 1.4s steps(1,end) infinite}
+@keyframes blink{0%,49%{opacity:1}50%,100%{opacity:.15}}
 
 .card h2{margin:4px 0 0;font-size:19px;font-weight:900;letter-spacing:-.2px;line-height:1.25}
 .card h2 small{display:block;margin-top:3px;font-size:11.5px;font-weight:800;letter-spacing:.5px;
@@ -223,7 +244,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border-radius:6px;text-a
   <header class="head">
     <div class="mark">★</div>
     <div>
-      <h1>Centrum gier<span class="count">4 gry</span></h1>
+      <h1>Centrum gier<span class="count">5 gier</span></h1>
       <p>Wszystko działa w przeglądarce, offline — bez internetu i bez instalacji. Kliknij kartę, żeby zagrać.</p>
     </div>
   </header>
@@ -322,11 +343,34 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border-radius:6px;text-a
       </div>
     </article>
 
+    <!-- 5. NIGHT SHIFT: THE FORGOTTEN -->
+    <article class="card" data-game="nightshift" data-href="night-shift-the-forgotten.html" tabindex="0" style="--ac:#a78bfa">
+      <span class="key">5</span>
+      <span class="last">▶ ostatnio grane</span>
+      <div class="prev">
+        <div class="mini-cam">
+          <i></i><i class="on"></i><i></i><i></i>
+          <i class="on"></i><i></i><i></i><i class="on"></i>
+          <i></i><i></i><i class="on"></i><i></i>
+          <span class="rec"></span>
+          <span class="scan"></span>
+          <span class="eyes"><b></b><b></b></span>
+        </div>
+      </div>
+      <h2>Night Shift: The Forgotten <small>horror · ochrona nocna</small></h2>
+      <p>Nocna zmiana w zamkniętym centrum rozrywki „Kalejdoskop”. Pilnuj dwunastu kamer, zamykaj drzwi i oszczędzaj energię, bo po budynku chodzą animatroniki-maskotki, a każda z nich zabija inaczej. Od 12:00 AM do 6:00 AM — sześć nocy, szósta to Koszmar.</p>
+      <div class="tags"><span>🎥 12 kamer</span><span>🧸 7 przeciwników</span><span>⚡ energia</span><span>📞 telefon z głosem</span><span>🌙 6 nocy</span><span>🔊 dźwięk w kodzie</span></div>
+      <div class="row">
+        <a class="play" href="night-shift-the-forgotten.html">▶ Zagraj</a>
+        <a class="newtab" href="night-shift-the-forgotten.html" target="_blank" rel="noopener" title="Otwórz w nowej karcie">↗ nowa karta</a>
+      </div>
+    </article>
+
   </section>
 
   <footer>
-    <span>Wskazówka: naciśnij <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd>, żeby uruchomić grę. W grze wróć do tego menu przyciskiem „wstecz” w przeglądarce.</span>
-    <span>Pliki: <code>skrzynki.html</code> · <code>kolo-i-krzyzyk.html</code> · <code>epoka-konfliktow.html</code> · <code>emotes-vs-mobs.html</code></span>
+    <span>Wskazówka: naciśnij <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd>, żeby uruchomić grę. W grze wróć do tego menu przyciskiem „wstecz” w przeglądarce.</span>
+    <span>Pliki: <code>skrzynki.html</code> · <code>kolo-i-krzyzyk.html</code> · <code>epoka-konfliktow.html</code> · <code>emotes-vs-mobs.html</code> · <code>night-shift-the-forgotten.html</code></span>
   </footer>
 </main>
 
