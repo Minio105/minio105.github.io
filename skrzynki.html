@@ -574,6 +574,45 @@ main{max-width:1380px;margin:0 auto;padding:24px 18px 90px}
   background:linear-gradient(180deg,rgba(76,29,149,.85),rgba(28,10,58,.85));box-shadow:0 0 18px -4px #a855f7}
 .tier-legendary .case-tag{color:#3b2600;border-color:#fff6d0;
   background:linear-gradient(180deg,#fff3c4,#e0a91a);box-shadow:0 0 22px -4px #ffd76a}
+.case-card.secret{border:1px solid transparent;background:linear-gradient(180deg,#0a0614,#05030a) padding-box,linear-gradient(125deg,#7c3aed,#a855f7,#3b0764,#7c3aed) border-box;box-shadow:0 28px 62px -30px rgba(124,58,237,.7),inset 0 0 34px rgba(124,58,237,.1)}
+.case-card.secret .case-tag{color:#e9d5ff;border-color:#c4b5fd;background:linear-gradient(180deg,#3b0764,#1e0a3c);box-shadow:0 0 22px -4px #a855f7}
+.case-card.secret .crate{box-shadow:inset 0 0 0 1px rgba(168,85,247,.4),0 0 34px -8px rgba(168,85,247,.6)}
+.ach-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:24px}
+.ach-card{display:flex;gap:11px;padding:12px 13px;border-radius:13px;
+  background:linear-gradient(180deg,#121a2c,#0a101c);border:1px solid var(--line);
+  transition:border-color .25s,box-shadow .25s,opacity .25s;position:relative;overflow:hidden;
+  animation:cardIn .4s backwards cubic-bezier(.2,.8,.3,1)}
+.ach-card.locked{opacity:.5;filter:grayscale(.55)}
+.ach-card.unlocked{border-color:rgba(255,206,84,.45);box-shadow:0 0 26px -14px rgba(255,206,84,.5)}
+.ach-ico{font-size:26px;line-height:1;flex:none;filter:drop-shadow(0 0 10px rgba(255,255,255,.2))}
+.ach-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.ach-name{font-size:13px;font-weight:800;color:var(--txt);line-height:1.2}
+.ach-desc{font-size:11px;color:var(--dim);line-height:1.35}
+.ach-prog{height:5px;border-radius:99px;background:#070b14;overflow:hidden;margin-top:4px}
+.ach-prog>i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffd166,#ff8a3d)}
+.ach-rew{font-size:10.5px;font-weight:800;color:#ffd9a8;margin-top:2px}
+.ach-card.unlocked .ach-rew{color:#8ef0b0}
+.ach-badge{position:absolute;top:8px;right:10px;font-size:9px;font-weight:900;letter-spacing:.08em;
+  padding:2px 7px;border-radius:99px;background:rgba(255,206,84,.18);color:#ffd9a8;border:1px solid rgba(255,206,84,.45)}
+.ach-card.locked .ach-badge{background:rgba(255,255,255,.06);color:var(--dim);border-color:var(--line)}
+.cos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:10px;margin-bottom:24px}
+.cos-card{display:flex;gap:11px;padding:12px 13px;border-radius:13px;
+  background:linear-gradient(180deg,#121a2c,#0a101c);border:1px solid var(--line);
+  transition:border-color .25s,box-shadow .25s;position:relative;overflow:hidden;
+  animation:cardIn .4s backwards cubic-bezier(.2,.8,.3,1)}
+.cos-card.locked{opacity:.5;filter:grayscale(.55)}
+.cos-card.owned{border-color:rgba(56,224,138,.4)}
+.cos-ico{font-size:26px;line-height:1;flex:none;filter:drop-shadow(0 0 10px rgba(255,255,255,.2))}
+.cos-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.cos-name{font-size:13px;font-weight:800;color:var(--txt);line-height:1.2}
+.cos-desc{font-size:11px;color:var(--dim);line-height:1.35}
+.cos-rew{font-size:10.5px;font-weight:800;color:#ffd9a8;margin-top:2px}
+.cos-card.owned .cos-rew{color:#8ef0b0}
+.cos-btn{margin-top:6px}
+.boss-btn{background:linear-gradient(180deg,#7f1d1d,#450a0a);border-color:#ef4444;color:#fecaca}
+.boss-btn:hover{background:linear-gradient(180deg,#991b1b,#7f1d1d)}
+.koh-btn{background:linear-gradient(180deg,#7c2d12,#431407);border-color:#fb923c;color:#fed7aa}
+.koh-btn:hover{background:linear-gradient(180deg,#9a3412,#7c2d12)}
 
 /* ta sama skórka na liście wyboru w bitwach */
 .bch .pat{z-index:0;border-radius:11px;opacity:calc(var(--patop,0) * .8)}
@@ -1348,6 +1387,8 @@ select:hover{border-color:var(--line2)}
     <div class="battle-go">
       <button class="btn primary" id="fightBtn">⚔️ Walcz</button>
       <button class="btn auto-btn" id="autoBtn" title="Walcz automatycznie, dopóki starcza monet">🔁 Auto-walka</button>
+      <button class="btn boss-btn" id="bossBtn" title="Walcz z bossem — ogromna stawka, potężne nagrody">👹 Boss</button>
+      <button class="btn koh-btn" id="kohBtn" title="Królowa góry — ryzyko wszystkiego za potężną pulę">🎰 Królowa góry</button>
       <div class="battle-cost" id="battleCost"></div>
     </div>
     <h2 class="sec-title">Ostatnie bitwy <span class="line"></span></h2>
@@ -1357,6 +1398,10 @@ select:hover{border-color:var(--line2)}
   <section class="view" id="view-stats">
     <h2 class="sec-title">Statystyki <span class="line"></span></h2>
     <div class="stat-grid" id="statGrid"></div>
+    <h2 class="sec-title">🏆 Osiągnięcia <span class="line"></span><span class="muted" id="achHint"></span></h2>
+    <div class="ach-grid" id="achGrid"></div>
+    <h2 class="sec-title">🎨 Kosmetyki <span class="line"></span><span class="muted" id="cosHint"></span></h2>
+    <div class="cos-grid" id="cosGrid"></div>
     <h2 class="sec-title">Ostatnie zdobycze <span class="line"></span></h2>
     <div class="recent-list" id="recentList"></div>
   </section>
@@ -1542,6 +1587,27 @@ const FX = [
 ];
 const FX_BY_ID = {};
 FX.forEach(f=>FX_BY_ID[f.id]=f);
+
+/* 🎄 EFEKTY EVENTOWE — limitowane, dostępne tylko w czasie eventu.
+   Event trwa EVENT_FX_HOURS godzin (liczony od epochy eventu). Gdy event
+   nieaktywny, efekty eventowe nie wypadają. */
+const EVENT_FX_START = Date.UTC(2026, 9, 20);   // 20 paź 2026 00:00 UTC
+const EVENT_FX_HOURS = 72;                        // trwa 3 dni
+const EVENT_FX = [
+  {id:"xmas",   icon:"🎄", name:"Świąteczny",  color:"#38e08a", chance:0.008, mult:3.5, glow:"śnieg i świece"},
+  {id:"hallow", icon:"🎃", name:"Halloween",   color:"#fb923c", chance:0.006, mult:5.0, glow:"dynia i duch"},
+  {id:"ny",     icon:"🎆", name:"Noworoczny",  color:"#f472b6", chance:0.003, mult:9.0, glow:"fajerwerki"},
+  {id:"easter", icon:"🐰", name:"Wielkanocny", color:"#fde047", chance:0.004, mult:6.5, glow:"jaja i kwiatki"}
+];
+const EVENT_FX_BY_ID = {};
+EVENT_FX.forEach(f=>EVENT_FX_BY_ID[f.id]=f);
+function eventFxActive(){
+  const now = Date.now();
+  return now >= EVENT_FX_START && now < EVENT_FX_START + EVENT_FX_HOURS*3600*1000;
+}
+function eventFxList(){
+  return eventFxActive() ? EVENT_FX : [];
+}
 const FX_CHANCE = FX.reduce((a,f)=>a+f.chance,0);   // suma szans (na tierze ×1)
 const FX_TIER_BOOST = {mil:1, restricted:1, classified:1.3, covert:1.6, special:2.2};
 const FX_BIG = 4;                                    // od tego mnożnika odpalamy wielką fetę
@@ -2216,41 +2282,56 @@ const NEW_CASES_3 = [
     sub:"Zamknięta na siedem kłódek. W środku tylko to, czego nikt nie powinien mieć.",
     odds:{mil:.001, restricted:.350, classified:.400, covert:.199, special:.050},
     items:{
-      mil:       [["P250","Ostatni Oddech","pistol"]],
+      mil:       [["P250","Ostatni Oddech","pistol"],["MP9","Szept Echa","smg"],["Galil AR","Zamek Cieni","rifle"],
+                  ["Nova","Kopuła","shotgun"],["Tec-9","Lekki Jak Cień","pistol"]],
       restricted:[["AK-47","Złota Harmonia Legendy","rifle"],["AWP","Królewska Wstęga Legendy","awp"],
                   ["M4A1-S","Srebrny Dwór Legendy","rifle"],["Desert Eagle","Monarcha Legendy","pistol"],
                   ["USP-S","Berło Legendy","pistol"],["AUG","Korona Legendy","rifle"],
-                  ["Negev","Królewski Dwór","lmg"],["SCAR-20","Żar Legendy","awp"]],
+                  ["Negev","Królewski Dwór","lmg"],["SCAR-20","Żar Legendy","awp"],
+                  ["M4A4","Zbroja Cienia","rifle"],["MP7","Strażnik","smg"]],
       classified:[["AK-47","Tron Legendy","rifle"],["AWP","Berło Carów Legendy","awp"],["M4A4","Carska Mozaika Legendy","rifle"],
                   ["P90","Diadem Legendy","smg"],["R8 Revolver","Regalia Legendy","revolver"],
-                  ["MAG-7","Złota Mozaika","shotgun"]],
+                  ["MAG-7","Złota Mozaika","shotgun"],["Desert Eagle","Kodeks","pistol"],
+                  ["FAMAS","Opatrzność","rifle"],["Glock-18","Pieczęć","pistol"]],
       covert:    [["AK-47","Królewski Rubin Legendy","rifle"],["AWP","Cesarska Korona Legendy","awp"],
                   ["M4A1-S","Złoty Ornament Legendy","rifle"],["Desert Eagle","Cesarstwo Legendy","pistol"],
-                  ["M4A4","Diamentowa Korona","rifle"],["AWP","Pan Królów Legendy","awp"]],
+                  ["M4A4","Diamentowa Korona","rifle"],["AWP","Pan Królów Legendy","awp"],
+                  ["AK-47","Szarlatan","rifle"],["M4A1-S","Sarkofag","rifle"]],
       special:   [["Karambit","Królewski Legendarny","knife"],["Nóż Motylkowy","Tron Legendy","knife"],
                   ["Nóż Talon","Cesarstwo Legendy","knife"],["Bayonet","Monarcha Legendy","knife"],
                   ["Nóż Skeleton","Król Legendy","knife"],["Nóż Gut","Legendarny","knife"],
-                  ["Nóż Flip","Diamentowy Legendarny","knife"]] } },
+                  ["Nóż Flip","Diamentowy Legendarny","knife"],["Kukri","Korona","knife"],
+                  ["Sztylet Cieni","Berło","knife"],["Nóż Huntsman","Regalia","knife"],
+                  ["Nóż Falchion","Tron","knife"],["Nóż Ursus","Srebro","knife"]] } },
 
   { id:"secret50", name:"Skrzynka Legendarna", price:50000000, color:"#fbbf24", icon:"👑", secret:true,
     sub:"Szczyt. Tylko dla tych, którzy nie mają już czego szukać. Najrzadsze ostrza na świecie.",
     odds:{mil:.001, restricted:.350, classified:.400, covert:.199, special:.050},
     items:{
-      mil:       [["P250","Ostatni Oddech","pistol"]],
+      mil:       [["P250","Ostatni Oddech","pistol"],["MP9","Echa Tronu","smg"],["Galil AR","Kolumna","rifle"],
+                  ["Nova","Korona Popiołów","shotgun"],["Tec-9","Złoty Pył","pistol"],["MAC-10","Siedem","smg"]],
       restricted:[["AK-47","Złota Harmonia Legendy","rifle"],["AWP","Królewska Wstęga Legendy","awp"],
                   ["M4A1-S","Srebrny Dwór Legendy","rifle"],["Desert Eagle","Monarcha Legendy","pistol"],
                   ["USP-S","Berło Legendy","pistol"],["AUG","Korona Legendy","rifle"],
-                  ["Negev","Królewski Dwór","lmg"],["SCAR-20","Żar Legendy","awp"]],
+                  ["Negev","Królewski Dwór","lmg"],["SCAR-20","Żar Legendy","awp"],
+                  ["M4A4","Cesarski Ornament","rifle"],["MP7","Słoneczny","smg"],["SG 553","Ołtarz","rifle"]],
       classified:[["AK-47","Tron Legendy","rifle"],["AWP","Berło Carów Legendy","awp"],["M4A4","Carska Mozaika Legendy","rifle"],
                   ["P90","Diadem Legendy","smg"],["R8 Revolver","Regalia Legendy","revolver"],
-                  ["MAG-7","Złota Mozaika","shotgun"]],
+                  ["MAG-7","Złota Mozaika","shotgun"],["Desert Eagle","Złoty Kodeks","pistol"],
+                  ["FAMAS","Zwycięstwo","rifle"],["Glock-18","Królewska Pieczęć","pistol"],
+                  ["M249","Serafin","lmg"],["SSG 08","Zorza","awp"]],
       covert:    [["AK-47","Królewski Rubin Legendy","rifle"],["AWP","Cesarska Korona Legendy","awp"],
                   ["M4A1-S","Złoty Ornament Legendy","rifle"],["Desert Eagle","Cesarstwo Legendy","pistol"],
-                  ["M4A4","Diamentowa Korona","rifle"],["AWP","Pan Królów Legendy","awp"]],
+                  ["M4A4","Diamentowa Korona","rifle"],["AWP","Pan Królów Legendy","awp"],
+                  ["AK-47","Złoty Władca","rifle"],["M4A1-S","Srebro","rifle"]],
       special:   [["Karambit","Królewski Legendarny","knife"],["Nóż Motylkowy","Tron Legendy","knife"],
                   ["Nóż Talon","Cesarstwo Legendy","knife"],["Bayonet","Monarcha Legendy","knife"],
                   ["Nóż Skeleton","Król Legendy","knife"],["Nóż Gut","Legendarny","knife"],
-                  ["Nóż Flip","Diamentowy Legendarny","knife"]] } }
+                  ["Nóż Flip","Diamentowy Legendarny","knife"],["Kukri","Siewca","knife"],
+                  ["Sztylet Cieni","Złoto","knife"],["Nóż Huntsman","Szlachetny","knife"],
+                  ["Nóż Falchion","Cesarski","knife"],["Nóż Ursus","Korona","knife"],
+                  ["Nóż Navaja","Legendarny","knife"],["Nóż Paracord","Królewski","knife"],
+                  ["Nóż Klasyczny","Berło","knife"],["Nóż Bowie","Ornament","knife"]] } }
 ];
 
 CASES.push(...NEW_CASES, ...NEW_CASES_2, ...NEW_CASES_3);
@@ -2700,9 +2781,10 @@ function rollFx(tier){
   const r = Math.random();
   let acc = 0;
   for(const f of FX){ acc += f.chance*boost; if(r < acc) return f.id; }
+  for(const f of eventFxList()){ acc += f.chance*boost; if(r < acc) return f.id; }
   return null;
 }
-const fxOf    = it => (it && it.fx && FX_BY_ID[it.fx]) || null;
+const fxOf    = it => { if(!it || !it.fx) return null; return FX_BY_ID[it.fx] || EVENT_FX_BY_ID[it.fx] || null; };
 const fxMult  = it => { const f = fxOf(it); return f ? f.mult : 1; };
 const fxBoostTxt = f => "+" + Math.round((f.mult-1)*100) + "% wartości";
 /* polski przecinek w mnożniku: 1,8 zamiast 1.8 */
@@ -2713,13 +2795,13 @@ function fxBadge(it){
   if(!f) return "";
   return `<span class="fx-badge" title="${f.name} — ${f.glow} · ${fxBoostTxt(f)}">${f.icon} ${f.name} ×${fxM(f)}</span>`;
 }
-/* ile razy w tym zapisie wypadł dany efekt */
+/* ile razy w tym zapisie wypadł dany efekt (zwykły lub eventowy) */
 const fxCount = id => numFrom((state.stats && state.stats.fx && state.stats.fx[id]) || 0);
 
 function makeItem(caseDef, tier){
   const [w,n,art] = pick(caseDef.items[tier]);
   const fx = rollFx(tier);
-  const f = fx ? FX_BY_ID[fx] : null;
+  const f = fx ? (FX_BY_ID[fx] || EVENT_FX_BY_ID[fx]) : null;
   return {
     uid: "i"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
     w, n, art, tier, caseId: caseDef.id,
@@ -2748,7 +2830,7 @@ let state = {
   coins: START_COINS, inv: [], recent: [], battles: [],
   stats:{opened:0, spent:0, earned:0, sold:0, knives:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{}},
   up: UP_ZERO(),
-  album:{}, albumClaimed:{}, missions:null, weekly:null,
+  album:{}, albumClaimed:{}, missions:null, weekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false,
   sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, battleCase:"start", battleSize:1,
   autoTurbo:false, autoLimit:0
 };
@@ -2862,7 +2944,7 @@ function snapshot(){
     sound:state.sound, fast:state.fast, bonusAt:state.bonusAt, rescueAt:state.rescueAt,
     autoTurbo:state.autoTurbo === true, autoLimit:autoLimitSan(state.autoLimit),
     cloverUntil:state.cloverUntil||0,
-    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly };
+    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly, achievements:state.achievements, cosmetics:state.cosmetics, bossKills:state.bossKills };
 }
 
 /* Zapis z weryfikacją + wykrywaniem gry w dwóch oknach.
@@ -3147,6 +3229,7 @@ function renderShop(){
   $("#shopHint").innerHTML = [
     state.coins < cheapest ? "Brakuje monet — użyj przycisku 🎁 Bonus" : "★ Noże są rzadsze, ale warte więcej",
     "✨ Efekty na broniach mnożą wartość: "+FX.map(f=>f.icon+"×"+fxM(f)).join(" · "),
+    eventFxList().length ? "🎉 EVENT: "+eventFxList().map(f=>f.icon+" "+f.name+" ×"+fxM(f)).join(" · ") : "",
     active.join(" · ") + (active.length ? " — szanse już z ulepszeniami" : "")
   ].filter(Boolean).join(" &nbsp;·&nbsp; ");
   $("#caseGrid").innerHTML = CASES.map((c,i)=>{
@@ -3633,7 +3716,8 @@ function noteDrop(item){
     st.fx[item.fx] = numFrom(st.fx[item.fx]) + 1;
     st.fxTotal = numFrom(st.fxTotal) + 1;
     missionTrack("fx", 1);                      // 📅 misje tygodniowe na efekty
-    if(FX_BY_ID[item.fx] && FX_BY_ID[item.fx].mult >= FX_BIG) missionTrack("fxbig", 1);
+    const fxDef = FX_BY_ID[item.fx] || EVENT_FX_BY_ID[item.fx];
+    if(fxDef && fxDef.mult >= FX_BIG) missionTrack("fxbig", 1);
   }
   if(!state.stats.best || item.value>state.stats.best.value)
     state.stats.best = {w:item.w,n:item.n,tier:item.tier,value:item.value,fx:item.fx||null};
@@ -4177,7 +4261,10 @@ function autoSchedule(n){
   autoTimer = setTimeout(()=>{ autoTimer = null; autoNext(); }, AUTO_WAIT[n] || 1900);
 }
 
-$("#autoBtn").addEventListener("click", ()=>{
+$("#bossBtn").addEventListener("click", ()=>{ const b=BOSSES[Math.floor(Math.random()*BOSSES.length)]; fightBoss(b.id); });
+  $("#kohBtn").addEventListener("click", playKoh);
+  $("#cosGrid").addEventListener("click", e=>{ const b=e.target.closest("[data-cos]"); if(b) buyCosmetic(b.dataset.cos); });
+  $("#autoBtn").addEventListener("click", ()=>{
   if(autoBattle){ setAuto(false); return; }
   const c = CASES.find(x=>x.id===state.battleCase) || CASES[0];
   const { total, n } = battleCost(c);
@@ -4261,6 +4348,8 @@ function renderStats(){
           </div></div>`;
       }).join("")
     : (perCase ? "" : `<div class="empty" style="grid-column:1/-1"><span class="big">📊</span>Brak danych — otwórz pierwszą skrzynkę.</div>`));
+  renderAchievements();
+  renderCosmetics();
 }
 
 /* =======================================================================
@@ -4777,6 +4866,49 @@ const MISSION_KINDS = {
 const MISSION_EASY_N = 3;      // ile spokojnych misji dziennie
 const REROLL_MAX = 2;          // ile razy dziennie można wymienić misję
 
+
+/* =======================================================================
+   14c. 💤 NAGRODA ZA CZAS GRY (IDLE)
+   -----------------------------------------------------------------------
+   Grając (zakładka otwarta) co IDLE_TICK sekund dostajesz trochę monet
+   i chwilowe szczęście. Po IDLE_KNIFE_HOURS godzinach łącznego czasu gry
+   dostajesz specjalny niezły nóż, który sprzedasz za 150 000 monet.
+   ======================================================================= */
+const IDLE_TICK = 30;                    // sekundy między nagrodami
+const IDLE_COINS = 500;                  // monety za tick
+const IDLE_LUCK = 5;                     // chwilowe szczęście za tick (sekundy)
+const IDLE_KNIFE_HOURS = 1.5;            // godziny do noża
+const IDLE_KNIFE_VALUE = 150000;         // wartość noża
+let idleTimer = 0;
+let idleLast = Date.now();
+function idleTick(){
+  const now = Date.now();
+  const dt = Math.floor((now - (idleLast||now)) / 1000);
+  if(dt <= 0) return;
+  idleLast = now;
+  idleTimer += dt;
+  // monety za czas gry
+  state.coins += IDLE_COINS * dt;
+  // chwilowe szczęście (maleje z czasem)
+  const luckGain = Math.max(0, IDLE_LUCK - Math.floor(idleTimer / 300));
+  if(luckGain > 0) state.cloverUntil = Math.max(Date.now(), state.cloverUntil||0) + luckGain * 1000;
+  // nóż po 1.5h
+  const knifeMs = IDLE_KNIFE_HOURS * 3600 * 1000;
+  if(idleTimer * 1000 >= knifeMs && !state.idleKnifeClaimed){
+    state.idleKnifeClaimed = true;
+    const item = {
+      uid: "idle" + Date.now().toString(36),
+      w: "Karambit", n: "Cień Czekania", art: "knife",
+      tier: "classified", caseId: "idle",
+      fx: null, value: IDLE_KNIFE_VALUE, ts: Date.now()
+    };
+    addToInv(item);
+    toast("💤 <b>Nagroda za cierpliwość!</b> Karambit „Cień Czekania” — sprzedasz za 🪙 "+fmt(IDLE_KNIFE_VALUE),"good");
+    confetti(["#38bdf8","#a855f7","#ffd700"]);
+  }
+  markDirty(); save(); renderBalance();
+}
+setInterval(idleTick, IDLE_TICK * 1000);
 /* =======================================================================
    14d. 📅 MISJE TYGODNIOWE + POZIOMY TRUDNOŚCI
    -----------------------------------------------------------------------
@@ -4861,6 +4993,9 @@ function weeklyLoad(d){
   });
   if(!list.length){ rollWeekly(); return; }
   state.weekly = {start:numFrom(w.start), list, rerolls:Math.min(REROLL_WEEK_MAX, numFrom(w.rerolls))};
+  state.achievements = (d.achievements && typeof d.achievements === "object" && !Array.isArray(d.achievements)) ? d.achievements : {};
+  state.cosmetics = (d.cosmetics && typeof d.cosmetics === "object" && !Array.isArray(d.cosmetics)) ? d.cosmetics : {};
+  state.bossKills = (d.bossKills && typeof d.bossKills === "object" && !Array.isArray(d.bossKills)) ? d.bossKills : {};
   // dobicie brakujących misji (gdy zestaw powstał przy mniejszej liczbie typów)
   if(list.length < WEEKLY_N){
     const used = list.map(x=>x.kind);
@@ -5203,6 +5338,132 @@ $("#weeklyGrid").addEventListener("click", e=>{
   else if(r) rerollWeekly(+r.dataset.wreroll);
 });
 
+
+/* =======================================================================
+   14d. ACHIEVEMENTS + COSMETICS + BOSS + KING OF THE HILL
+   ======================================================================= */
+const ACHIEVEMENTS = [
+  /* 🌱 Dla początkujących (łatwe) */
+  {id:"open_1",    icon:"📦", name:"Pierwszy krok",      desc:"Otwórz pierwszą skrzynkę.",           target:1,     prog:()=>state.stats.opened,    done:()=>state.stats.opened>=1,     reward:{coins:500}},
+  {id:"open_10",   icon:"📦", name:"Początek drogi",     desc:"Otwórz 10 skrzynek.",                 target:10,    prog:()=>state.stats.opened,    done:()=>state.stats.opened>=10,    reward:{coins:2000}},
+  {id:"sell_5",    icon:"💰", name:"Pierwszy zarobek",  desc:"Sprzedaj 5 przedmiotów.",              target:5,     prog:()=>state.stats.sold,      done:()=>state.stats.sold>=5,      reward:{coins:1000}},
+  {id:"battle_3",  icon:"⚔️", name:"Pierwsza walka",    desc:"Stocz 3 bitwy.",                       target:3,     prog:()=>state.stats.battles,   done:()=>state.stats.battles>=3,   reward:{coins:3000}},
+  {id:"win_1",     icon:"🏆", name:"Pierwsze zwycięstwo",desc:"Wygraj pierwszą bitwę.",               target:1,     prog:()=>state.stats.battleWins, done:()=>state.stats.battleWins>=1, reward:{coins:5000}},
+  {id:"album_5",   icon:"📖", name:"Pierwsza kolekcja", desc:"Odkryj 5 skinów w albumie.",            target:5,     prog:()=>albumHave(),            done:()=>albumHave()>=5,          reward:{coins:2000}},
+  {id:"fx_1",      icon:"✨", name:"Pierwszy błysk",    desc:"Wykręć pierwszy efekt na broni.",       target:1,     prog:()=>state.stats.fxTotal,    done:()=>state.stats.fxTotal>=1,    reward:{coins:10000}},
+  {id:"coins_100k",icon:"🪙", name:"Pierwsza fortuna",  desc:"Zgromadź 100 000 monet.",              target:100000, prog:()=>state.coins,           done:()=>state.coins>=100000,     reward:{coins:1000}},
+  {id:"cos_1",     icon:"🎨", name:"Pierwsza kosmetyka",desc:"Kup pierwszy patch na broń.",          target:1,     prog:()=>Object.keys(state.cosmetics||{}).length, done:()=>Object.keys(state.cosmetics||{}).length>=1, reward:{coins:50000}},
+  /* 🎯 Dla średniozaawansowanych */
+  {id:"open_100",  icon:"📦", name:"Sto otwarć",        desc:"Otwórz 100 skrzynek.",                 target:100,   prog:()=>state.stats.opened,    done:()=>state.stats.opened>=100,   reward:{coins:50000}},
+  {id:"knife_1",   icon:"★",  name:"Pierwszy nóż",      desc:"Wylosuj pierwszy nóż.",                target:1,     prog:()=>state.stats.knives,     done:()=>state.stats.knives>=1,    reward:{coins:25000}},
+  {id:"win_10",    icon:"🏆", name:"Zwycięzca",         desc:"Wygraj 10 bitew.",                     target:10,    prog:()=>state.stats.battleWins, done:()=>state.stats.battleWins>=10,  reward:{coins:50000}},
+  {id:"album_50",  icon:"📖", name:"Kolekcjoner",       desc:"Odkryj 50 skinów w albumie.",          target:50,    prog:()=>albumHave(),            done:()=>albumHave()>=50,         reward:{coins:75000}},
+  {id:"fx_5",      icon:"✨", name:"Kolekcjoner błysków",desc:"Wykręć 5 efektów na broniach.",        target:5,     prog:()=>state.stats.fxTotal,    done:()=>state.stats.fxTotal>=5,    reward:{coins:100000}},
+  {id:"coins_1m",  icon:"🪙", name:"Milioner",          desc:"Zgromadź 1 000 000 monet.",            target:1000000,prog:()=>state.coins,           done:()=>state.coins>=1000000,   reward:{coins:20000}},
+  /* 💎 Dla weteranów (trudne) */
+  {id:"open_1000", icon:"📦", name:"Tysiąc otwarć",     desc:"Otwórz 1000 skrzynek.",                target:1000,  prog:()=>state.stats.opened,    done:()=>state.stats.opened>=1000,  reward:{coins:500000}},
+  {id:"open_10000",icon:"📦", name:"Dziesięć tysięcy",  desc:"Otwórz 10 000 skrzynek.",              target:10000, prog:()=>state.stats.opened,    done:()=>state.stats.opened>=10000, reward:{coins:5000000}},
+  {id:"knife_10",  icon:"★",  name:"Zbrojownia",        desc:"Wylosuj 10 noży.",                     target:10,    prog:()=>state.stats.knives,     done:()=>state.stats.knives>=10,   reward:{coins:250000}},
+  {id:"knife_25",  icon:"★",  name:"Kolekcja noży",     desc:"Wylosuj 25 noży.",                     target:25,    prog:()=>state.stats.knives,     done:()=>state.stats.knives>=25,   reward:{coins:1000000}},
+  {id:"win_50",    icon:"🏆", name:"Niepokonany",       desc:"Wygraj 50 bitew.",                     target:50,    prog:()=>state.stats.battleWins, done:()=>state.stats.battleWins>=50,  reward:{coins:500000}},
+  {id:"win_100",   icon:"🏆", name:"Legenda aren",      desc:"Wygraj 100 bitew.",                    target:100,   prog:()=>state.stats.battleWins, done:()=>state.stats.battleWins>=100, reward:{coins:2000000}},
+  {id:"album_200", icon:"📖", name:"Muzealnik",         desc:"Odkryj 200 skinów w albumie.",         target:200,   prog:()=>albumHave(),            done:()=>albumHave()>=200,        reward:{coins:500000}},
+  {id:"album_500", icon:"📖", name:"Archiwista",        desc:"Odkryj 500 skinów w albumie.",         target:500,   prog:()=>albumHave(),            done:()=>albumHave()>=500,        reward:{coins:2000000}},
+  {id:"fx_diamond",icon:"💎", name:"Rzadkość",          desc:"Wykręć efekt 💎 Diamentowy lub lepszy.", target:1,    prog:()=>state.stats.fxTotal,    done:()=>Object.keys(state.stats.fx||{}).some(k=>["diamond","rainbow","cosmic"].includes(k)), reward:{coins:500000}},
+  {id:"fx_cosmic", icon:"🌌", name:"Kosmiczny",        desc:"Wykręć efekt 🌌 Kosmiczny.",         target:1,    prog:()=>state.stats.fxTotal,    done:()=>Object.keys(state.stats.fx||{}).some(k=>k==="cosmic"), reward:{coins:3000000}},
+  {id:"clover_1",  icon:"🍀", name:"Szczęśliarz",       desc:"Znajdź czterolistną koniczynę.",         target:1,     prog:()=>state.stats.clovers,   done:()=>state.stats.clovers>=1,   reward:{coins:50000}},
+  {id:"clover_10", icon:"🍀", name:"Ogród koniczyny",   desc:"Znajdź 10 koniczyn.",                  target:10,    prog:()=>state.stats.clovers,   done:()=>state.stats.clovers>=10,  reward:{coins:500000}},
+  {id:"boss_1",    icon:"👹", name:"Pogromca",          desc:"Pokonaj bossa.",                        target:1,     prog:()=>state.stats.bossWins||0, done:()=>(state.stats.bossWins||0)>=1, reward:{coins:1000000}},
+  {id:"boss_3",    icon:"👹", name:"Bossów łowca",      desc:"Pokonaj 3 bossów.",                     target:3,     prog:()=>state.stats.bossWins||0, done:()=>(state.stats.bossWins||0)>=3, reward:{coins:3000000}},
+  {id:"boss_all",  icon:"👹", name:"Pogromca wszystkich",desc:"Pokonaj każdego bossa (po 1×).",      target:3,     prog:()=>Object.keys(state.bossKills||{}).length, done:()=>Object.keys(state.bossKills||{}).length>=3, reward:{coins:10000000}},
+  {id:"koh_1",     icon:"🎰", name:"Królowa góry",      desc:"Wygraj w trybie Królowa góry.",         target:1,     prog:()=>state.stats.kohWins||0, done:()=>(state.stats.kohWins||0)>=1, reward:{coins:500000}},
+  {id:"koh_10",    icon:"🎰", name:"Władca gry",        desc:"Wygraj 10 razy w Królowej góry.",       target:10,    prog:()=>state.stats.kohWins||0, done:()=>(state.stats.kohWins||0)>=10, reward:{coins:5000000}},
+  {id:"rich_1b",   icon:"🪙", name:"Milionard",         desc:"Zgromadź 1 000 000 000 monet.",        target:1000000000, prog:()=>state.coins, done:()=>state.coins>=1000000000, reward:{coins:5000000}},
+  {id:"rich_10b",  icon:"🪙", name:"Milionard",          desc:"Zgromadź 10 000 000 000 monet.",       target:10000000000,prog:()=>state.coins, done:()=>state.coins>=10000000000,reward:{coins:50000000}},
+  {id:"cos_all",   icon:"👑", name:"Pełna kolekcja",    desc:"Kup wszystkie 6 kosmetyków.",           target:6,     prog:()=>Object.keys(state.cosmetics||{}).length, done:()=>Object.keys(state.cosmetics||{}).length>=6, reward:{coins:20000000}}
+];
+
+function checkAchievements(){
+  if(!state.achievements || typeof state.achievements !== "object" || Array.isArray(state.achievements)) state.achievements = {};
+  let unlocked = 0;
+  ACHIEVEMENTS.forEach(a=>{
+    if(state.achievements[a.id]) return;
+    let met = false;
+    try { met = !!a.done(); } catch(e){ met = false; }
+    if(!met) return;
+    state.achievements[a.id] = Date.now();
+    if(a.reward && a.reward.coins) state.coins += a.reward.coins;
+    unlocked++;
+    toast("🏆 <b>Osiagniecie!</b> "+a.icon+" "+a.name+" — nagroda: 🪙 "+fmt(a.reward.coins),"good");
+    confetti();
+  });
+  if(unlocked){ markDirty(); save(); renderStats(); renderBalance(); }
+}
+function renderAchievements(){
+  const g = $("#achGrid"); if(!g) return;
+  const h = $("#achHint"); if(h) h.innerHTML = `odblokowane <b>${ACHIEVEMENTS.filter(a=>state.achievements[a.id]).length}</b> / ${ACHIEVEMENTS.length}`;
+  g.innerHTML = ACHIEVEMENTS.map((a,i)=>{
+    const un = !!state.achievements[a.id];
+    let p = 0;
+    try { p = Math.min(1, (a.prog()||0) / Math.max(1, a.target||1)); } catch(e){ p = 0; }
+    const pct = Math.round(p*100);
+    const prog = (a.prog()||0) >= (a.target||1) ? "✔" : (fmt(a.prog()||0)+" / "+fmt(a.target||1));
+    return `<div class="ach-card ${un?"unlocked":"locked"}" style="animation-delay:${i*25}ms">
+      <span class="ach-badge">${un?"ODBLOKOWANE":"W TOKU"}</span>
+      <span class="ach-ico">${a.icon}</span>
+      <div class="ach-body">
+        <div class="ach-name">${esc(a.name)}</div>
+        <div class="ach-desc">${esc(a.desc)}</div>
+        ${un?"":`<div class="ach-prog"><i style="width:${pct}%"></i></div>`}
+        <div class="ach-rew">${un?"✔ odebrane":"Nagroda:"} 🪙 ${fmt((a.reward&&a.reward.coins)||0)}</div>
+        ${un?"":`<div class="ach-desc" style="font-size:10px">${prog}</div>`}
+      </div></div>`;
+  }).join("");
+}/* 🎨 KOSMETYKI — patche na bron, kupowane za monety, daja bonus do wartosci */
+const COSMETICS = [
+  {id:"pat_star",  icon:"⭐", name:"Gwiazda",      desc:"Kawalek kosmicznego pylu.",        cost:5000000,   mult:1.10, color:"#fde047"},
+  {id:"pat_flame", icon:"🔥", name:"Plomien",      desc:"Wiecy z daleka.",                  cost:15000000,  mult:1.15, color:"#f97316"},
+  {id:"pat_ice",   icon:"❄️", name:"Lod",          desc:"Wieczna zima na broni.",           cost:30000000,  mult:1.20, color:"#38bdf8"},
+  {id:"pat_volt",  icon:"⚡", name:"Blyskawica",   desc:"Elektryczne wyladowanie.",         cost:75000000,  mult:1.25, color:"#a855f7"},
+  {id:"pat_skull", icon:"💀", name:"Czaszka",      desc:"Ostatni spojrzenie.",              cost:200000000, mult:1.35, color:"#eb4b4b"},
+  {id:"pat_crown", icon:"👑", name:"Korona",       desc:"Krolewski znak.",                 cost:500000000, mult:1.50, color:"#ffd700"}
+];
+const COSMETIC_BY_ID = {};
+COSMETICS.forEach(c=>COSMETIC_BY_ID[c.id]=c);
+function buyCosmetic(id){
+  const c = COSMETIC_BY_ID[id];
+  if(!c) return;
+  if(state.cosmetics && state.cosmetics[id]){ sfxErr(); return; }
+  if(state.coins < c.cost){ sfxErr(); toast("Za malo monet na "+c.icon+" "+c.name+" (🪙 "+fmt(c.cost)+")","bad"); return; }
+  state.coins -= c.cost;
+  state.cosmetics = state.cosmetics || {};
+  state.cosmetics[id] = true;
+  sfxCoin(); burst(rnd(120,innerWidth-120), rnd(140,360), c.color);
+  save(); renderStats();
+  toast(c.icon+" <b>"+c.name+"</b> zakupiony! Twoje bronie dostana +" + Math.round((c.mult-1)*100) + "% wartosci.","good");
+}
+function cosmeticMult(){
+  let m = 1;
+  COSMETICS.forEach(c=>{ if(state.cosmetics && state.cosmetics[c.id]) m *= c.mult; });
+  return m;
+}
+function renderCosmetics(){
+  const g = $("#cosGrid"); if(!g) return;
+  const h = $("#cosHint"); if(h) h.innerHTML = `kupione <b>${COSMETICS.filter(c=>state.cosmetics&&state.cosmetics[c.id]).length}</b> / ${COSMETICS.length}`;
+  g.innerHTML = COSMETICS.map((c,i)=>{
+    const owned = !!(state.cosmetics && state.cosmetics[c.id]);
+    return `<div class="cos-card ${owned?"owned":"locked"}" style="animation-delay:${i*40}ms">
+      <span class="cos-ico">${c.icon}</span>
+      <div class="cos-body">
+        <div class="cos-name">${esc(c.name)}</div>
+        <div class="cos-desc">${esc(c.desc)}</div>
+        <div class="cos-rew">Bonus: +${Math.round((c.mult-1)*100)}% wartosci</div>
+        ${owned
+          ? `<button class="btn tb-btn cos-btn" disabled>✔ Posiadasz</button>`
+          : `<button class="btn primary cos-btn" data-cos="${c.id}">Kup za 🪙 ${fmt(c.cost)}</button>`}
+      </div></div>`;
+  }).join("");
+}
 /* =======================================================================
    15. TRWAŁOŚĆ — autozapis i zapis przy zamykaniu
    ======================================================================= */
@@ -5219,6 +5480,87 @@ setInterval(()=>{
 
 window.addEventListener("beforeunload", ()=>{ if(dirty) save(); });
 window.addEventListener("pagehide", ()=>{ if(dirty) save(); });
+
+/* 👹 BOSS FIGHT — gra o ogromna stawke z szansa na unikalna bron */
+const BOSSES = [
+  {id:"boss_golem",  name:"Golem Cieni",     hp:1000000,  stake:5000000,   reward:25000000,   icon:"🗿", color:"#7c3aed"},
+  {id:"boss_dragon", name:"Smok Otchlani",    hp:5000000,  stake:25000000,  reward:150000000,  icon:"🐉", color:"#ef4444"},
+  {id:"boss_reaper", name:"Zniwiarz",        hp:15000000, stake:100000000, reward:800000000,  icon:"💀", color:"#d32ce6"}
+];
+function fightBoss(bossId){
+  if(battleBusy || battleStage) return;
+  const b = BOSSES.find(x=>x.id===bossId);
+  if(!b) return;
+  if(state.coins < b.stake){ sfxErr(); toast("Za malo monet na walke z "+b.icon+" "+b.name+" (🪙 "+fmt(b.stake)+")","bad"); return; }
+  battleBusy = true;
+  state.coins -= b.stake;
+  state.stats.spent += b.stake;
+  state.stats.battles++;
+  missionTrack("battle",1); missionTrack("spend",b.stake);
+  const playerPower = Math.max(100, Math.floor(sumVal(state.inv.slice(0,5))) + state.coins*0.001);
+  const win = playerPower > b.hp * (0.8 + Math.random()*0.4);
+  state.battles.unshift({
+    win, draw:false, cn:"Boss: "+b.name, n:1, cost:b.stake, gain: win?b.reward:0, ts:Date.now(),
+    mt:"classified", mn:b.name+" · 👹", mval:playerPower, at:"special", an:"Boss", aval:b.hp
+  });
+  state.battles = state.battles.slice(0,8);
+  if(win){
+    state.stats.battleWins++;
+    state.stats.bossWins = (state.stats.bossWins||0)+1;
+    state.bossKills = state.bossKills || {};
+    state.bossKills[b.id] = true;
+    state.coins += b.reward;
+    state.stats.earned += b.reward;
+    missionTrack("win",1); missionTrack("battleearn",b.reward);
+    toast("👹 <b>Pokonales "+b.name+"!</b> Nagroda: 🪙 "+fmt(b.reward),"good");
+    confetti(["#ffd700","#ef4444","#a855f7","#38e08a"]);
+  } else {
+    sfxErr();
+    toast("👹 <b>"+b.name+" Cie pokonal!</b> Straciles 🪙 "+fmt(b.stake),"bad");
+  }
+  markDirty(); save(); renderBalance(); renderStats();
+  battleBusy = false;
+  checkAchievements();
+}
+
+/* 🎰 KROLOWA GORY — maszyna losujaca z rosnacym ryzykiem */
+let kohPrize = 100000;
+function playKoh(){
+  if(battleBusy || battleStage) return;
+  if(state.coins < kohPrize){ sfxErr(); toast("Za malo monet na Krolowa gory (🪙 "+fmt(kohPrize)+")","bad"); return; }
+  battleBusy = true;
+  state.coins -= kohPrize;
+  state.stats.spent += kohPrize;
+  const roll = Math.random();
+  let result, mult;
+  if(roll < 0.02){ result="JACKPOT"; mult=50; }
+  else if(roll < 0.10){ result="Wielki wygrany"; mult=10; }
+  else if(roll < 0.30){ result="Wygrana"; mult=3; }
+  else if(roll < 0.60){ result="Mala wygrana"; mult=1.5; }
+  else { result="Przegrana"; mult=0; }
+  const gain = Math.round(kohPrize * mult);
+  if(gain > 0){
+    state.coins += gain;
+    state.stats.earned += gain;
+    missionTrack("battleearn",gain);
+  }
+  if(result==="JACKPOT" || result==="Wielki wygrany"){
+    state.stats.kohWins = (state.stats.kohWins||0)+1;
+  }
+  const won = gain > 0;
+  state.battles.unshift({
+    win:won, draw:false, cn:"🎰 Krolowa gory", n:1, cost:kohPrize, gain, ts:Date.now(),
+    mt: won?"classified":"mil", mn:result+" ×"+mult, mval:gain, at:"mil", an:"", aval:0
+  });
+  state.battles = state.battles.slice(0,8);
+  kohPrize = Math.max(100000, Math.round(kohPrize * (won ? 0.5 : 2)));
+  if(result==="JACKPOT") kohPrize = 100000;
+  markDirty(); save(); renderBalance(); renderStats();
+  battleBusy = false;
+  if(won){ sfxCoin(); toast("🎰 <b>"+result+"!</b> Wygrywasz 🪙 "+fmt(gain)+" (×"+mult+")","good"); confetti(); }
+  else { sfxErr(); toast("🎰 <b>"+result+"</b> — przegrywasz 🪙 "+fmt(kohPrize),"bad"); }
+  checkAchievements();
+}
 document.addEventListener("visibilitychange", ()=>{ if(document.hidden && dirty) save(); });
 
 // ostrzeżenie, jeśli przeglądarka blokuje zapis (np. tryb prywatny)
@@ -5242,7 +5584,7 @@ $("#soundBtn").textContent = state.sound ? "🔊" : "🔇";
 $("#fastBtn").classList.toggle("on", state.fast);
 renderBalance(true);
 renderShop(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
-renderAlbumBadge(); renderDailyBadge();
+renderAlbumBadge(); renderDailyBadge(); checkAchievements();
 save();   // od razu utrwalamy wczytany stan (migracja starych zapisów)
 if(state.stats.opened>0) toast("Witaj ponownie! Otwarte skrzynki: <b>"+state.stats.opened+"</b> · ekwipunek: <b>"+state.inv.length+"</b>","good");
 setTimeout(grantRescue, 600);   // jeśli wracasz bez niczego — ratunek od razu
