@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#111820">
+  <title>MOSTOWNIA — buduj mosty, testuj fizykę</title>
+  <link rel="icon" type="image/svg+xml" href="icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="topbar">
+      <div class="brand" aria-label="Mostownia">
+        <div class="brand-mark">
+          <svg viewBox="0 0 48 48" aria-hidden="true">
+            <path d="M5 35h38M9 35V23m30 12V23M9 27c8-13 22-13 30 0M16 35l8-10 8 10M24 25v10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div>
+          <strong>MOSTOWNIA</strong>
+          <span>symulator inżyniera</span>
+        </div>
+      </div>
+
+      <nav class="level-tabs" id="levelTabs" aria-label="Poziomy"></nav>
+
+      <div class="top-actions">
+        <div class="save-indicator" id="saveIndicator"><span></span> Projekt zapisany</div>
+        <button class="icon-btn" id="btnHelp" title="Jak grać (H)" aria-label="Pomoc">?</button>
+        <button class="icon-btn" id="btnSound" title="Dźwięk" aria-label="Przełącz dźwięk">
+          <svg viewBox="0 0 24 24" class="sound-on" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm13.5-2.5a7 7 0 0 1 0 11M19 4a11 11 0 0 1 0 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <svg viewBox="0 0 24 24" class="sound-off" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4Zm12 1 5 5m0-5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <main class="workspace">
+      <aside class="tool-panel">
+        <div class="panel-heading">
+          <span class="eyebrow">WARSZTAT</span>
+          <h2>Materiały</h2>
+        </div>
+        <div class="materials" id="materials"></div>
+
+        <div class="panel-heading tools-heading">
+          <span class="eyebrow">NARZĘDZIA</span>
+        </div>
+        <div class="tool-grid">
+          <button class="tool-btn" id="btnUndo" title="Cofnij (Ctrl+Z)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 7 4 12l5 5M5 12h8a6 6 0 0 1 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Cofnij</span>
+          </button>
+          <button class="tool-btn" id="btnRedo" title="Ponów (Ctrl+Y)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 7 5 5-5 5m4-5h-8a6 6 0 0 0-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Ponów</span>
+          </button>
+          <button class="tool-btn" id="btnDelete" title="Usuń zaznaczony (Delete)">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m-8 0 1 13h8l1-13M10 11v5m4-5v5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <span>Usuń</span>
+          </button>
+          <button class="tool-btn" id="btnClear" title="Wyczyść cały projekt">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 7 4 13h7l3-8M8 7l2-3h6l2 3M3 7h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Nowy</span>
+          </button>
+        </div>
+
+        <div class="build-tip">
+          <span class="tip-icon">✦</span>
+          <p><strong>Łącz punkty.</strong> Przeciągnij od jednego punktu do drugiego. Kliknij dwukrotnie, aby połączyć bez przeciągania.</p>
+        </div>
+      </aside>
+
+      <section class="stage">
+        <div class="canvas-wrap" id="canvasWrap">
+          <canvas id="gameCanvas" aria-label="Plansza budowy mostu"></canvas>
+
+          <div class="canvas-top-left">
+            <span class="mode-chip build" id="modeChip"><i></i> TRYB BUDOWANIA</span>
+            <span class="weather-chip">☀ 18°C · wiatr 2 m/s</span>
+          </div>
+
+          <div class="test-hud" id="testHud" hidden>
+            <div class="telemetry">
+              <div><span>POJAZD</span><strong id="hudVehicle">—</strong></div>
+              <div><span>MASA</span><strong id="hudMass">—</strong></div>
+              <div><span>PRĘDKOŚĆ</span><strong id="hudSpeed">0 km/h</strong></div>
+              <div><span>OBCIĄŻENIE</span><strong id="hudLoad">0%</strong></div>
+            </div>
+            <div class="stress-gauge"><span id="stressBar"></span></div>
+          </div>
+
+          <div class="countdown" id="countdown" hidden>
+            <span>PRZYGOTOWANIE</span>
+            <strong>3</strong>
+          </div>
+
+          <div class="canvas-banner" id="canvasBanner">
+            <div class="banner-icon">⌁</div>
+            <div>
+              <strong>Zaprojektuj przeprawę</strong>
+              <p>Połącz punkty drogowe, a następnie zakotwicz jezdnię trójkątną kratownicą w skale.</p>
+            </div>
+            <button id="btnDismissBanner" aria-label="Zamknij">×</button>
+          </div>
+
+          <div class="cost-bubble" id="costBubble" hidden></div>
+          <div class="toast-stack" id="toastStack" aria-live="polite"></div>
+
+          <div class="canvas-legend">
+            <span><i class="dot deck"></i> punkt drogowy</span>
+            <span><i class="dot support"></i> punkt konstrukcyjny</span>
+            <span><i class="dot fixed"></i> podpora stała</span>
+          </div>
+        </div>
+
+        <div class="stage-footer">
+          <span><kbd>1</kbd>–<kbd>4</kbd> materiał</span>
+          <span><kbd>Delete</kbd> usuń</span>
+          <span><kbd>Ctrl</kbd>+<kbd>Z</kbd> cofnij</span>
+          <span><kbd>Spacja</kbd> pauza</span>
+          <span class="stage-status" id="stageStatus">Gotowy do projektowania</span>
+        </div>
+      </section>
+
+      <aside class="side-panel">
+        <section class="mission-card">
+          <div class="mission-head">
+            <span class="level-no" id="levelNo">POZIOM 1</span>
+            <span class="difficulty" id="levelDifficulty">ŁATWY</span>
+          </div>
+          <h1 id="levelName">Zielona Dolina</h1>
+          <p id="levelMission">Zbuduj most nad niewielkim wąwozem.</p>
+          <div class="mission-meta">
+            <span>Rozpiętość <strong id="levelSpan">—</strong></span>
+            <span>Dopuszczalne <strong id="levelVehicles">—</strong></span>
+          </div>
+        </section>
+
+        <section class="budget-card">
+          <div class="budget-top">
+            <div>
+              <span class="eyebrow">BUDŻET</span>
+              <strong id="budgetTotal">0 zł</strong>
+            </div>
+            <div class="budget-left">
+              <span>pozostało</span>
+              <strong id="budgetLeft">0 zł</strong>
+            </div>
+          </div>
+          <div class="budget-bar"><span id="budgetBar"></span></div>
+          <div class="budget-bottom">
+            <span>Koszt projektu <strong id="projectCost">0 zł</strong></span>
+            <span id="budgetPct">0%</span>
+          </div>
+        </section>
+
+        <section class="stats-card">
+          <div class="stat"><span>Elementy</span><strong id="statElements">0</strong></div>
+          <div class="stat"><span>Długość</span><strong id="statLength">0 m</strong></div>
+          <div class="stat"><span>Droga</span><strong id="statRoad">brak</strong></div>
+        </section>
+
+        <section class="selection-card" id="selectionCard" hidden>
+          <div class="selection-head">
+            <div>
+              <span class="eyebrow">ZAZNACZONY ELEMENT</span>
+              <strong id="selectedName">Drewno</strong>
+            </div>
+            <button id="btnDeselect" class="mini-close" aria-label="Odznacz">×</button>
+          </div>
+          <div class="selection-metrics">
+            <span>Długość <strong id="selectedLength">—</strong></span>
+            <span>Koszt <strong id="selectedCost">—</strong></span>
+            <span>Obciążenie <strong id="selectedStress">—</strong></span>
+          </div>
+          <div class="mini-materials" id="miniMaterials"></div>
+          <button class="btn btn-danger-ghost btn-small" id="btnRemoveSelected">Usuń element</button>
+        </section>
+
+        <section class="vehicle-card">
+          <div class="section-title">
+            <span class="eyebrow">POJAZD TESTOWY</span>
+            <span class="mass-note">masa rzeczywista</span>
+          </div>
+          <div class="vehicles" id="vehicles"></div>
+        </section>
+
+        <div class="test-actions build-actions" id="buildActions">
+          <button class="btn btn-primary btn-test" id="btnTest">
+            <span class="test-icon">▶</span>
+            <span><strong>TESTUJ MOST</strong><small id="testSubtext">Sprawdź konstrukcję</small></span>
+          </button>
+          <button class="btn btn-ghost btn-small" id="btnHint">PODPOWIEDŹ</button>
+        </div>
+
+        <div class="test-actions test-actions-run" id="testActions" hidden>
+          <div class="run-buttons">
+            <button class="btn btn-ghost" id="btnPause">PAUZA</button>
+            <button class="btn btn-ghost" id="btnResetTest">RESET TESTU</button>
+          </div>
+          <button class="btn btn-primary" id="btnBackBuild">WRÓĆ DO BUDOWANIA</button>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="statusbar">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Wybierz materiał i połącz punkty konstrukcyjne.</span>
+      <span class="status-spacer"></span>
+      <span class="solver-label">SOLVER SPRĘŻYSTY · 360 Hz</span>
+      <span>v1.0</span>
+    </footer>
+  </div>
+
+  <div class="modal-layer" id="helpModal" hidden>
+    <div class="modal help-modal" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <button class="modal-close" data-close="helpModal" aria-label="Zamknij">×</button>
+      <span class="eyebrow">INSTRUKCJA</span>
+      <h2 id="helpTitle">Zbuduj most, który naprawdę wytrzyma</h2>
+      <div class="help-grid">
+        <div>
+          <h3><span>1</span> Połącz punkty</h3>
+          <p>Wybierz materiał i przeciągnij między dwoma punktami. Droga musi tworzyć ciągły ciąg od lewego do prawego brzegu, a każdy jej punkt musi mieć zakotwiczoną podporę — belkę lub linę prowadzącą do stałego punktu w skale. Ukośne belki tworzą trójkąty, najsztywniejsze kształty w konstrukcjach.</p>
+        </div>
+        <div>
+          <h3><span>2</span> Pamiętaj o fizyce</h3>
+          <p>Każdy element ma masę, sprężystość i limit rozciągania/ściskania. Kable nie przenoszą ściskania. Czerwony kolor oznacza przeciążenie, a pęknięty element przestaje istnieć w symulacji.</p>
+        </div>
+        <div>
+          <h3><span>3</span> Testuj i poprawiaj</h3>
+          <p>Samochód obciąża drogę, a siła przechodzi na połączone belki i podpory. Po teście wróć do projektu bez utraty pracy. Oszczędny most bez uszkodzeń zdobywa trzy gwiazdki.</p>
+        </div>
+        <div>
+          <h3><span>4</span> Sterowanie</h3>
+          <p><kbd>1</kbd>–<kbd>4</kbd> wybór materiału · <kbd>Delete</kbd> usuń zaznaczony element · <kbd>Ctrl</kbd>+<kbd>Z</kbd> cofnij · <kbd>Spacja</kbd> pauza · <kbd>PPM</kbd> szybkie usunięcie.</p>
+        </div>
+      </div>
+      <h3 class="mat-title">Właściwości materiałów</h3>
+      <div class="material-table" id="materialTable"></div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" data-close="helpModal">ROZUMIEM, BUDUJĘ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-layer" id="resultModal" hidden>
+    <div class="modal result-modal" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+      <div class="result-hero">
+        <div class="result-badge" id="resultBadge">✓</div>
+        <span class="eyebrow" id="resultEyebrow">TEST ZAKOŃCZONY</span>
+        <h2 id="resultTitle">Przeprawa udana!</h2>
+        <p id="resultSubtitle">Pojazd bezpiecznie dotarł na drugi brzeg.</p>
+      </div>
+      <div class="stars" id="resultStars" aria-label="Ocena konstrukcji">
+        <span>★</span><span>★</span><span>★</span>
+      </div>
+      <div class="result-stats" id="resultStats"></div>
+      <p class="star-note" id="starNote"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btnResultBuild">POPRAW MOST</button>
+        <button class="btn btn-primary" id="btnResultNext">NASTĘPNY POZIOM</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/levels.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/render.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
