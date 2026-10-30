@@ -7,9 +7,9 @@
 <title>Centrum gier — wybierz grę</title>
 <style>
 /* ==========================================================================
-   Centrum gier — launcher dla 5 gier
+   Centrum gier — launcher dla 8 gier
    (skrzynki, kółko i krzyżyk, Epoka Konfliktów, Emotes vs Mobs,
-    Night Shift: The Forgotten)
+    Night Shift: The Forgotten, Kulkowa Arena, Szachy, Mostownia)
    Plik samodzielny: bez internetu, bez zależności. Wystarczy otworzyć w przeglądarce.
    ========================================================================== */
 *{box-sizing:border-box}
@@ -86,6 +86,9 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
 .card:nth-child(3){animation-delay:.18s}
 .card:nth-child(4){animation-delay:.25s}
 .card:nth-child(5){animation-delay:.32s}
+.card:nth-child(6){animation-delay:.39s}
+.card:nth-child(7){animation-delay:.46s}
+.card:nth-child(8){animation-delay:.53s}
 .card:hover,.card:focus-visible{
   transform:translateY(-5px);
   border-color:color-mix(in srgb, var(--ac) 55%, var(--line));
@@ -100,6 +103,16 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
 .prev{position:relative;height:118px;border-radius:14px;overflow:hidden;
   background:radial-gradient(360px 160px at 50% 0%, color-mix(in srgb, var(--ac) 15%, transparent), transparent 70%), #070c16;
   border:1px solid rgba(255,255,255,.06);display:grid;place-items:center}
+
+/* 8) Mostownia — ikona gry */
+.game-icon{display:block;width:94px;height:94px;border-radius:20px;
+  box-shadow:0 20px 38px -18px #000, 0 0 0 1px rgba(255,255,255,.09);
+  transition:transform .28s cubic-bezier(.2,.8,.3,1), box-shadow .28s}
+.card:hover .game-icon,.card:focus-visible .game-icon{
+  transform:translateY(-2px) scale(1.045);
+  box-shadow:0 24px 44px -18px #000,
+             0 0 0 1px color-mix(in srgb, var(--ac) 40%, transparent),
+             0 0 34px -8px color-mix(in srgb, var(--ac) 32%, transparent)}
 
 /* 1) skrzynki — mini ruletka */
 .roulette{display:flex;gap:8px;transform:rotate(-4deg)}
@@ -122,6 +135,16 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
 .board i.x{color:#4da3ff;text-shadow:0 0 14px rgba(77,163,255,.6)}
 .board i.o{color:#ff6b6b;text-shadow:0 0 14px rgba(255,107,107,.55)}
 .board i.win{background:rgba(77,163,255,.16);border-color:rgba(77,163,255,.5)}
+
+/* 7) szachy — mini szachownica */
+.chess-prev{position:relative;width:128px;height:96px;border-radius:8px;
+  background:conic-gradient(#e8d5b5 0 25%, #a9855f 0 50%, #e8d5b5 0 75%, #a9855f 0) 0 0/32px 32px;
+  box-shadow:0 14px 30px -18px #000, inset 0 0 0 1px rgba(0,0,0,.35)}
+.chess-prev span{position:absolute;font-size:21px;line-height:1;transform:translate(-50%,-50%);
+  color:#22252b;text-shadow:0 1px 0 rgba(255,255,255,.28)}
+.chess-prev span.w{color:#fdfbf7;text-shadow:0 0 2px #2e2114,0 2px 3px rgba(0,0,0,.4)}
+.chess-prev span.main{font-size:27px;color:#fdfbf7;text-shadow:0 0 3px #2e2114,0 3px 6px rgba(0,0,0,.45);
+  filter:drop-shadow(0 0 10px rgba(154,212,106,.45))}
 
 /* 3) Epoka Konfliktów — mini mapa */
 .mini-map{position:relative;width:190px;height:92px}
@@ -154,6 +177,42 @@ main{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:52px 22p
 .mini-td b.m2{animation-delay:-1.2s}
 .mini-td .glow{position:absolute;left:112px;top:42px;width:10px;height:10px;border-radius:50%;
   border:2px solid #ffd166;box-shadow:0 0 10px rgba(255,209,102,.9)}
+
+/* 6) Kulkowa Arena — mini arena z kolorowymi kulami i zderzeniem */
+.mini-arena{position:relative;width:198px;height:96px;border-radius:10px;overflow:hidden;
+  background:
+    radial-gradient(86px 76px at 20% 16%,rgba(69,230,255,.13),transparent 72%),
+    radial-gradient(90px 72px at 84% 88%,rgba(255,79,154,.12),transparent 72%),
+    #060c18;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
+.mini-arena::before{content:"";position:absolute;inset:7px 8px;border-radius:16px;z-index:1;
+  border:1px solid rgba(69,230,255,.3);
+  box-shadow:0 0 15px rgba(69,230,255,.13),inset 0 0 22px rgba(69,230,255,.045)}
+.mini-arena::after{content:"";position:absolute;inset:7px 8px;border-radius:16px;z-index:1;opacity:.55;
+  background:
+    linear-gradient(rgba(116,175,255,.07) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(116,175,255,.07) 1px,transparent 1px);
+  background-size:19px 19px;
+  -webkit-mask-image:radial-gradient(circle at 50% 50%,#000,transparent 92%);
+          mask-image:radial-gradient(circle at 50% 50%,#000,transparent 92%)}
+.mini-arena i.orb{position:absolute;z-index:2;border-radius:50%;
+  background:radial-gradient(circle at 31% 27%,#fff 0 5%,color-mix(in srgb,var(--c) 62%,#fff) 20%,
+    var(--c) 52%,color-mix(in srgb,var(--c) 48%,#000) 100%);
+  box-shadow:0 0 14px var(--c),inset -4px -5px 8px rgba(0,0,0,.3);
+  animation:bob 3.4s ease-in-out infinite}
+.mini-arena i.orb:nth-of-type(2){animation-delay:-.85s}
+.mini-arena i.orb:nth-of-type(3){animation-delay:-1.6s}
+.mini-arena i.orb:nth-of-type(4){animation-delay:-2.35s}
+.mini-arena .hp{position:absolute;z-index:3;width:30px;height:3px;border-radius:99px;transform:translateX(-50%);
+  background:linear-gradient(90deg,var(--c) 0 var(--fill,72%),rgba(255,255,255,.12) var(--fill,72%) 100%);
+  box-shadow:0 0 7px color-mix(in srgb,var(--c) 45%,transparent)}
+.mini-arena .impact{position:absolute;z-index:4;left:98px;top:46px;width:7px;height:7px;border-radius:50%;
+  background:#fff;box-shadow:0 0 0 4px rgba(255,214,105,.16),0 0 18px #ffd166,0 0 32px rgba(69,230,255,.5);
+  animation:miniImpact 2.4s ease-in-out infinite}
+.mini-arena .spark{position:absolute;z-index:4;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.8;
+  box-shadow:0 0 6px #8cf7ff;animation:miniSpark 2.4s ease-in-out infinite}
+@keyframes miniImpact{0%,100%{transform:scale(.72);opacity:.55}48%{transform:scale(1.05);opacity:1}}
+@keyframes miniSpark{0%,100%{opacity:.2;transform:scale(.6)}50%{opacity:.95;transform:scale(1.2)}}
 
 /* 5) Night Shift — mini monitoring (siatka kamer + para święcących oczu) */
 .mini-cam{position:relative;width:198px;height:96px;border-radius:10px;overflow:hidden;
@@ -244,7 +303,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border-radius:6px;text-a
   <header class="head">
     <div class="mark">★</div>
     <div>
-      <h1>Centrum gier<span class="count">5 gier</span></h1>
+      <h1>Centrum gier<span class="count">8 gier</span></h1>
       <p>Wszystko działa w przeglądarce, offline — bez internetu i bez instalacji. Kliknij kartę, żeby zagrać.</p>
     </div>
   </header>
@@ -366,11 +425,76 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border-radius:6px;text-a
       </div>
     </article>
 
+    <!-- 6. KULKOWA ARENA -->
+    <article class="card" data-game="kulki" data-href="kulki-arena.html" tabindex="0" style="--ac:#45e6ff">
+      <span class="key">6</span>
+      <span class="last">▶ ostatnio grane</span>
+      <div class="prev">
+        <div class="mini-arena">
+          <i class="orb" style="left:28px;top:31px;width:23px;height:23px;--c:#ff3b5c"></i>
+          <span class="hp" style="left:40px;top:24px;--fill:68%"></span>
+          <i class="orb" style="left:136px;top:18px;width:19px;height:19px;--c:#3bc9ff"></i>
+          <span class="hp" style="left:146px;top:12px;--fill:91%"></span>
+          <i class="orb" style="left:108px;top:60px;width:16px;height:16px;--c:#ffd93d"></i>
+          <span class="hp" style="left:116px;top:53px;--fill:44%"></span>
+          <i class="orb" style="left:58px;top:63px;width:13px;height:13px;--c:#9b6bff"></i>
+          <span class="hp" style="left:65px;top:57px;--fill:82%"></span>
+          <span class="impact"></span>
+          <span class="spark" style="left:82px;top:37px"></span>
+          <span class="spark" style="left:117px;top:50px;animation-delay:-.7s"></span>
+        </div>
+      </div>
+      <h2>Kulkowa Arena <small>fizyka · 3 tryby · rekordy</small></h2>
+      <p>Kolorowe kule walczą same — teraz z bronią i unikalnymi efektami: topór kruszy pancerz, miecz powoduje krwawienie, a łuk truje. Kule zbierają rdzenie mocy, wykorzystują boosty na trzech torach i ścigają się o rekordy. Wybierz ARSENAŁ, WYŚCIG albo PĘTA i patrz na chaos.</p>
+      <div class="tags"><span>⚔️ broń i efekty</span><span>✦ rdzenie mocy</span><span>🏁 wyścig</span><span>🗺️ 3 tory</span><span>⛓ pęta</span><span>⚛️ prawdziwa fizyka</span><span>🏆 rekordy kariery</span><span>⚙️ opcje efektów</span></div>
+      <div class="row">
+        <a class="play" href="kulki-arena.html">▶ Zagraj</a>
+        <a class="newtab" href="kulki-arena.html" target="_blank" rel="noopener" title="Otwórz w nowej karcie">↗ nowa karta</a>
+      </div>
+    </article>
+
+    <!-- 7. SZACHY -->
+    <article class="card" data-game="szachy" data-href="szachy/index.html" tabindex="0" style="--ac:#9ad46a">
+      <span class="key">7</span>
+      <span class="last">▶ ostatnio grane</span>
+      <div class="prev">
+        <div class="chess-prev">
+          <span class="main" style="left:81%;top:28%">♞</span>
+          <span class="w" style="left:19%;top:16%">♜</span>
+          <span style="left:31%;top:72%">♟</span>
+          <span class="w" style="left:69%;top:84%">♙</span>
+        </div>
+      </div>
+      <h2>Szachy <small>ty kontra silnik AI</small></h2>
+      <p>Pełne zasady: bicie w przelocie, roszada, promocja i szach mat. Sześć poziomów trudności — od spokojnego nowicjusza po mistrza, który nie wybacza błędów.</p>
+      <div class="tags"><span>♟ 6 poziomów AI</span><span>♜ pełne zasady</span><span>💡 podpowiedzi</span><span>↩️ cofanie ruchów</span></div>
+      <div class="row">
+        <a class="play" href="szachy/index.html">▶ Zagraj</a>
+        <a class="newtab" href="szachy/index.html" target="_blank" rel="noopener" title="Otwórz w nowej karcie">↗ nowa karta</a>
+      </div>
+    </article>
+
+    <!-- 8. MOSTOWNIA -->
+    <article class="card" data-game="mosty" data-href="mosty/index.html" tabindex="0" style="--ac:#ffb347">
+      <span class="key">8</span>
+      <span class="last">▶ ostatnio grane</span>
+      <div class="prev">
+        <img class="game-icon" src="mosty/icon.svg" alt="Mostownia — kratownicowy most nad kanionem" width="94" height="94">
+      </div>
+      <h2>Mostownia <small>symulator inżyniera · fizyka mostów</small></h2>
+      <p>Projektuj mosty z drewna, stali i lin, pilnuj budżetu i przeprowadź pojazd przez kanion. Prawdziwa sprężystość, pękające belki i pięć poziomów.</p>
+      <div class="tags"><span>🌉 5 poziomów</span><span>⚙️ fizyka 360 Hz</span><span>🚗 4 pojazdy</span><span>⭐ ocena 1–3</span><span>💾 zapis projektu</span></div>
+      <div class="row">
+        <a class="play" href="mosty/index.html">▶ Zagraj</a>
+        <a class="newtab" href="mosty/index.html" target="_blank" rel="noopener" title="Otwórz w nowej karcie">↗ nowa karta</a>
+      </div>
+    </article>
+
   </section>
 
   <footer>
-    <span>Wskazówka: naciśnij <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd>, żeby uruchomić grę. W grze wróć do tego menu przyciskiem „wstecz” w przeglądarce.</span>
-    <span>Pliki: <code>skrzynki.html</code> · <code>kolo-i-krzyzyk.html</code> · <code>epoka-konfliktow.html</code> · <code>emotes-vs-mobs.html</code> · <code>night-shift-the-forgotten.html</code></span>
+    <span>Wskazówka: naciśnij <kbd>1</kbd> <kbd>2</kbd> <kbd>3</kbd> <kbd>4</kbd> <kbd>5</kbd> <kbd>6</kbd> <kbd>7</kbd> <kbd>8</kbd>, żeby uruchomić grę. W grze wróć do tego menu przyciskiem „wstecz” w przeglądarce.</span>
+    <span>Pliki: <code>skrzynki.html</code> · <code>kolo-i-krzyzyk.html</code> · <code>epoka-konfliktow.html</code> · <code>emotes-vs-mobs.html</code> · <code>night-shift-the-forgotten.html</code> · <code>kulki-arena.html</code> · <code>szachy/</code> · <code>mosty/</code></span>
   </footer>
 </main>
 
@@ -391,7 +515,7 @@ kbd{display:inline-block;min-width:20px;padding:1px 6px;border-radius:6px;text-a
     });
   });
 
-  /* klawisze 1 / 2 / 3 */
+  /* klawisze 1–8 */
   document.addEventListener("keydown", function(e){
     if(e.ctrlKey || e.altKey || e.metaKey) return;
     var n = parseInt(e.key, 10);

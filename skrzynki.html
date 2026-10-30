@@ -161,6 +161,23 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
 #cloverPill .cp-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.07)}
 #cloverPill .cp-bar i{display:block;height:100%;width:100%;background:linear-gradient(90deg,#45d06a,#a8f0c0);transition:width .25s linear}
 @media (max-width:760px){ #cloverPill{left:10px;bottom:10px;padding:7px 12px 9px 10px;gap:8px} #cloverPill .cp-time{font-size:14px} }
+/* -------- 💤 plakietka nagrody za czas gry -------- */
+#idlePill{
+  position:fixed;right:16px;bottom:16px;z-index:118;pointer-events:none;
+  display:none;align-items:center;gap:10px;overflow:hidden;
+  padding:8px 15px 10px 12px;border-radius:14px;
+  background:linear-gradient(135deg,#101a33,#080d1a 70%);
+  border:1px solid #2f4f8a;
+  box-shadow:0 22px 54px -22px #000,0 0 38px -14px #38bdf8;
+}
+#idlePill.show{display:flex;animation:cloverIn .42s cubic-bezier(.2,1.3,.35,1)}
+#idlePill .ip-ico{font-size:22px;line-height:1;filter:drop-shadow(0 0 13px rgba(56,189,248,.8));animation:cloverSpin 3.2s ease-in-out infinite}
+#idlePill .ip-col{display:flex;flex-direction:column;gap:1px;line-height:1.12}
+#idlePill .ip-t{font-size:10px;font-weight:900;letter-spacing:.7px;text-transform:uppercase;color:#8ec5e8}
+#idlePill .ip-time{font-size:14px;font-weight:900;color:#c9ecff;font-variant-numeric:tabular-nums}
+#idlePill .ip-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.07)}
+#idlePill .ip-bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#38bdf8,#a855f7);transition:width .25s linear}
+@media (max-width:760px){ #idlePill{right:10px;bottom:10px;padding:7px 12px 9px 10px;gap:8px} #idlePill .ip-time{font-size:12.5px} #cloverPill{bottom:64px} }
 .tabs{display:flex;gap:5px;background:#0a1020;padding:5px;border-radius:13px;border:1px solid var(--line)}
 .tab{
   position:relative;padding:8px 13px;border-radius:9px;font-weight:800;font-size:12.5px;color:var(--dim);
@@ -1296,6 +1313,76 @@ select:hover{border-color:var(--line2)}
   .arena{grid-template-columns:1fr;justify-items:center}
   .arena-mid{padding-top:0}
 }
+
+/* ======================= 🤖 BAZAR BOTÓW ======================= */
+.bot-note{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;margin-bottom:18px;border-radius:13px;
+  background:linear-gradient(180deg,#101a2e,#0a1120);border:1px solid var(--line);
+  font-size:12.5px;color:var(--dim);line-height:1.6}
+.bot-note b{color:var(--txt)}
+.bot-note .bnote-ico{font-size:24px;line-height:1}
+.bot-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(342px,1fr));gap:16px}
+.bot-card{display:flex;flex-direction:column;gap:10px;padding:15px;border-radius:16px;
+  background:linear-gradient(165deg,#121b2f,#0a1120);border:1px solid var(--line);
+  box-shadow:0 18px 40px -26px #000;animation:cardIn .45s backwards cubic-bezier(.2,.8,.3,1)}
+.bot-head{display:flex;align-items:center;gap:11px}
+.bot-ava{width:42px;height:42px;flex:none;display:grid;place-items:center;font-size:21px;border-radius:12px;
+  background:linear-gradient(160deg,#1b2a4a,#0d1526);border:1px solid var(--line2);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+.bot-name{font-weight:900;font-size:14.5px;letter-spacing:.2px}
+.bot-tag{font-size:10.5px;color:var(--dim2);font-weight:700;text-transform:uppercase;letter-spacing:.8px}
+.bot-live{margin-left:auto;font-size:9.5px;font-weight:900;letter-spacing:.6px;color:#4ade80;
+  padding:3px 8px;border-radius:99px;background:rgba(74,222,128,.1);border:1px solid rgba(74,222,128,.35);white-space:nowrap}
+.bot-live.off{color:var(--dim2);background:rgba(255,255,255,.04);border-color:var(--line)}
+.bot-line{font-size:11.5px;color:var(--dim);font-style:italic;line-height:1.45;min-height:32px}
+.bot-offers{display:flex;flex-direction:column;gap:8px;margin-top:2px}
+.bot-offer{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:11px;
+  background:linear-gradient(180deg,#0e1626,#0a1019);border:1px solid #1d2740;transition:.18s}
+.bot-offer:hover{border-color:var(--line2);background:linear-gradient(180deg,#131d31,#0c1320)}
+.bot-offer.sold{opacity:.42;filter:grayscale(.7)}
+.bo-art{width:58px;height:42px;flex:none;display:grid;place-items:center;border-radius:9px;overflow:hidden;
+  background:radial-gradient(circle at 50% 120%,color-mix(in srgb,var(--c,#4b69ff) 45%,transparent),#070c15 72%);
+  border:1px solid color-mix(in srgb,var(--c,#4b69ff) 30%,transparent)}
+.bo-art svg{width:100%;height:100%;display:block;padding:3px;filter:drop-shadow(0 3px 5px rgba(0,0,0,.6))}
+.bo-art.bo-case{font-size:24px;background:radial-gradient(circle at 50% 120%,color-mix(in srgb,var(--cc,#666) 55%,transparent),#070c15 72%)}
+.bo-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.bo-w{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px;font-weight:700;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bo-n{font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bo-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:10.5px}
+.bo-price{font-weight:900;color:var(--acc);font-variant-numeric:tabular-nums}
+.bo-base{color:var(--dim2);text-decoration:line-through}
+.bo-deal{font-weight:900;color:var(--ok);padding:1px 6px;border-radius:99px;
+  background:rgba(56,224,138,.12);border:1px solid rgba(56,224,138,.35)}
+.bo-deal.bad{color:#ff9a9a;background:rgba(235,75,75,.12);border-color:rgba(235,75,75,.35)}
+.bo-buy{flex:none;padding:9px 12px;border-radius:10px;font-size:11.5px;font-weight:900;
+  background:linear-gradient(180deg,#ffd063,#e0890f);color:#2b1a02;border:1px solid #ffe093;transition:.15s}
+.bo-buy:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.bo-buy:disabled{opacity:.4;cursor:not-allowed}
+.bo-stock{font-size:9.5px;color:var(--dim2);font-weight:800;letter-spacing:.4px}
+.bo-stock.low{color:#ffb84d}
+.stock-tag{display:flex;align-items:center;gap:6px;margin:-2px 0 10px;padding:5px 9px;border-radius:8px;
+  font-size:11px;font-weight:800;color:#a8f0c0;background:rgba(56,224,138,.09);border:1px solid rgba(56,224,138,.3)}
+.stock-tag b{color:#d6ffe6}
+@media (max-width:760px){ .bot-grid{grid-template-columns:1fr} }
+
+/* ---- skórki dwóch skrzynek dostępnych tylko u botów ---- */
+[data-skin="smuggler"]{--pat:repeating-linear-gradient(90deg,rgba(0,0,0,.38) 0 10px,rgba(16,185,129,.14) 10px 20px);--patop:.8}
+[data-skin="smuggler"] .body{background:linear-gradient(158deg,#0f766e,#064e3b 46%,#041d16)}
+[data-skin="smuggler"] .lid{background:linear-gradient(180deg,#34d399,#0f766e 60%,#053b2c)}
+[data-skin="smuggler"] .deko.front i:nth-child(1){left:6px;top:20px;width:122px;height:9px;border-radius:2px;
+  background:repeating-linear-gradient(45deg,#fbbf24 0 6px,#141414 6px 12px);opacity:.85}
+[data-skin="smuggler"] .deko.front i:nth-child(2){right:-5px;top:62px;width:34px;height:34px;border-radius:50%;
+  border:2px solid rgba(52,211,153,.65);box-shadow:0 0 16px rgba(52,211,153,.6);animation:glowPulse 3.2s ease-in-out infinite}
+[data-skin="gambler"]{--pat:repeating-linear-gradient(45deg,rgba(0,0,0,.36) 0 8px,rgba(225,29,72,.16) 8px 16px);--patop:.75}
+[data-skin="gambler"] .body{background:linear-gradient(158deg,#be123c,#7f1d1d 46%,#1c0509)}
+[data-skin="gambler"] .lid{background:linear-gradient(180deg,#fb7185,#be123c 55%,#7f1d1d)}
+[data-skin="gambler"] .deko.front i:nth-child(1){left:12px;top:16px;width:19px;height:19px;border-radius:5px;
+  background:#fff;box-shadow:inset 0 0 0 2px #e11d48;transform:rotate(12deg)}
+[data-skin="gambler"] .deko.front i:nth-child(2){left:96px;top:28px;width:19px;height:19px;border-radius:5px;
+  background:#fff;box-shadow:inset 0 0 0 2px #141414;transform:rotate(-10deg)}
+[data-skin="gambler"] .deko.front i:nth-child(3){left:50%;top:-12px;width:50px;height:50px;margin-left:-25px;border-radius:50%;
+  background:radial-gradient(circle,rgba(251,113,133,.55),transparent 70%);filter:blur(5px);
+  animation:glowPulse 2.6s ease-in-out infinite}
 </style>
 </head>
 <body>
@@ -1312,6 +1399,7 @@ select:hover{border-color:var(--line2)}
   </div>
   <div class="tabs">
     <button class="tab active" data-view="shop">Skrzynki</button>
+    <button class="tab" data-view="bots">🤖 Bazar botów<span class="cnt" id="botCount">0</span></button>
     <button class="tab" data-view="inv">Ekwipunek<span class="cnt" id="invCount">0</span></button>
     <button class="tab" data-view="stats">Statystyki</button>
     <button class="tab" data-view="up">🚀 Ulepszenia<span class="cnt" id="upCount">0</span></button>
@@ -1333,6 +1421,25 @@ select:hover{border-color:var(--line2)}
   <section class="view active" id="view-shop">
     <h2 class="sec-title">Skrzynki <span class="line"></span><span class="muted" id="shopHint"></span></h2>
     <div class="case-grid" id="caseGrid"></div>
+  </section>
+
+  <section class="view" id="view-bots">
+    <h2 class="sec-title">🤖 Bazar botów <span class="line"></span>
+      <span class="muted" id="botHint"></span>
+      <button class="tb-btn" id="botRefresh" title="Poproś boty o nowy towar">🔄 Nowe oferty</button>
+    </h2>
+    <div class="bot-note">
+      <span class="bnote-ico">🛒</span>
+      <div>
+        <b>Boty sprzedają ograniczoną liczbę broni i skrzynek.</b> Każda oferta ma swój zapas —
+        gdy go wykupisz, znika do następnej rotacji. Ceny są <b>niższe albo wyższe</b> od normalnych,
+        więc opłaca się porównywać: zielona plakietka to okazja, czerwona to przepłacanie.
+        Tylko tutaj kupisz <b>2 skrzynki niedostępne w zwykłym sklepie</b>: 🕶️ Przemytnika i 🎲 Hazardzisty.
+        Kupione skrzynki lądują w <b>zapasie</b> w zakładce Skrzynki — po pierwszym zakupie zostają
+        <b>odblokowane na stałe</b>, więc możesz je później otwierać także za monety.
+      </div>
+    </div>
+    <div class="bot-grid" id="botGrid"></div>
   </section>
 
   <section class="view" id="view-inv">
@@ -1518,6 +1625,15 @@ select:hover{border-color:var(--line2)}
     <span class="cp-time" id="cloverTime">80s</span>
   </span>
   <span class="cp-bar"><i id="cloverBar"></i></span>
+</div>
+
+<div id="idlePill">
+  <span class="ip-ico">💤</span>
+  <span class="ip-col">
+    <span class="ip-t">Nagroda za czas gry</span>
+    <span class="ip-time" id="idleTime">0:00 do noża</span>
+  </span>
+  <span class="ip-bar"><i id="idleBar"></i></span>
 </div>
 
 <!-- 🤖 panel auto-otwierania (pokazywany tylko, gdy auto działa) -->
@@ -2344,6 +2460,47 @@ CASES.forEach(c=>{
 });
 
 /* =======================================================================
+   1a5. DWIE SKRZYNKI TYLKO DLA BAZARU BOTÓW 🕶️🎲
+   Oznaczone botOnly:true — renderShop ich nie pokazuje, można je zdobyć
+   wyłącznie kupując od bota. Zwrot liczy się z ceny tak samo jak reszta.
+   ======================================================================= */
+const BOT_CASES = [
+  { id:"smuggler", name:"Skrzynka Przemytnika", price:7500, color:"#10b981", icon:"🕶️", botOnly:true,
+    sub:"Oficjalnie nie istnieje. A jednak ktoś ją sprzedaje.",
+    odds:{mil:.700, restricted:.226, classified:.052, covert:.018, special:.004},
+    items:{
+      mil:       [["MP9","Szmugiel","smg"],["P250","Fałszywy Nominał","pistol"],["Galil AR","Kontrabanda","rifle"],
+                  ["Nova","Skrytka","shotgun"],["Tec-9","Podsłuch","pistol"],["MAC-10","Kurier Nocny","smg"],
+                  ["Dual Berettas","Podwójna Gra","pistol"],["Sawed-Off","Luka w Prawie","shotgun"]],
+      restricted:[["AK-47","Czarny Rynek","rifle"],["AWP","Przemyt","awp"],["M4A1-S","Fikcyjna Faktura","rifle"],
+                  ["USP-S","Cichy Wspólnik","pistol"],["SG 553","Granica","rifle"],["MP7","Kanał","smg"]],
+      classified:[["AK-47","Przemytnik","rifle"],["Desert Eagle","Łapówka","pistol"],["AWP","Nocna Dostawa","awp"],
+                  ["P90","Kontener","smg"],["R8 Revolver","Kod Cła","revolver"]],
+      covert:    [["AWP","Czarna Dostawa","awp"],["AK-47","Król Przemytu","rifle"],["M4A4","Nielegalny Ładunek","rifle"],
+                  ["Desert Eagle","Cena Milczenia","pistol"]],
+      special:   [["Karambit","Przemytnik","knife"],["Nóż Motylkowy","Kontrabanda","knife"],["Nóż Talon","Czarny Rynek","knife"],
+                  ["Nóż Gut","Szmugler","knife"]] } },
+
+  { id:"gambler", name:"Skrzynka Hazardzisty", price:900000, color:"#e11d48", icon:"🎲", botOnly:true,
+    sub:"Jedno rozdanie decyduje o wszystkim. Stawka? Twoja kolekcja.",
+    odds:{mil:.120, restricted:.540, classified:.250, covert:.070, special:.020},
+    items:{
+      mil:       [["MP9","Kostka","smg"],["P250","Żeton","pistol"],["Galil AR","Ruletka","rifle"],
+                  ["Nova","Zakład","shotgun"],["Tec-9","Szuler","pistol"],["MAC-10","Talia Kart","smg"]],
+      restricted:[["AK-47","Podwójne Zero","rifle"],["AWP","All-In","awp"],["M4A1-S","Krupier","rifle"],
+                  ["Desert Eagle","Jednoreki Bandyta","pistol"],["USP-S","Ostatni Żeton","pistol"],
+                  ["AUG","Wielka Wygrana","rifle"],["Negev","Jackpot","lmg"]],
+      classified:[["AK-47","Rosyjska Ruletka","rifle"],["AWP","Złoty Żeton","awp"],["M4A4","Kasyno","rifle"],
+                  ["P90","Fortuna","smg"],["R8 Revolver","Bank","revolver"],["MAG-7","Slepa Ulica","shotgun"]],
+      covert:    [["AK-47","Król Kasyna","rifle"],["AWP","Wielki Szuler","awp"],["M4A1-S","Ostatni Zakład","rifle"],
+                  ["Desert Eagle","Fortuna Kołem","pistol"]],
+      special:   [["Karambit","Hazard","knife"],["Nóż Motylkowy","Ruletka","knife"],["Nóż Skeleton","Jackpot","knife"],
+                  ["Bayonet","Fortuna","knife"],["Nóż Flip","Zakład","knife"]] } }
+];
+CASES.push(...BOT_CASES);
+CASES.sort((a,b)=>a.price - b.price);
+
+/* =======================================================================
    1b. ULEPSZENIA (trwałe perki kupowane za monety)
    ======================================================================= */
 const LUCK_STEP   = 0.07;   // siła szczęścia za poziom
@@ -2354,6 +2511,13 @@ const SPEED_STEP  = 2000;   // -2 s odnowienia bonusu za poziom
 const COUPON_STEP = 0.04;   // +4% szans na darmowe otwarcie za poziom
 const VALUE_STEP  = 0.10;   // +10% wartości zdobytych przedmiotów
 const BULK_STEP   = 0.03;   // -3% ceny przy otwieraniu ×10
+const CLOVER_STEP = 15000;  // +15 s działania koniczyny za poziom
+const BATTLE_STEP = 0.05;   // +5% wartości dropów gracza w bitwie
+const IDLE_STEP   = 0.20;   // +20% monet za czas gry
+const KOH_STEP    = 0.010;  // +1% szczęścia w Królowej góry
+const TRADE_STEP  = 0.020;  // -2% cen u botów
+const FXHUNT_STEP = 0.10;   // +10% szansy na efekt
+const PATCH_STEP  = 0.05;   // -5% ceny kosmetyków
 const BASECASE    = 100;    // najtańsza skrzynka (do ratunku)
 
 /* Noże prawie nie korzystają ze szczęścia — inaczej przy pełnym szczęściu
@@ -2399,7 +2563,35 @@ const UPGRADES = [
   { id:"auto", icon:"🤖", name:"Auto-otwieranie", max:1,
     desc:"Odblokowuje przycisk 🤖 Auto przy każdej skrzynce — gra otwiera ją za Ciebie jedno po drugim, dopóki wystarcza monet (albo wciśniesz ⏹ Stop). Otwarcia liczą się jak zwykłe: kupony, 🍀 koniczyna, misje dzienne, album i ekwipunek działają normalnie. W panelu auto-otwierania znajdziesz ⚡ tryb turbo (4 otwarcia na sekundę) i ⏹ limit otwarć (∞ / 25 / 100 / 500).",
     costs:[12500],
-    fmt:l => l ? "auto-otwieranie skrzynek: odblokowane" : "auto-otwieranie: zablokowane" }
+    fmt:l => l ? "auto-otwieranie skrzynek: odblokowane" : "auto-otwieranie: zablokowane" },
+  { id:"clover", icon:"🍀", name:"Długi kwiat", max:8,
+    desc:"Wydłuża działanie czterolistnej koniczyny. Każde trafienie daje dłuższe okno na noże i lepsze bronie.",
+    costs:[40000,120000,350000,900000,2200000,5500000,14000000,35000000],
+    fmt:l => "koniczyna działa "+Math.round((CLOVER_DUR+CLOVER_STEP*l)/1000)+" s" },
+  { id:"battle", icon:"⚔️", name:"Wojownik", max:10,
+    desc:"Podnosi wartość dropów, które wypadają dla Ciebie w bitwach. AI tego nie dostaje — z każdym poziomem bijesz mocniej.",
+    costs:[30000,90000,250000,700000,1800000,4800000,12000000,30000000,75000000,180000000],
+    fmt:l => l ? "+"+Math.round(BATTLE_STEP*l*100)+"% wartości Twoich dropów w bitwie" : "bez bonusu w bitwach" },
+  { id:"idle", icon:"💤", name:"Cierpliwość", max:10,
+    desc:"Zwiększa monety, które dostajesz za czas spędzony w grze (nagroda co 30 sekund).",
+    costs:[15000,45000,120000,300000,800000,2000000,5000000,12000000,30000000,75000000],
+    fmt:l => "+"+Math.round(IDLE_STEP*l*100)+"% monet za czas gry" },
+  { id:"jackpot", icon:"🎰", name:"Szczęśliwa ręka", max:8,
+    desc:"Przesuwa wynik w Królowej góry na Twoją korzyść — łatwiej o wygraną, wielką wygraną i jackpot.",
+    costs:[120000,350000,900000,2200000,5500000,14000000,35000000,90000000],
+    fmt:l => "+"+Math.round(KOH_STEP*l*100)+"% szczęścia w Królowej góry" },
+  { id:"trade", icon:"🏷️", name:"Targowanie", max:8,
+    desc:"Zbija ceny wszystkich ofert na bazarze botów — zarówno broni, jak i skrzynek.",
+    costs:[50000,150000,400000,1000000,2500000,6500000,16000000,40000000],
+    fmt:l => l ? "-"+Math.round(TRADE_STEP*l*100)+"% cen u botów" : "normalne ceny u botów" },
+  { id:"fxhunt", icon:"✨", name:"Łowca błysków", max:8,
+    desc:"Zwiększa szansę, że zdobycz dostanie rzadki efekt ✨, który mnoży jej wartość.",
+    costs:[250000,700000,2000000,5500000,15000000,40000000,100000000,250000000],
+    fmt:l => l ? "+"+Math.round(FXHUNT_STEP*l*100)+"% szansy na efekt" : "podstawowa szansa na efekt" },
+  { id:"patch", icon:"🎨", name:"Zniżka na patche", max:5,
+    desc:"Obniża cenę kosmetyków kupowanych w dziale Statystyki.",
+    costs:[500000,2000000,7000000,25000000,80000000],
+    fmt:l => l ? "-"+Math.round(PATCH_STEP*l*100)+"% ceny kosmetyków" : "normalne ceny kosmetyków" }
 ];
 const UP_BY_ID = Object.fromEntries(UPGRADES.map(u=>[u.id,u]));
 const upCost = (id, lvl) => UP_BY_ID[id].costs[lvl];
@@ -2777,7 +2969,7 @@ function itemValue(caseDef, tier, key){
 }
 /* ✨ losowanie efektu — droższe tiery mają go trochę częściej */
 function rollFx(tier){
-  const boost = FX_TIER_BOOST[tier] || 1;
+  const boost = (FX_TIER_BOOST[tier] || 1) * (1 + FXHUNT_STEP*upLvl("fxhunt"));   // ✨ Łowca błysków
   const r = Math.random();
   let acc = 0;
   for(const f of FX){ acc += f.chance*boost; if(r < acc) return f.id; }
@@ -2816,7 +3008,7 @@ function pickTier(caseDef){
   for (const t of TIERS){ acc += o[t]||0; if(r<acc) return t; }
   return "mil";
 }
-const itemSell = i => Math.round(i.value * sellRate());
+const itemSell = i => i.fixedSell ? numFrom(i.fixedSell) : Math.round(i.value * sellRate());
 const casePrice = id => (CASES.find(c=>c.id===id)||{}).price || 0;
 
 /* =======================================================================
@@ -2830,7 +3022,8 @@ let state = {
   coins: START_COINS, inv: [], recent: [], battles: [],
   stats:{opened:0, spent:0, earned:0, sold:0, knives:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{}},
   up: UP_ZERO(),
-  album:{}, albumClaimed:{}, missions:null, weekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false,
+  album:{}, albumClaimed:{}, missions:null, weekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false, idleSec:0,
+  caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{},
   sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, battleCase:"start", battleSize:1,
   autoTurbo:false, autoLimit:0
 };
@@ -2944,7 +3137,9 @@ function snapshot(){
     sound:state.sound, fast:state.fast, bonusAt:state.bonusAt, rescueAt:state.rescueAt,
     autoTurbo:state.autoTurbo === true, autoLimit:autoLimitSan(state.autoLimit),
     cloverUntil:state.cloverUntil||0,
-    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly, achievements:state.achievements, cosmetics:state.cosmetics, bossKills:state.bossKills };
+    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly, achievements:state.achievements, cosmetics:state.cosmetics, bossKills:state.bossKills,
+    idleKnifeClaimed:state.idleKnifeClaimed===true, idleSec:numFrom(state.idleSec),
+    caseStock:state.caseStock, botSalt:state.botSalt, botBought:state.botBought, botRefreshAt:state.botRefreshAt, botUnlocked:state.botUnlocked };
 }
 
 /* Zapis z weryfikacją + wykrywaniem gry w dwóch oknach.
@@ -3040,8 +3235,27 @@ function load(){
   if(typeof state.stats.battleWins !== "number") state.stats.battleWins = 0;
   if(typeof state.stats.albums !== "number") state.stats.albums = 0;
   state.battles = Array.isArray(d.battles) ? d.battles.filter(b=>b && b.cn).slice(0,8) : [];
-  state.battleCase = CASES.some(c=>c.id===d.battleCase) ? d.battleCase : "start";
+  state.battleCase = CASES.some(c=>c.id===d.battleCase && !c.botOnly) ? d.battleCase : "start";
   state.battleSize = [1,2,3,5].includes(d.battleSize) ? d.battleSize : 1;
+  /* 🤖 bazar botów — zapas skrzynek i wykupione oferty */
+  state.caseStock = (d.caseStock && typeof d.caseStock === "object" && !Array.isArray(d.caseStock)) ? d.caseStock : {};
+  Object.keys(state.caseStock).forEach(k=>{
+    state.caseStock[k] = numFrom(state.caseStock[k]);
+    if(!state.caseStock[k]) delete state.caseStock[k];
+  });
+  state.botSalt = numFrom(d.botSalt);
+  state.botBought = (d.botBought && typeof d.botBought === "object" && !Array.isArray(d.botBought)) ? d.botBought : {};
+  state.botRefreshAt = numFrom(d.botRefreshAt);
+  /* skrzynki botów: raz kupiona = odblokowana na stałe (można otwierać za monety) */
+  state.botUnlocked = (d.botUnlocked && typeof d.botUnlocked === "object" && !Array.isArray(d.botUnlocked)) ? d.botUnlocked : {};
+  BOT_CASES.forEach(c=>{
+    if(caseStock(c.id) > 0 || numFrom((state.stats.cases||{})[c.id]) > 0) state.botUnlocked[c.id] = true;
+  });
+  state.idleKnifeClaimed = d.idleKnifeClaimed === true;
+  state.idleSec = numFrom(d.idleSec);
+  ["botBuys","botSpent","botCases","stockOpened","bestDeal"].forEach(k=>{
+    if(typeof state.stats[k] !== "number") state.stats[k] = 0;
+  });
   saveRev = d.rev|0; knownRev = saveRev;
   lastSavedCoins = state.coins;
 }
@@ -3187,6 +3401,7 @@ function switchView(v){
   if(v==="album") renderAlbum();
   if(v==="daily") renderDaily();
   if(v==="battle") renderBattle();
+  if(v==="bots") renderBots();
 }
 
 /* =======================================================================
@@ -3218,7 +3433,10 @@ function caseTier(c){
 const DEKO = n => `<i></i>`.repeat(n);
 
 function renderShop(){
-  const cheapest = Math.min(...CASES.map(c=>c.price));
+  /* skrzynki tylko z bazaru botów pokazujemy dopiero, gdy masz je w zapasie —
+     inaczej nie byłoby jak ich otworzyć (nie ma ich w zwykłej sprzedaży) */
+  const shopCases = CASES.filter(c=>!c.botOnly || caseStock(c.id)>0 || (state.botUnlocked && state.botUnlocked[c.id]));
+  const cheapest = Math.min(...shopCases.map(c=>c.price));
   const lk = upLvl("luck");
   const active = [];
   if(lk) active.push("🎯 Szczęście "+lk+"/"+UP_BY_ID.luck.max);
@@ -3226,19 +3444,24 @@ function renderShop(){
   if(kn) active.push("🔪 Łowca Noży "+kn+"/"+UP_BY_ID.knives.max);
   if(cloverActive()) active.push("🍀 Koniczyna "+Math.ceil(cloverLeft()/1000)+" s — "+cloverDesc());
   if(autoOpen) active.push("🤖 Auto: "+esc(autoOpen.name)+" — "+autoOpen.n+" "+plural(autoOpen.n,"otwarcie","otwarcia","otwarć"));
+  const stockN = CASES.reduce((a,c)=>a+caseStock(c.id),0);
   $("#shopHint").innerHTML = [
     state.coins < cheapest ? "Brakuje monet — użyj przycisku 🎁 Bonus" : "★ Noże są rzadsze, ale warte więcej",
+    stockN ? "📦 W zapasie: <b>"+fmt(stockN)+"</b> "+plural(stockN,"skrzynka","skrzynki","skrzynek")+" z bazaru botów" : "🤖 2 skrzynki tylko u botów — zakładka Bazar botów",
+    BOT_CASES.filter(c=>state.botUnlocked && state.botUnlocked[c.id]).length ? "🕶️ Odblokowane u botów: <b>"+BOT_CASES.filter(c=>state.botUnlocked && state.botUnlocked[c.id]).length+"/2</b> — otwierasz je też za monety" : "",
     "✨ Efekty na broniach mnożą wartość: "+FX.map(f=>f.icon+"×"+fxM(f)).join(" · "),
     eventFxList().length ? "🎉 EVENT: "+eventFxList().map(f=>f.icon+" "+f.name+" ×"+fxM(f)).join(" · ") : "",
     active.join(" · ") + (active.length ? " — szanse już z ulepszeniami" : "")
   ].filter(Boolean).join(" &nbsp;·&nbsp; ");
-  $("#caseGrid").innerHTML = CASES.map((c,i)=>{
+  $("#caseGrid").innerHTML = shopCases.map((c,i)=>{
     const ten = Math.round(c.price * (1 - bulkRate())) * 10;
     const can = state.coins>=c.price, can10 = state.coins>=ten;
     const tier = caseTier(c);
+    const st = caseStock(c.id);
+    const unlockedBot = !!(c.botOnly && state.botUnlocked && state.botUnlocked[c.id]);
     const aOn = !!autoOpen && autoOpen.id===c.id, aUnl = autoUnlocked();
     return `<div class="case-card tier-${tier}" data-skin="${c.id}" style="--cc:${c.color};animation-delay:${i*70}ms" data-case="${c.id}">
-      <span class="case-tag">${TIER_NAME[tier]}</span>
+      <span class="case-tag">${c.botOnly ? (unlockedBot ? "Odblokowana · bot" : "Tylko u botów") : TIER_NAME[tier]}</span>
       <div class="crate">
         <div class="deko back">${DEKO(5)}</div>
         <div class="halo"></div>
@@ -3257,20 +3480,22 @@ function renderShop(){
       <div class="case-sub">${esc(c.sub)}</div>
       <div class="odds">${oddsBar(c)}</div>
       <div class="odds-legend">${oddsLegend(c)}</div>
+      ${st?`<div class="stock-tag">📦 W zapasie: <b>${st}</b> ${plural(st,"skrzynka","skrzynki","skrzynek")} — otwarcie bez opłat</div>`:""}
       <div class="price-row">
         <span class="price">🪙 ${fmt(c.price)}</span>
         <span class="price-target">★ nóż ~ ${fmtShort(itemValue(c,"special","Karambit|Fala"))}</span>
       </div>
       <div class="btn-row">
-        <button class="btn primary open-btn" data-open="${c.id}" ${can?"":"disabled"}>Otwórz</button>
-        <button class="btn ghost" data-open10="${c.id}" title="Otwórz 10 skrzynek (🪙 ${fmt(ten)} łącznie)" ${can10?"":"disabled"}>×10</button>
+        ${st?`<button class="btn gold open-btn" style="flex:1 1 100%" data-stockopen="${c.id}">📦 Otwórz z zapasu (${st})</button>`:""}
+        ${c.botOnly && !unlockedBot ? "" : `<button class="btn primary open-btn" data-open="${c.id}" ${can?"":"disabled"}>Otwórz</button>
+        <button class="btn ghost" data-open10="${c.id}" title="Otwórz 10 skrzynek (🪙 ${fmt(ten)} łącznie)" ${can10?"":"disabled"}>×10</button>`}
         <button class="btn ghost loot-btn" data-loot="${c.id}" title="Zobacz wszystkie bronie w tej skrzynce">📋 Zawartość</button>
-        <button class="btn ghost auto-btn${aOn?" on":""}${aUnl?"":" locked"}" data-auto="${c.id}"
+        ${c.botOnly ? "" : `<button class="btn ghost auto-btn${aOn?" on":""}${aUnl?"":" locked"}" data-auto="${c.id}"
           title="${aUnl
             ? (aOn ? "Zatrzymaj auto-otwieranie"
                    : "Otwieraj tę skrzynkę automatycznie — "+(autoTurboOn() ? "⚡ ok. 4 otwarcia / s" : "1 otwarcie / "+autoStepTxt()+" s")
                      +(autoLimit() ? " · limit "+autoLimit()+" otwarć" : " · bez limitu"))
-            : "Ulepszenie 🤖 Auto-otwieranie (🪙 12 500) — zakładka 🚀 Ulepszenia"}">${aOn?"⏹ Stop":"🤖 Auto"}${aUnl?"":' <span class="lock">🔒</span>'}</button>
+            : "Ulepszenie 🤖 Auto-otwieranie (🪙 12 500) — zakładka 🚀 Ulepszenia"}">${aOn?"⏹ Stop":"🤖 Auto"}${aUnl?"":' <span class="lock">🔒</span>'}</button>`}
       </div>
     </div>`;
   }).join("");
@@ -3279,9 +3504,11 @@ function renderShop(){
 $("#caseGrid").addEventListener("click", e=>{
   const lo  = e.target.closest("[data-loot]");
   if(lo){ showLoot(lo.dataset.loot); return; }
+  const so = e.target.closest("[data-stockopen]");
   const o1 = e.target.closest("[data-open]");
   const o10 = e.target.closest("[data-open10]");
   const au = e.target.closest("[data-auto]");
+  if(so) openCase(so.dataset.stockopen, so.closest(".case-card"), true);
   if(o1) openCase(o1.dataset.open, o1.closest(".case-card"));
   if(o10) openMany(o10.dataset.open10, 10);
   if(au) switchAuto(au.dataset.auto);
@@ -3300,7 +3527,7 @@ function showLoot(caseId){
   $("#lootBody").innerHTML =
     `<div class="loot-bonus"><i class="lb-ico">🍀</i><span class="lb-txt">
       <b>Czterolistna koniczyna — szansa ${(CLOVER_CHANCE*100).toFixed(1)}%</b>
-      Wypada <em>dodatkowo</em> przy otwarciu skrzynki (także przy ×10) i na ${Math.round(CLOVER_DUR/1000)} s
+      Wypada <em>dodatkowo</em> przy otwarciu skrzynki (także przy ×10) i na ${Math.round(cloverDur()/1000)} s
       daje większe szanse na noże i dobre bronie: ${cloverDesc()}.
     </span></div>` +
     `<div class="loot-bonus lb-fx"><i class="lb-ico">✨</i><span class="lb-txt">
@@ -3328,6 +3555,233 @@ function showLoot(caseId){
 function closeLoot(){ $("#lootOverlay").classList.remove("show"); }
 $("#lootClose").addEventListener("click", closeLoot);
 $("#lootOverlay").addEventListener("click", e=>{ if(e.target.id==="lootOverlay") closeLoot(); });
+
+/* =======================================================================
+   8a. 🤖 BAZAR BOTÓW — limitowane oferty broni i skrzynek
+   -----------------------------------------------------------------------
+   Każdy bot ma własny zapas (1–3 szt.). Oferty rotują co BOT_TTL, można je
+   też odświeżyć ręcznie (co BOT_REFRESH_CD). Ceny wahają się od ~55% do
+   ~155% normalnej wartości, więc część to okazje, a część przepłacone.
+   Skrzynki kupione tutaj trafiają do state.caseStock i otwiera się je
+   bez opłat w zakładce Skrzynki.
+   ======================================================================= */
+const BOT_TTL        = 8*60*1000;   // rotacja ofert
+const BOT_REFRESH_CD = 60*1000;     // przerwa między ręcznymi odświeżeniami
+const BOT_SLOTS      = 4;           // 3 bronie + 1 skrzynka na bota
+const BOT_SELLERS = [
+  {id:"gizmo", icon:"🤖", name:"Gizmo_2200", tag:"złom i okazje",  line:"„Wszystko legalne. Prawie.”"},
+  {id:"vince", icon:"🕶️", name:"Vince",       tag:"przemytnik",     line:"„Nie pytaj, skąd to mam.”"},
+  {id:"mech",  icon:"🦾", name:"M3CH-9",      tag:"hurt i detal",   line:"„Cena się zmienia. Jak wszystko.”"},
+  {id:"lena",  icon:"🎲", name:"LuckyLena",   tag:"hazardzistka",   line:"„Raz na jakiś czas trafia się perełka.”"}
+];
+const BOT_TIER_W = {
+  gizmo:{mil:56, restricted:30, classified:10, covert:3.4, special:0.6},
+  vince:{mil:20, restricted:40, classified:26, covert:11,   special:3},
+  mech: {mil:40, restricted:34, classified:18, covert:6,    special:2},
+  lena: {mil:24, restricted:30, classified:25, covert:15,   special:6}
+};
+const BOT_FACTOR = {   // [min, max] mnożnik ceny względem normalnej wartości
+  gizmo:[0.52, 0.88],
+  vince:[0.72, 1.32],
+  mech: [0.87, 1.12],
+  lena: [0.58, 1.58]
+};
+const BOT_CACHE = {tag:"", list:[]};
+
+function mulberry32(a){
+  return function(){
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+const botCycle = () => Math.floor(Date.now()/BOT_TTL);
+function botStockMap(){
+  if(!state.botBought || typeof state.botBought !== "object" || Array.isArray(state.botBought)) state.botBought = {};
+  return state.botBought;
+}
+function caseStock(id){
+  const m = state.caseStock;
+  return (m && typeof m === "object" && !Array.isArray(m)) ? numFrom(m[id]) : 0;
+}
+function botLeft(o){ return Math.max(0, o.max - numFrom(botStockMap()[o.id])); }
+function botTag(){ return botCycle()+"_"+numFrom(state.botSalt)+"_"+upLvl("trade"); }
+function pickWeighted(w, rndF){
+  const keys = Object.keys(w);
+  let total = 0; keys.forEach(k=>total+=w[k]);
+  let r = rndF()*total;
+  for(const k of keys){ r -= w[k]; if(r <= 0) return k; }
+  return keys[0];
+}
+function botOffers(){
+  const tag = botTag();
+  if(BOT_CACHE.tag === tag) return BOT_CACHE.list;
+  const rndF = mulberry32(hash("botmarket|"+tag));
+  const bought = botStockMap();
+  Object.keys(bought).forEach(k=>{ if(k.indexOf("b"+tag+"_") !== 0) delete bought[k]; });
+  const pool = CASES.filter(c=>!c.secret);
+  const trade = 1 - TRADE_STEP*upLvl("trade");   // 🏷️ Targowanie
+  const list = [];
+  BOT_SELLERS.forEach((s, si)=>{
+    for(let k=0;k<BOT_SLOTS;k++){
+      const id = "b"+tag+"_"+si+"_"+k;
+      if(k === BOT_SLOTS-1){                       // skrzynka
+        let c;
+        if(si === 0) c = BOT_CASES[botCycle() % BOT_CASES.length];
+        else if(rndF() < 0.34) c = BOT_CASES[(rndF()*BOT_CASES.length)|0];
+        else c = pool[(rndF()*pool.length)|0];
+        const base = c.price;
+        const f = c.botOnly ? 0.94 + rndF()*0.22 : 0.72 + rndF()*0.56;
+        list.push({ id, seller:s.id, kind:"case", caseId:c.id, base,
+                    price:Math.max(1, Math.round(roundNice(base*f) * trade)), max: c.botOnly ? 1 : 1 + ((rndF()*2)|0) });
+      } else {                                     // broń
+        const c = pool[(rndF()*pool.length)|0];
+        const tier = pickWeighted(BOT_TIER_W[s.id], rndF);
+        const it = c.items[tier][(rndF()*c.items[tier].length)|0];
+        const base = itemValue(c, tier, it[0]+"|"+it[1]);
+        const f = BOT_FACTOR[s.id][0] + rndF()*(BOT_FACTOR[s.id][1]-BOT_FACTOR[s.id][0]);
+        list.push({ id, seller:s.id, kind:"weapon", caseId:c.id, tier, w:it[0], n:it[1], art:it[2], base,
+                    price:Math.max(1, Math.round(roundNice(base*f) * trade)), max: 1 + ((rndF()*3)|0) });
+      }
+    }
+  });
+  BOT_CACHE.tag = tag; BOT_CACHE.list = list;
+  return list;
+}
+function botOfferHTML(o){
+  const left = botLeft(o);
+  const sold = left <= 0;
+  const diff = Math.round((o.price/o.base - 1)*100);
+  const deal = diff <= 0 ? `<span class="bo-deal">${diff}%</span>` : `<span class="bo-deal bad">+${diff}%</span>`;
+  const stockTxt = sold ? "wykupione" : "zostało "+left+" z "+o.max;
+  const stockCls = "bo-stock"+(left>0 && left<=1 ? " low" : "");
+  if(o.kind === "case"){
+    const c = CASES.find(x=>x.id===o.caseId);
+    if(!c) return "";
+    return `<div class="bot-offer${sold?" sold":""}" style="--c:${c.color}${sold?";--c:#44506b":""}">
+      <div class="bo-art bo-case" style="--cc:${c.color}">${c.icon}</div>
+      <div class="bo-main">
+        <div class="bo-w">${c.botOnly ? "tylko u botów" : "skrzynka"}</div>
+        <div class="bo-n">${esc(c.name)}</div>
+        <div class="bo-meta"><span class="bo-price">🪙 ${fmt(o.price)}</span>
+          <span class="bo-base">🪙 ${fmt(o.base)}</span>${deal}
+          <span class="${stockCls}">${stockTxt}</span></div>
+      </div>
+      <button class="bo-buy" data-botbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
+    </div>`;
+  }
+  const t = TIER[o.tier];
+  return `<div class="bot-offer${sold?" sold":""}" style="--c:${t.color}">
+    <div class="bo-art">${weaponSVG({w:o.w,n:o.n,tier:o.tier,art:o.art}, hash(o.id).toString(36))}</div>
+    <div class="bo-main">
+      <div class="bo-w">${esc(o.w)}</div>
+      <div class="bo-n">${esc(o.n)}</div>
+      <div class="bo-meta"><span class="bo-price">🪙 ${fmt(o.price)}</span>
+        <span class="bo-base">🪙 ${fmt(o.base)}</span>${deal}
+        <span class="${stockCls}">${stockTxt}</span></div>
+    </div>
+    <button class="bo-buy" data-botbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
+  </div>`;
+}
+function mmss(ms){
+  const s = Math.max(0, Math.ceil(ms/1000));
+  return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");
+}
+function botTick(){
+  const h = $("#botHint");
+  if(h){
+    const offers = botOffers();
+    const sold = offers.filter(o=>botLeft(o)<=0).length;
+    h.innerHTML = "rotacja za <b>"+mmss(BOT_TTL - (Date.now()%BOT_TTL))+"</b> · dostępne: <b>"+
+      (offers.length-sold)+"</b> / "+offers.length;
+  }
+  const btn = $("#botRefresh");
+  if(btn){
+    const cd = Math.max(0, numFrom(state.botRefreshAt) - Date.now());
+    btn.disabled = cd > 0;
+    btn.textContent = cd > 0 ? "⏳ "+mmss(cd) : "🔄 Nowe oferty";
+  }
+  const badge = $("#botCount");
+  if(badge){
+    const n = CASES.reduce((a,c)=>a+caseStock(c.id),0);
+    badge.textContent = n ? String(n) : "";
+    badge.style.display = n ? "" : "none";
+  }
+}
+function renderBots(){
+  const g = $("#botGrid"); if(!g) return;
+  const offers = botOffers();
+  g.innerHTML = BOT_SELLERS.map((s,i)=>{
+    const mine = offers.filter(o=>o.seller===s.id);
+    const any = mine.some(o=>botLeft(o)>0);
+    return `<div class="bot-card" style="animation-delay:${i*70}ms">
+      <div class="bot-head">
+        <div class="bot-ava">${s.icon}</div>
+        <div><div class="bot-name">${esc(s.name)}</div><div class="bot-tag">${esc(s.tag)}</div></div>
+        <div class="bot-live${any?"":" off"}">● ${any?"ONLINE":"WYKUPIONY"}</div>
+      </div>
+      <div class="bot-line">${s.line}</div>
+      <div class="bot-offers">${mine.map(botOfferHTML).join("")}</div>
+    </div>`;
+  }).join("");
+  botTick();
+}
+function buyBotOffer(id){
+  const off = botOffers().find(o=>o.id===id);
+  if(!off) return;
+  if(botLeft(off) <= 0){ sfxErr(); toast("Ten bot już wszystko sprzedał","bad"); return; }
+  if(state.coins < off.price){ sfxErr(); toast("Za mało monet!","bad"); return; }
+
+  state.coins -= off.price;
+  state.stats.spent += off.price;
+  state.stats.botBuys  = numFrom(state.stats.botBuys) + 1;
+  state.stats.botSpent = numFrom(state.stats.botSpent) + off.price;
+  botStockMap()[off.id] = numFrom(botStockMap()[off.id]) + 1;
+
+  if(off.kind === "case"){
+    state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+    state.caseStock[off.caseId] = caseStock(off.caseId) + 1;
+    state.stats.botCases = numFrom(state.stats.botCases) + 1;
+    state.botUnlocked = state.botUnlocked || {};
+    state.botUnlocked[off.caseId] = true;
+    const c = CASES.find(x=>x.id===off.caseId);
+    sfxCoin();
+    toast("📦 Kupiono <b>"+esc(c ? c.name : "skrzynkę")+"</b> — czeka w zapasie w zakładce Skrzynki. Od teraz możesz ją otwierać też za monety.","good");
+  } else {
+    const item = { uid:"b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+      w:off.w, n:off.n, art:off.art, tier:off.tier, caseId:off.caseId, fx:null,
+      value:Math.round(off.base), ts:Date.now() };
+    addToInv(item);
+    const diff = Math.round((off.price/off.base - 1)*100);
+    if(diff < 0) state.stats.bestDeal = Math.min(100, Math.max(numFrom(state.stats.bestDeal), -diff));
+    sfxCoin();
+    toast((diff<=0 ? "🏷️ <b>Okazja!</b> " : "🛒 Kupiono ")+"<b>"+esc(item.n)+"</b> ("+esc(item.w)+") za 🪙 "+
+      fmt(off.price)+(diff<0 ? " · "+(-diff)+"% taniej" : diff>0 ? " · +"+diff+"% drożej" : " · cena rynkowa"),"good");
+  }
+  markDirty(); save();
+  renderBalance(); renderBots(); renderShop(); renderInv(); renderStats();
+  checkAchievements();
+}
+function refreshBotOffers(){
+  const cd = numFrom(state.botRefreshAt) - Date.now();
+  if(cd > 0){ sfxErr(); toast("Boty potrzebują jeszcze "+mmss(cd)+" na nowy towar","bad"); return; }
+  state.botSalt = numFrom(state.botSalt) + 1;
+  state.botRefreshAt = Date.now() + BOT_REFRESH_CD;
+  BOT_CACHE.tag = ""; BOT_CACHE.list = [];
+  markDirty(); save(); renderBots();
+  toast("🔄 Boty wystawiły nowy towar","good");
+}
+$("#botRefresh").addEventListener("click", refreshBotOffers);
+$("#botGrid").addEventListener("click", e=>{
+  const b = e.target.closest("[data-botbuy]");
+  if(b) buyBotOffer(b.dataset.botbuy);
+});
+setInterval(()=>{
+  if(currentView !== "bots") return;
+  if(BOT_CACHE.tag !== botTag()) renderBots();
+  else botTick();
+}, 1000);
 
 /* =======================================================================
    8b. SKLEP ULEPSZEŃ
@@ -3409,17 +3863,26 @@ function doOpen(c, free){
   return obtainDrop(c, pickTier(c));      // drop zapisuje się od razu (saveDrop)
 }
 
-function openCase(caseId, cardEl){
+function openCase(caseId, cardEl, fromStock){
   if(spinning) return;
   const c = CASES.find(x=>x.id===caseId);
   if(!c) return;
-  const free = Math.random() < couponChance();
+  const stock = caseStock(c.id);
+  const useStock = !!fromStock && stock > 0;
+  if(c.botOnly){ state.botUnlocked = state.botUnlocked || {}; state.botUnlocked[c.id] = true; }
+  const free = useStock || Math.random() < couponChance();
   if(!free && state.coins < c.price){ sfxErr(); toast("Za mało monet!","bad"); return; }
+  if(useStock){
+    state.caseStock[c.id] = stock - 1;
+    if(!state.caseStock[c.id]) delete state.caseStock[c.id];
+    state.stats.stockOpened = numFrom(state.stats.stockOpened) + 1;
+  }
 
   spinning = true;                        // blokada na czas animacji skrzynki
-  if(free) toast("🎟️ <b>Kupon!</b> Otwarcie nic Cię nie kosztowało","good");
+  if(useStock) toast("📦 <b>Otwierasz z zapasu</b> — bez opłat. Zostało: "+caseStock(c.id),"good");
+  else if(free) toast("🎟️ <b>Kupon!</b> Otwarcie nic Cię nie kosztowało","good");
   const win = doOpen(c, free);
-  renderBalance(); renderShop();
+  renderBalance(); renderShop(); renderBots();
   save();
 
   if (state.fast){ spinning = false; showResult([win], true); return; }
@@ -3430,10 +3893,10 @@ function openCase(caseId, cardEl){
     sfxWhoosh();
     setTimeout(()=>cardEl.classList.remove("opening"), 420);
   }
-  setTimeout(()=>spin(c, win, free), cardEl ? 330 : 0);
+  setTimeout(()=>spin(c, win, free, useStock), cardEl ? 330 : 0);
 }
 
-function spin(c, win, free){
+function spin(c, win, free, fromStock){
   const strip = $("#strip");
   let html = "";
   for(let i=0;i<STRIP_LEN;i++){
@@ -3448,7 +3911,7 @@ function spin(c, win, free){
   spinning = true;
 
   $("#spinTitle").textContent = "Otwieranie: " + c.name;
-  $("#spinTag").textContent = free ? "🎟️ DARMOWE" : "🪙 " + fmt(c.price);
+  $("#spinTag").textContent = fromStock ? "📦 ZAPAS" : free ? "🎟️ DARMOWE" : "🪙 " + fmt(c.price);
   $("#spinStatus").textContent = "Losowanie…";
   $("#skipBtn").disabled = false;
   $("#spinOverlay").classList.add("show");
@@ -3511,12 +3974,21 @@ function openMany(caseId, count){
   if(spinning) return;
   const c = CASES.find(x=>x.id===caseId);
   if(!c) return;
-  // kupony mogą pokryć część otwarć
+  const stock = caseStock(c.id);
+  const useStock = Math.min(stock, count);
+  if(c.botOnly){ state.botUnlocked = state.botUnlocked || {}; state.botUnlocked[c.id] = true; }
+  const rest = count - useStock;
+  // kupony mogą pokryć część płatnych otwarć
   let freeN = 0;
-  for(let i=0;i<count;i++) if(Math.random() < couponChance()) freeN++;
+  for(let i=0;i<rest;i++) if(Math.random() < couponChance()) freeN++;
   const unit = Math.round(c.price * (1 - bulkRate()));     // rabat z ulepszenia "Hurt"
-  const cost = unit*(count-freeN);
+  const cost = unit*(rest-freeN);
   if(state.coins < cost){ sfxErr(); toast("Za mało monet na "+count+"× otwarcie!","bad"); return; }
+  if(useStock){
+    state.caseStock[c.id] = stock - useStock;
+    if(!state.caseStock[c.id]) delete state.caseStock[c.id];
+    state.stats.stockOpened = numFrom(state.stats.stockOpened) + useStock;
+  }
   state.coins -= cost;
   state.stats.spent += cost;
   state.stats.opened += count;
@@ -3528,8 +4000,9 @@ function openMany(caseId, count){
   if(cloverActive()) missionTrack("cloveropen", count);
   const wins = [];
   for(let i=0;i<count;i++) wins.push(obtainDrop(c, pickTier(c)));
-  if(freeN) toast("🎟️ <b>Kupony!</b> " + freeN + " z " + count + " otwarć darmowych","good");
-  save(); renderBalance(); renderShop();
+  if(useStock) toast("📦 <b>"+useStock+"×</b> z zapasu — bez opłat","good");
+  if(freeN) toast("🎟️ <b>Kupony!</b> " + freeN + " z " + rest + " płatnych otwarć darmowych","good");
+  save(); renderBalance(); renderShop(); renderBots();
   showResult(wins, false);
 }
 
@@ -3988,8 +4461,9 @@ function renderBattle(){
   const badge = $("#battleCount");
   if(badge){ badge.textContent = nb ? String(nb) : ""; badge.style.display = nb ? "" : "none"; }
 
-  const sel = CASES.find(x=>x.id===state.battleCase) || CASES[0];
-  pick.innerHTML = CASES.map(c=>`
+  const battleCases = CASES.filter(c=>!c.botOnly);
+  const sel = battleCases.find(x=>x.id===state.battleCase) || battleCases[0];
+  pick.innerHTML = battleCases.map(c=>`
     <button class="bch ${c.id===sel.id?"active":""} tier-${caseTier(c)}" data-skin="${c.id}" data-bcase="${c.id}" style="--cc:${c.color}">
       <span class="pat"></span>
       <span class="bch-ico">${c.icon}</span>
@@ -4068,6 +4542,8 @@ function fight(caseId){
     my.push(makeItem(c, pickTier(c)));         // gracz — z ulepszeniami
     ai.push(makeItem(c, aiPickTier(c)));       // AI — na bazowych szansach
   }
+  const bl = upLvl("battle");                  // ⚔️ Wojownik — mocniejsze dropy gracza
+  if(bl) my.forEach(it=>{ it.value = Math.round(it.value * (1 + BATTLE_STEP*bl)); });
   const res = battleCompare(my, ai);
 
   state.coins -= total;
@@ -4316,6 +4792,9 @@ function renderStats(){
     (s.albums|0)+" "+plural(s.albums|0,"skompletowana skrzynka","skompletowane skrzynki","skompletowanych skrzynek")]);
   boxes.push(["🎯 Misje dzienne", fmt(((state.missions&&state.missions.list)||[]).filter(m=>m.claimed).length)+" / "+
     fmt(((state.missions&&state.missions.list)||[]).length), "nowe misje o północy", false]);
+  if((s.botBuys|0) > 0)
+    boxes.push(["🤖 Bazar botów", fmt(numFrom(s.botBuys))+" zakupów",
+      "wydano 🪙 "+fmtShort(numFrom(s.botSpent))+" · najlepsza okazja −"+fmt(numFrom(s.bestDeal))+"%", false]);
   const wkl = (state.weekly && state.weekly.list) || [];
   boxes.push(["📅 Misje tygodniowe", fmt(wkl.filter(m=>m.claimed).length)+" / "+fmt(wkl.length),
     wkl.length ? "nowe misje za "+wUntilNew() : "brak", false]);
@@ -4481,6 +4960,9 @@ const CLOVER_CHANCE = 0.004;   // 0,4% szansy na koniczynę przy każdym zdobyty
 const CLOVER_DUR    = 80000;   // czas działania: 80 sekund
 const CLOVER_BOOST  = {mil:0, restricted:0.12, classified:0.28, covert:0.35, special:0.40};
 
+/* 🍀 ulepszenie "Długi kwiat" wydłuża działanie koniczyny */
+const cloverDur = () => CLOVER_DUR + CLOVER_STEP*upLvl("clover");
+
 function cloverActive(){ return Date.now() < (state.cloverUntil||0); }
 function cloverLeft(){ return Math.max(0, (state.cloverUntil||0) - Date.now()); }
 function cloverOdds(){ return cloverActive() ? CLOVER_BOOST : null; }
@@ -4497,7 +4979,7 @@ function cloverDesc(){
 function rollClover(){
   if(Math.random() >= CLOVER_CHANCE) return false;
   const now = Date.now();
-  state.cloverUntil = Math.max(now, state.cloverUntil||0) + CLOVER_DUR;
+  state.cloverUntil = Math.max(now, state.cloverUntil||0) + cloverDur();
   state.stats.clovers = (state.stats.clovers||0)+1;
   markDirty();
   return true;
@@ -4508,7 +4990,7 @@ function cloverHit(){
   missionTrack("clover",1);
   sfxClover();
   confetti(["#4ade80","#a8f0c0","#22c55e","#ffd700"]);
-  toast("🍀 <b>Czterolistna koniczyna!</b> Przez "+Math.round(CLOVER_DUR/1000)+
+  toast("🍀 <b>Czterolistna koniczyna!</b> Przez "+Math.round(cloverDur()/1000)+
         " s masz większe szanse na noże i dobre bronie — " + cloverDesc(), "good");
   updateClover();
 }
@@ -4524,7 +5006,7 @@ function updateClover(){
     pill.dataset.on = on ? "1" : "0";
     pill.classList.toggle("show", on);
     if(on){
-      pill.title = "🍀 Czterolistna koniczyna — " + cloverDesc() + " · wypada ze skrzynek (szansa " + (CLOVER_CHANCE*100).toFixed(1) + "%), działa " + Math.round(CLOVER_DUR/1000) + " s";
+      pill.title = "🍀 Czterolistna koniczyna — " + cloverDesc() + " · wypada ze skrzynek (szansa " + (CLOVER_CHANCE*100).toFixed(1) + "%), działa " + Math.round(cloverDur()/1000) + " s";
       save();                 // utrwalone od razu, żeby bonus nie zginął przy odświeżeniu
     }
     renderShop();             // paski szans w sklepie pokazują realny stan
@@ -4533,7 +5015,7 @@ function updateClover(){
   const left = cloverLeft();
   const t = $("#cloverTime"), b = $("#cloverBar");
   if(t) t.textContent = Math.ceil(left/1000)+"s";
-  if(b) b.style.width = Math.min(100, 100*left/CLOVER_DUR)+"%";
+  if(b) b.style.width = Math.min(100, 100*left/cloverDur())+"%";
 }
 setInterval(updateClover, 250);
 
@@ -4565,6 +5047,8 @@ $("#resetBtn").addEventListener("click", ()=>{
   state.bonusAt = 0; state.rescueAt = 0; state.cloverUntil = 0;
   state.battles = []; state.battleCase = "start"; state.battleSize = 1;
   state.album = {}; state.albumClaimed = {}; albumCase = null;
+  state.botUnlocked = {};
+  state.idleKnifeClaimed = false; state.idleSec = 0; idleTimer = 0;
   rollMissions();
   rollWeekly();                           // 📅 świeży zestaw misji tygodniowych
   autoBattle = false; if(autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
@@ -4881,14 +5365,33 @@ const IDLE_KNIFE_HOURS = 1.5;            // godziny do noża
 const IDLE_KNIFE_VALUE = 150000;         // wartość noża
 let idleTimer = 0;
 let idleLast = Date.now();
+function idleSecs(){ return state.idleKnifeClaimed ? 0 : Math.max(idleTimer, numFrom(state.idleSec)) + Math.max(0, (Date.now() - (idleLast||Date.now()))/1000); }
+function clockTxt(sec){
+  const s = Math.max(0, Math.ceil(sec));
+  const h = Math.floor(s/3600), m = Math.floor((s%3600)/60), q = s%60;
+  return h ? h+":"+String(m).padStart(2,"0")+":"+String(q).padStart(2,"0")
+           : m+":"+String(q).padStart(2,"0");
+}
+function updateIdle(){
+  const pill = $("#idlePill"), t = $("#idleTime"), b = $("#idleBar");
+  if(!pill) return;
+  const need = IDLE_KNIFE_HOURS * 3600;
+  const done = Math.min(need, idleSecs());
+  const left = Math.max(0, need - done);
+  if(t) t.textContent = state.idleKnifeClaimed ? "✔ nóż odebrany" : clockTxt(left)+" do noża";
+  if(b) b.style.width = Math.min(100, 100*done/need)+"%";
+  pill.classList.add("show");
+}
 function idleTick(){
+  if(!idleTimer) idleTimer = numFrom(state.idleSec||0);
   const now = Date.now();
   const dt = Math.floor((now - (idleLast||now)) / 1000);
   if(dt <= 0) return;
   idleLast = now;
   idleTimer += dt;
+  state.idleSec = state.idleKnifeClaimed ? 0 : idleTimer;
   // monety za czas gry
-  state.coins += IDLE_COINS * dt;
+  state.coins += Math.round(IDLE_COINS * (dt / IDLE_TICK) * (1 + IDLE_STEP*upLvl("idle")));
   // chwilowe szczęście (maleje z czasem)
   const luckGain = Math.max(0, IDLE_LUCK - Math.floor(idleTimer / 300));
   if(luckGain > 0) state.cloverUntil = Math.max(Date.now(), state.cloverUntil||0) + luckGain * 1000;
@@ -4896,19 +5399,22 @@ function idleTick(){
   const knifeMs = IDLE_KNIFE_HOURS * 3600 * 1000;
   if(idleTimer * 1000 >= knifeMs && !state.idleKnifeClaimed){
     state.idleKnifeClaimed = true;
+    state.idleSec = 0;
     const item = {
       uid: "idle" + Date.now().toString(36),
       w: "Karambit", n: "Cień Czekania", art: "knife",
-      tier: "classified", caseId: "idle",
+      tier: "classified", caseId: "idle", fixedSell: IDLE_KNIFE_VALUE,
       fx: null, value: IDLE_KNIFE_VALUE, ts: Date.now()
     };
     addToInv(item);
     toast("💤 <b>Nagroda za cierpliwość!</b> Karambit „Cień Czekania” — sprzedasz za 🪙 "+fmt(IDLE_KNIFE_VALUE),"good");
     confetti(["#38bdf8","#a855f7","#ffd700"]);
   }
-  markDirty(); save(); renderBalance();
+  markDirty(); save(); renderBalance(); updateIdle();
 }
 setInterval(idleTick, IDLE_TICK * 1000);
+setInterval(updateIdle, 1000);
+setTimeout(updateIdle, 300);
 /* =======================================================================
    14d. 📅 MISJE TYGODNIOWE + POZIOMY TRUDNOŚCI
    -----------------------------------------------------------------------
@@ -5380,7 +5886,33 @@ const ACHIEVEMENTS = [
   {id:"koh_10",    icon:"🎰", name:"Władca gry",        desc:"Wygraj 10 razy w Królowej góry.",       target:10,    prog:()=>state.stats.kohWins||0, done:()=>(state.stats.kohWins||0)>=10, reward:{coins:5000000}},
   {id:"rich_1b",   icon:"🪙", name:"Milionard",         desc:"Zgromadź 1 000 000 000 monet.",        target:1000000000, prog:()=>state.coins, done:()=>state.coins>=1000000000, reward:{coins:5000000}},
   {id:"rich_10b",  icon:"🪙", name:"Milionard",          desc:"Zgromadź 10 000 000 000 monet.",       target:10000000000,prog:()=>state.coins, done:()=>state.coins>=10000000000,reward:{coins:50000000}},
-  {id:"cos_all",   icon:"👑", name:"Pełna kolekcja",    desc:"Kup wszystkie 6 kosmetyków.",           target:6,     prog:()=>Object.keys(state.cosmetics||{}).length, done:()=>Object.keys(state.cosmetics||{}).length>=6, reward:{coins:20000000}}
+  {id:"cos_all",   icon:"👑", name:"Pełna kolekcja",    desc:"Kup wszystkie 6 kosmetyków.",           target:6,     prog:()=>Object.keys(state.cosmetics||{}).length, done:()=>Object.keys(state.cosmetics||{}).length>=6, reward:{coins:20000000}},
+  /* 🤖 BAZAR BOTÓW — nowe wyzwania */
+  {id:"bot_1",      icon:"🤖", name:"Pierwszy interes", desc:"Kup cokolwiek od bota na bazarze.",       target:1,  prog:()=>numFrom(state.stats.botBuys||0), done:()=>numFrom(state.stats.botBuys||0)>=1,  reward:{coins:15000}},
+  {id:"bot_10",     icon:"🤝", name:"Stały klient",     desc:"Kup 10 rzeczy od botów.",                 target:10, prog:()=>numFrom(state.stats.botBuys||0), done:()=>numFrom(state.stats.botBuys||0)>=10, reward:{coins:250000}},
+  {id:"bot_50",     icon:"🛒", name:"Król bazaru",      desc:"Kup 50 rzeczy od botów.",                 target:50, prog:()=>numFrom(state.stats.botBuys||0), done:()=>numFrom(state.stats.botBuys||0)>=50, reward:{coins:5000000}},
+  {id:"bot_case_1", icon:"📦", name:"Zapas na później", desc:"Kup pierwszą skrzynkę od bota.",          target:1,  prog:()=>numFrom(state.stats.botCases||0), done:()=>numFrom(state.stats.botCases||0)>=1, reward:{coins:30000}},
+  {id:"bot_case_10",icon:"🗃️", name:"Hurtownik",        desc:"Kup 10 skrzynek od botów.",               target:10, prog:()=>numFrom(state.stats.botCases||0), done:()=>numFrom(state.stats.botCases||0)>=10,reward:{coins:1000000}},
+  {id:"bot_cheap",  icon:"🏷️", name:"Rodzynek",         desc:"Kup broń co najmniej 35% taniej niż normalnie.", target:35, prog:()=>Math.min(35,numFrom(state.stats.bestDeal||0)), done:()=>numFrom(state.stats.bestDeal||0)>=35, reward:{coins:250000}},
+  {id:"stock_1",    icon:"🗄️", name:"Prosto z magazynu",desc:"Otwórz skrzynkę z zapasu kupionego u bota.", target:1, prog:()=>numFrom(state.stats.stockOpened||0), done:()=>numFrom(state.stats.stockOpened||0)>=1, reward:{coins:50000}},
+  {id:"stock_25",   icon:"🏗️", name:"Logistyka",        desc:"Otwórz 25 skrzynek z zapasu.",            target:25, prog:()=>numFrom(state.stats.stockOpened||0), done:()=>numFrom(state.stats.stockOpened||0)>=25, reward:{coins:1500000}},
+  /* 💎 DODATKOWE KAMIENIE MILOWE */
+  {id:"open_50",    icon:"📦", name:"Pół setki",        desc:"Otwórz 50 skrzynek.",                    target:50,   prog:()=>state.stats.opened, done:()=>state.stats.opened>=50,   reward:{coins:15000}},
+  {id:"open_500",   icon:"📦", name:"Pięćsetka",        desc:"Otwórz 500 skrzynek.",                   target:500,  prog:()=>state.stats.opened, done:()=>state.stats.opened>=500,  reward:{coins:100000}},
+  {id:"sell_100",   icon:"💰", name:"Handlarz",         desc:"Sprzedaj 100 przedmiotów.",              target:100,  prog:()=>state.stats.sold,   done:()=>state.stats.sold>=100,     reward:{coins:100000}},
+  {id:"sell_1000",  icon:"💸", name:"Giełda",           desc:"Sprzedaj 1000 przedmiotów.",             target:1000, prog:()=>state.stats.sold,   done:()=>state.stats.sold>=1000,    reward:{coins:2000000}},
+  {id:"battle_25",  icon:"⚔️", name:"Weteran aren",      desc:"Stocz 25 bitew.",                        target:25,   prog:()=>state.stats.battles,done:()=>state.stats.battles>=25,   reward:{coins:150000}},
+  {id:"fx_25",      icon:"✨", name:"Fabryka błysku",   desc:"Wykręć 25 efektów na broniach.",         target:25,   prog:()=>state.stats.fxTotal,done:()=>state.stats.fxTotal>=25,   reward:{coins:750000}},
+  {id:"knife_50",   icon:"★",  name:"Ostrza na ścianie",desc:"Wylosuj 50 noży.",                       target:50,   prog:()=>state.stats.knives, done:()=>state.stats.knives>=50,    reward:{coins:5000000}},
+  {id:"album_100",  icon:"📖", name:"Setka w albumie",  desc:"Odkryj 100 skinów w albumie.",           target:100,  prog:()=>albumHave(),       done:()=>albumHave()>=100,          reward:{coins:200000}},
+  {id:"cos_3",      icon:"🎨", name:"Trzy pieczęcie",   desc:"Kup 3 kosmetyki.",                       target:3,    prog:()=>Object.keys(state.cosmetics||{}).length, done:()=>Object.keys(state.cosmetics||{}).length>=3, reward:{coins:5000000}},
+  {id:"coins_10m",  icon:"🪙", name:"Dziesięć milionów",desc:"Zgromadź 10 000 000 monet.",             target:10000000, prog:()=>state.coins,   done:()=>state.coins>=10000000,     reward:{coins:250000}},
+  /* 🧩 ULEPSZENIA — nowe wyzwania */
+  {id:"idle_knife", icon:"💤", name:"Cierpliwy",         desc:"Odbierz nóż za 1,5 godziny czasu gry.",   target:1,    prog:()=>state.idleKnifeClaimed?1:0, done:()=>state.idleKnifeClaimed===true, reward:{coins:250000}},
+  {id:"up_10",      icon:"🧩", name:"Ulepszony",         desc:"Kup 10 poziomów ulepszeń.",              target:10,   prog:()=>upTotal(),         done:()=>upTotal()>=10,             reward:{coins:100000}},
+  {id:"up_25",      icon:"🧬", name:"Inżynier",          desc:"Kup 25 poziomów ulepszeń.",              target:25,   prog:()=>upTotal(),         done:()=>upTotal()>=25,             reward:{coins:1000000}},
+  {id:"up_max",     icon:"🏅", name:"Perfekcjonista",    desc:"Wymaksuj dowolne ulepszenie.",           target:1,    prog:()=>UPGRADES.filter(u=>upLvl(u.id)>=u.max).length, done:()=>UPGRADES.some(u=>upLvl(u.id)>=u.max), reward:{coins:2000000}},
+  {id:"perk_all",   icon:"🏆", name:"Kolekcjoner mocy",  desc:"Kup po jednym poziomie każdego ulepszenia.", target:UPGRADES.length, prog:()=>UPGRADES.filter(u=>upLvl(u.id)>0).length, done:()=>UPGRADES.every(u=>upLvl(u.id)>0), reward:{coins:10000000}}
 ];
 
 function checkAchievements(){
@@ -5394,7 +5926,7 @@ function checkAchievements(){
     state.achievements[a.id] = Date.now();
     if(a.reward && a.reward.coins) state.coins += a.reward.coins;
     unlocked++;
-    toast("🏆 <b>Osiagniecie!</b> "+a.icon+" "+a.name+" — nagroda: 🪙 "+fmt(a.reward.coins),"good");
+    toast("🏆 <b>Osiągnięcie!</b> "+a.icon+" "+a.name+" — nagroda: 🪙 "+fmt(a.reward.coins),"good");
     confetti();
   });
   if(unlocked){ markDirty(); save(); renderStats(); renderBalance(); }
@@ -5430,12 +5962,15 @@ const COSMETICS = [
 ];
 const COSMETIC_BY_ID = {};
 COSMETICS.forEach(c=>COSMETIC_BY_ID[c.id]=c);
+/* 🎨 ulepszenie "Zniżka na patche" */
+const cosmeticCost = c => Math.max(1, Math.round(c.cost * (1 - PATCH_STEP*upLvl("patch"))));
 function buyCosmetic(id){
   const c = COSMETIC_BY_ID[id];
   if(!c) return;
   if(state.cosmetics && state.cosmetics[id]){ sfxErr(); return; }
-  if(state.coins < c.cost){ sfxErr(); toast("Za malo monet na "+c.icon+" "+c.name+" (🪙 "+fmt(c.cost)+")","bad"); return; }
-  state.coins -= c.cost;
+  const price = cosmeticCost(c);
+  if(state.coins < price){ sfxErr(); toast("Za mało monet na "+c.icon+" "+c.name+" (🪙 "+fmt(price)+")","bad"); return; }
+  state.coins -= price;
   state.cosmetics = state.cosmetics || {};
   state.cosmetics[id] = true;
   sfxCoin(); burst(rnd(120,innerWidth-120), rnd(140,360), c.color);
@@ -5460,7 +5995,7 @@ function renderCosmetics(){
         <div class="cos-rew">Bonus: +${Math.round((c.mult-1)*100)}% wartosci</div>
         ${owned
           ? `<button class="btn tb-btn cos-btn" disabled>✔ Posiadasz</button>`
-          : `<button class="btn primary cos-btn" data-cos="${c.id}">Kup za 🪙 ${fmt(c.cost)}</button>`}
+          : `<button class="btn primary cos-btn" data-cos="${c.id}">Kup za 🪙 ${fmt(cosmeticCost(c))}</button>`}
       </div></div>`;
   }).join("");
 }
@@ -5531,7 +6066,7 @@ function playKoh(){
   battleBusy = true;
   state.coins -= kohPrize;
   state.stats.spent += kohPrize;
-  const roll = Math.random();
+  const roll = Math.max(0, Math.random() - KOH_STEP*upLvl("jackpot"));
   let result, mult;
   if(roll < 0.02){ result="JACKPOT"; mult=50; }
   else if(roll < 0.10){ result="Wielki wygrany"; mult=10; }
@@ -5583,7 +6118,7 @@ if(!state.weekly  || !Array.isArray(state.weekly.list)  || !state.weekly.list.le
 $("#soundBtn").textContent = state.sound ? "🔊" : "🔇";
 $("#fastBtn").classList.toggle("on", state.fast);
 renderBalance(true);
-renderShop(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
+renderShop(); renderBots(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
 renderAlbumBadge(); renderDailyBadge(); checkAchievements();
 save();   // od razu utrwalamy wczytany stan (migracja starych zapisów)
 if(state.stats.opened>0) toast("Witaj ponownie! Otwarte skrzynki: <b>"+state.stats.opened+"</b> · ekwipunek: <b>"+state.inv.length+"</b>","good");
