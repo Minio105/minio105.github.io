@@ -344,7 +344,7 @@ function autoSchedule(n){
 }
 
 $("#bossBtn").addEventListener("click", ()=>{ const b=BOSSES[Math.floor(Math.random()*BOSSES.length)]; fightBoss(b.id); });
-  $("#kohBtn").addEventListener("click", playKoh);
+  $("#kohBtn").addEventListener("click", ()=>playKoh());
   $("#cosGrid").addEventListener("click", e=>{ const b=e.target.closest("[data-cos]"); if(b) buyCosmetic(b.dataset.cos); });
   $("#autoBtn").addEventListener("click", ()=>{
   if(autoBattle){ setAuto(false); return; }
@@ -409,6 +409,9 @@ function renderStats(){
   if((s.shopBuys|0) > 0)
     boxes.push(["🛒 Sklep", fmt(numFrom(s.shopBuys))+" zakupów",
       "wydano 🪙 "+fmtShort(numFrom(s.shopSpent))+" · skrzynek: "+fmt(numFrom(s.shopCases)), false]);
+  if((s.packBuys|0) > 0)
+    boxes.push(["🎁 Pakiety", fmt(numFrom(s.packBuys))+" otwarć",
+      "wydano 🪙 "+fmtShort(numFrom(s.packSpent))+" · starter: "+(state.packClaims && state.packClaims.starter ? "odebrany" : "czeka"), false]);
   const fxEvStat = fxEventPool().filter(f=>fxEventActive(f.id));
   boxes.push(["🎰 Eventy efektów", fxEvStat.length ? fxEvStat.length+" aktywne" : "brak",
     fxEvStat.length
@@ -667,7 +670,7 @@ $("#resetBtn").addEventListener("click", ()=>{
   LEGACY_KEYS.forEach(k=>localStorage.removeItem(k));
   state.coins = START_COINS; state.inv = []; state.recent = [];
   state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,fx:{},fxTotal:0,best:null,cases:{},
-    codeDrops:0,codeRedeems:0,codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0};
+    codeDrops:0,codeRedeems:0,codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0};
   state.up = UP_ZERO();
   state.bonusAt = 0; state.rescueAt = 0; state.cloverUntil = 0;
   state.battles = []; state.battleCase = "start"; state.battleSize = 1;
@@ -675,6 +678,7 @@ $("#resetBtn").addEventListener("click", ()=>{
   state.codes = {}; state.codeRedeemed = {}; state.codeBought = {};
   state.botUnlocked = {};
   state.shopSalt = 0; state.shopBought = {}; state.shopRefreshAt = 0;
+  state.packClaims = {}; const packRes = $("#packResult"); if(packRes) packRes.innerHTML = "";
   state.fxEvents = {}; FX_EVENT_SIG = "";
   SHOP_CACHE.tag = ""; SHOP_CACHE.list = [];
   state.idleKnifeClaimed = false; state.idleSec = 0; idleTimer = 0;

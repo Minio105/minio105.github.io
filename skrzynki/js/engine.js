@@ -446,11 +446,11 @@ const START_COINS = 5000;
 let state = {
   coins: START_COINS, inv: [], recent: [], battles: [],
   stats:{opened:0, spent:0, earned:0, sold:0, knives:0, relics:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{},
-    codeDrops:0, codeRedeems:0, codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0},
+    codeDrops:0, codeRedeems:0, codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0},
   up: UP_ZERO(),
   album:{}, albumClaimed:{}, missions:null, weekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false, idleSec:0,
   caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{},
-  shopSalt:0, shopBought:{}, shopRefreshAt:0,
+  shopSalt:0, shopBought:{}, shopRefreshAt:0, packClaims:{},
   codes:{}, codeRedeemed:{}, codeBought:{},
   sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, fxEvents:{}, battleCase:"start", battleSize:1,
   autoTurbo:false, autoLimit:0, exp:0, rank:1
@@ -519,9 +519,15 @@ function mergeFrom(other){
   m.shopBuys = Math.max(numFrom(m.shopBuys), numFrom(s.shopBuys));
   m.shopSpent = Math.max(numFrom(m.shopSpent), numFrom(s.shopSpent));
   m.shopCases = Math.max(numFrom(m.shopCases), numFrom(s.shopCases));
+  m.packBuys = Math.max(numFrom(m.packBuys), numFrom(s.packBuys));
+  m.packSpent = Math.max(numFrom(m.packSpent), numFrom(s.packSpent));
   const osb = (other.shopBought && typeof other.shopBought === "object" && !Array.isArray(other.shopBought)) ? other.shopBought : {};
   state.shopBought = (state.shopBought && typeof state.shopBought === "object" && !Array.isArray(state.shopBought)) ? state.shopBought : {};
   Object.keys(osb).forEach(k=>{ state.shopBought[k] = Math.max(numFrom(state.shopBought[k]), numFrom(osb[k])); });
+  /* 🎁 pakiety — jednorazowe odbioru (starter) nie mogą zginąć przy dwóch oknach */
+  const opc = (other.packClaims && typeof other.packClaims === "object" && !Array.isArray(other.packClaims)) ? other.packClaims : {};
+  state.packClaims = (state.packClaims && typeof state.packClaims === "object" && !Array.isArray(state.packClaims)) ? state.packClaims : {};
+  Object.keys(opc).forEach(k=>{ if(opc[k]) state.packClaims[k] = true; });
   /* 🎰 eventy efektów — przy grze w dwóch oknach liczy się dłuższy czas */
   const ofxEv = (other.fxEvents && typeof other.fxEvents === "object" && !Array.isArray(other.fxEvents)) ? other.fxEvents : {};
   state.fxEvents = (state.fxEvents && typeof state.fxEvents === "object" && !Array.isArray(state.fxEvents)) ? state.fxEvents : {};
@@ -611,7 +617,8 @@ function snapshot(){
     idleKnifeClaimed:state.idleKnifeClaimed===true, idleSec:numFrom(state.idleSec),
     codes:state.codes, codeRedeemed:state.codeRedeemed, codeBought:state.codeBought,
     caseStock:state.caseStock, botSalt:state.botSalt, botBought:state.botBought, botRefreshAt:state.botRefreshAt, botUnlocked:state.botUnlocked,
-    shopSalt:state.shopSalt, shopBought:state.shopBought, shopRefreshAt:state.shopRefreshAt };
+    shopSalt:state.shopSalt, shopBought:state.shopBought, shopRefreshAt:state.shopRefreshAt,
+    packClaims:state.packClaims || {} };
 }
 
 /* Zapis z weryfikacją + wykrywaniem gry w dwóch oknach.
@@ -739,6 +746,7 @@ function load(){
   state.shopSalt = numFrom(d.shopSalt);
   state.shopBought = (d.shopBought && typeof d.shopBought === "object" && !Array.isArray(d.shopBought)) ? d.shopBought : {};
   state.shopRefreshAt = numFrom(d.shopRefreshAt);
+  state.packClaims = (d.packClaims && typeof d.packClaims === "object" && !Array.isArray(d.packClaims)) ? d.packClaims : {};
   /* skrzynki botów są jednorazowe — stary zapis mógł mieć flagę „odblokowana”,
      ale jej nie używamy: po otwarciu trzeba kupić kolejną u bota. */
   state.botUnlocked = {};
@@ -760,7 +768,7 @@ function load(){
   ["codeDrops","codeRedeems","codeBuys"].forEach(k=>{ if(typeof state.stats[k] !== "number") state.stats[k] = 0; });
   state.idleKnifeClaimed = d.idleKnifeClaimed === true;
   state.idleSec = numFrom(d.idleSec);
-  ["botBuys","botSpent","botCases","stockOpened","bestDeal","trollOpened","trollWins","shopBuys","shopSpent","shopCases"].forEach(k=>{
+  ["botBuys","botSpent","botCases","stockOpened","bestDeal","trollOpened","trollWins","shopBuys","shopSpent","shopCases","packBuys","packSpent"].forEach(k=>{
     if(typeof state.stats[k] !== "number") state.stats[k] = 0;
   });
   saveRev = d.rev|0; knownRev = saveRev;

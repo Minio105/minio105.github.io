@@ -677,6 +677,32 @@ const SHOP_FACTOR = {
 const SHOP_CACHE = {tag:"", list:[]};
 let FX_EVENT_SIG = "";
 
+/* =======================================================================
+   8a-2. 🎁 PAKIETY — darmowy starter i losowe pakiety za monety
+   -----------------------------------------------------------------------
+   Pakiety nie są gwarantowanym zyskiem. Zawartość losuje się przy zakupie:
+   czasem trafi się coś droższego, czasem strata. Starter jest jednorazowy.
+   ======================================================================= */
+const PACK_CODE_CHANCE = 0.01;
+const PACKS = [
+  { id:"starter", icon:"🎁", name:"Pakiet startowy", badge:"FREE · JEDNORAZOWY",
+    color:"#38e08a", price:0, once:true,
+    desc:"2 500 monet, Skrzynka Startowa i losowa broń z Pryzmatu. Jednorazowy zastrzyk na start." },
+  { id:"bronie", icon:"🔫", name:"Pakiet broni", badge:"3 LOSOWE BRONIE",
+    color:"#60a5fa", price:9000,
+    desc:"Trzy bronie z Widma. Bez gwarancji zysku — czasem trafi się rzadszy model." },
+  { id:"skrzynki", icon:"📦", name:"Pakiet skrzynek", badge:"2 LOSOWE SKRZYNKI",
+    color:"#34d399", price:6000,
+    desc:"Dwie skrzynki z puli Pryzmat / Widmo / Chroma. Wszystkie trafiają do zapasu." },
+  { id:"kolekcjoner", icon:"💼", name:"Pakiet kolekcjonera", badge:"CHROMA + SZANSA NA KOD",
+    color:"#f472b6", price:32000,
+    desc:"Broń z Chromy, skrzynka Chroma i mała (1%) szansa na rzadki kod. Dla lubiących ryzyko." },
+  { id:"hazard", icon:"🎲", name:"Pakiet hazardzisty", badge:"WYSOKIE RYZYKO",
+    color:"#f59e0b", price:15000,
+    desc:"Cztery bronie z Widma, głównie tanie — ale może wypaść nóż. Czasem wielka strata, czasem jackpot." }
+];
+const PACK_BY_ID = Object.fromEntries(PACKS.map(p=>[p.id,p]));
+
 const shopCycle = () => Math.floor(Date.now()/SHOP_TTL);
 function shopStockMap(){
   if(!state.shopBought || typeof state.shopBought !== "object" || Array.isArray(state.shopBought)) state.shopBought = {};
@@ -871,6 +897,161 @@ function eventOfferHTML(o){
   </div>`;
 }
 
+function caseById(id){ return CASES.find(c=>c.id===id); }
+function packClaimed(p){
+  return !!(p && p.once && state.packClaims && state.packClaims[p.id]);
+}
+function packRandomCode(){
+  const pool = CODES.filter(c=>c.rarity === "rare" && c.id !== "otchlan");
+  return pool.length ? pool[(Math.random()*pool.length)|0] : null;
+}
+function packContents(p){
+  const out = {items:[], cases:{}, coins:0, codes:[]};
+  if(!p) return out;
+  if(p.id === "starter"){
+    const starterCase = caseById("start"), prism = caseById("prism");
+    out.coins = 2500;
+    if(starterCase) out.cases.start = 1;
+    if(prism) out.items.push(makeItem(prism, pickTier(prism)));
+  } else if(p.id === "bronie"){
+    const c = caseById("spectral");
+    if(c) for(let i=0;i<3;i++) out.items.push(makeItem(c, pickTier(c)));
+  } else if(p.id === "skrzynki"){
+    for(let i=0;i<2;i++){
+      const id = pickWeighted({prism:55, spectral:35, chroma:10}, Math.random);
+      if(caseById(id)) out.cases[id] = (out.cases[id]||0) + 1;
+    }
+  } else if(p.id === "kolekcjoner"){
+    const c = caseById("chroma");
+    if(c){ out.items.push(makeItem(c, pickTier(c))); out.cases.chroma = 1; }
+    if(Math.random() < PACK_CODE_CHANCE){
+      const code = packRandomCode();
+      if(code) out.codes.push(code);
+    }
+  } else if(p.id === "hazard"){
+    const c = caseById("spectral");
+    const w = {mil:70, restricted:22, classified:6, covert:1.5, special:.5};
+    if(c) for(let i=0;i<4;i++) out.items.push(makeItem(c, pickWeighted(w, Math.random)));
+  }
+  return out;
+}
+function addPackItems(items){
+  for(const item of items){
+    item.ts = item.ts || Date.now();
+    state.inv.unshift(item);
+    noteDrop(item);
+    albumRegister(item);
+  }
+}
+function packTotals(out){
+  const itemVal = out.items.reduce((a,i)=>a + i.value, 0);
+  const caseVal = Object.entries(out.cases).reduce((a,[id,n])=>a + casePrice(id)*n, 0);
+  return {itemVal, caseVal, total:itemVal + caseVal + out.coins};
+}
+function packLootHTML(out){
+  const rows = [];
+  if(out.coins)
+    rows.push(`<div class="pack-loot-item coins"><span class="pl-ico">🪙</span><div><b>+${fmt(out.coins)}</b><small>monet od razu</small></div></div>`);
+  for(const item of out.items){
+    const t = TIER[item.tier] || TIER.mil;
+    const f = fxOf(item);
+    rows.push(`<div class="pack-loot-item" style="--c:${t.color}">
+      <span class="pl-ico">${f ? f.icon : "🔫"}</span>
+      <div><b>${esc(item.w)}</b><small>${esc(item.n)} · ${t.name}${f ? " · "+f.name : ""}</small></div>
+      <span class="pl-val">🪙 ${fmtShort(item.value)}</span></div>`);
+  }
+  Object.entries(out.cases).forEach(([id,n])=>{
+    const c = caseById(id);
+    if(!c) return;
+    rows.push(`<div class="pack-loot-item" style="--c:${c.color}">
+      <span class="pl-ico">${c.icon}</span>
+      <div><b>${esc(c.name)}</b><small>×${n} · trafia do zapasu</small></div>
+      <span class="pl-val">🪙 ${fmtShort(casePrice(id)*n)}</span></div>`);
+  });
+  out.codes.forEach(def=>{
+    rows.push(`<div class="pack-loot-item code"><span class="pl-ico">${def.icon}</span>
+      <div><b>${esc(def.name)}</b><small>kod · odbierz w zakładce Kody</small></div></div>`);
+  });
+  return rows.join("");
+}
+function showPackResult(p,out){
+  const el = $("#packResult");
+  if(!el) return;
+  const v = packTotals(out);
+  const net = v.total - p.price;
+  const verdict = net > 0 ? "+🪙 "+fmtShort(net)+" · opłaca się"
+                : net < 0 ? "−🪙 "+fmtShort(-net)+" · strata"
+                : "🪙 0 · na zero";
+  const codeNote = out.codes.length
+    ? `<div class="pack-code-note">🔑 Bonus: ${out.codes.map(c=>esc(c.name)).join(", ")} — kod nie jest doliczony do wartości, odbierzesz go w Kody.</div>`
+    : "";
+  el.innerHTML = `<div class="pack-result-box ${net>=0?"pos":"neg"}">
+    <div class="pack-result-head">
+      <div><span class="pack-result-kicker">🎁 Otworzono pakiet</span><b>${p.icon} ${esc(p.name)}</b></div>
+      <span class="pack-verdict ${net>=0?"pos":"neg"}">${verdict}</span>
+    </div>
+    <div class="pack-loot">${packLootHTML(out)}</div>
+    <div class="pack-result-foot">Szacowana wartość: 🪙 ${fmtShort(v.total)}${p.price ? " · cena: 🪙 "+fmtShort(p.price) : " · pakiet darmowy"}</div>
+    ${codeNote}
+  </div>`;
+}
+function packCardHTML(p){
+  const claimed = packClaimed(p), free = p.price === 0;
+  return `<div class="pack-card${free?" free":""}${claimed?" claimed":""}" style="--c:${p.color}">
+    <div class="pack-badge">${p.badge}${claimed ? " · ODEBRANY" : ""}</div>
+    <div class="pack-head">
+      <div class="pack-ico">${p.icon}</div>
+      <div style="min-width:0"><div class="pack-name">${esc(p.name)}</div>
+        <div class="pack-sub">${free ? "prezent na start" : "losowy zestaw"}</div></div>
+    </div>
+    <div class="pack-desc">${p.desc}</div>
+    <div class="pack-meta"><span class="pack-price">${free ? "DARMOWY" : "🪙 "+fmtShort(p.price)}</span>
+      <span class="pack-tag">${free ? (claimed ? "odebrany" : "raz na konto") : "bez limitu"}</span></div>
+    <button class="pack-buy" data-pack="${p.id}" ${claimed?"disabled":""}>${claimed ? "✔ Odebrany" : free ? "Odbierz za darmo" : "Kup i otwórz"}</button>
+  </div>`;
+}
+function renderPacks(){
+  const g = $("#packGrid");
+  if(!g) return;
+  g.innerHTML = PACKS.map(packCardHTML).join("");
+  g.classList.add("ready");
+  const h = $("#packHint");
+  if(h) h.innerHTML = "5 rodzajów · starter jednorazowy · losowa zawartość";
+}
+function buyPack(id){
+  const p = PACK_BY_ID[id];
+  if(!p) return;
+  state.packClaims = (state.packClaims && typeof state.packClaims === "object" && !Array.isArray(state.packClaims)) ? state.packClaims : {};
+  if(p.once && packClaimed(p)){ sfxErr(); toast("Ten pakiet został już odebrany","bad"); return; }
+  if(state.coins < p.price){ sfxErr(); toast("Za mało monet na ten pakiet","bad"); return; }
+
+  if(p.price){
+    state.coins -= p.price;
+    state.stats.spent = numFrom(state.stats.spent) + p.price;
+  }
+  const out = packContents(p);
+  if(out.coins){
+    state.coins += out.coins;
+    state.stats.earned = numFrom(state.stats.earned) + out.coins;
+  }
+  addPackItems(out.items);
+  Object.entries(out.cases).forEach(([id,n])=>{
+    state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+    state.caseStock[id] = caseStock(id) + n;
+  });
+  out.codes.forEach(def=>{ addCode(def.id, 1); state.stats.codeDrops = numFrom(state.stats.codeDrops) + 1; });
+  state.stats.packBuys = numFrom(state.stats.packBuys) + 1;
+  state.stats.packSpent = numFrom(state.stats.packSpent) + p.price;
+  if(p.once) state.packClaims[p.id] = true;
+
+  markDirty(); save({kind:"pack"});
+  sfxCoin();
+  toast("🎁 Otwarto <b>"+esc(p.name)+"</b> — wynik zobaczysz pod pakietami.", "good");
+  renderBalance(); renderInv(); renderShop(); renderStats(); renderCodes(); renderMarket(true);
+  showPackResult(p, out);
+  checkAchievements();
+}
+
 function fxEventSignature(){
   return fxEventPool().map(f=>f.id+":"+(fxEventActive(f.id)?"1":"0")).join("|");
 }
@@ -998,6 +1179,7 @@ function renderMarket(force){
     ev.innerHTML = offers.filter(o=>o.seller==="event").map(eventOfferHTML).join("");
     ev.classList.add("ready");
   }
+  renderPacks();
   renderFxEvents();
   shopTick();
 }
@@ -1057,6 +1239,8 @@ function refreshShopOffers(){
 
 $("#shopRefresh").addEventListener("click", refreshShopOffers);
 $("#view-market").addEventListener("click", e=>{
+  const pk = e.target.closest("[data-pack]");
+  if(pk){ buyPack(pk.dataset.pack); return; }
   const fx = e.target.closest("[data-fxevent]");
   if(fx){ buyFxEvent(fx.dataset.fxevent); return; }
   const b = e.target.closest("[data-shopbuy]");

@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="description" content="Symulator otwierania skrzynek CS2 — bez prawdziwych pieniędzy. Otwieraj, kolekcjonuj, walcz z AI!">
+<meta name="theme-color" content="#05070d">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Case Opener — symulator skrzynek CS2</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div id="bgfx">
+  <div class="grid"></div>
+  <div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div>
+</div>
+
+<div id="app">
+<header id="topbar">
+  <div id="logo">
+    <span class="mark">★</span>
+    <span>CASE OPENER<small>SYMULATOR SKRZYNEK</small></span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-view="shop">🗝️ Skrzynki</button>
+    <button class="tab" data-view="bots">🤖 Bazar botów<span class="cnt" id="botCount">0</span></button>
+    <button class="tab" data-view="market">🛒 Sklep<span class="cnt" id="shopCount">0</span></button>
+    <button class="tab" data-view="codes">🔑 Kody<span class="cnt" id="codeCount">0</span></button>
+    <button class="tab" data-view="inv">🎒 Ekwipunek<span class="cnt" id="invCount">0</span></button>
+    <button class="tab" data-view="stats">📊 Statystyki</button>
+    <button class="tab" data-view="up">🚀 Ulepszenia<span class="cnt" id="upCount">0</span></button>
+    <button class="tab" data-view="battle">⚔️ Bitwy<span class="cnt" id="battleCount">0</span></button>
+    <button class="tab" data-view="album">📖 Album<span class="cnt" id="albumCount">0</span></button>
+    <button class="tab" data-view="daily">🎯 Misje<span class="cnt" id="dailyCount">0</span></button>
+    <button class="tab" data-view="casino">🎰 Kasyno</button>
+  </div>
+  <div class="spacer"></div>
+  <span id="saveFlag" class="save-flag">✓ zapisano</span>
+  <div id="rankPill" class="rank-pill"></div>
+  <button class="tb-btn" id="fastBtn" title="Pomiń animację otwierania">⚡ Szybkie</button>
+  <button class="tb-btn" id="bonusBtn" title="Darmowe monety co 20 sekund">🎁 Bonus <span class="cd"></span></button>
+  <button class="tb-btn" id="soundBtn" title="Dźwięk">🔊</button>
+  <button class="tb-btn" id="backupBtn" title="Kopia zapisu — wyeksportuj lub wczytaj kod">💾 Kopia</button>
+  <div class="balance"><span class="coin">🪙</span><span id="balance">0</span></div>
+  <button class="tb-btn" id="resetBtn" title="Zacznij od nowa">Reset</button>
+</header>
+
+<main>
+  <section class="view active" id="view-shop">
+    <h2 class="sec-title">Skrzynki <span class="line"></span><span class="muted" id="shopHint"></span></h2>
+    <div class="case-grid" id="caseGrid"></div>
+  </section>
+
+  <section class="view" id="view-bots">
+    <h2 class="sec-title">🤖 Bazar botów <span class="line"></span>
+      <span class="muted" id="botHint"></span>
+      <button class="tb-btn" id="botRefresh" title="Poproś boty o nowy towar">🔄 Nowe oferty</button>
+    </h2>
+    <div class="bot-note">
+      <span class="bnote-ico">🛒</span>
+      <div>
+        <b>Boty sprzedają ograniczoną liczbę broni i skrzynek.</b> Każda oferta ma swój zapas —
+        gdy go wykupisz, znika do następnej rotacji. Ceny są <b>niższe albo wyższe</b> od normalnych,
+        więc opłaca się porównywać: zielona plakietka to okazja, czerwona to przepłacanie.
+        Tylko tutaj kupisz <b>4 skrzynki niedostępne w zwykłym sklepie</b>: 🕶️ Przemytnika, 🎲 Hazardzisty,
+        🌾 Żniwiarza i 🏷️ Naklejek. Kupione skrzynki lądują w <b>zapasie</b> w zakładce Skrzynki —
+        ale są <b>jednorazowe</b>: po otwarciu znikają i <b>nie da się ich wznowić za monety</b>.
+        Kolejną musisz upolować u bota. W dwóch nowych skrzynkach czekają <b>✦ Relikty</b>:
+        kosy, noże, naklejki i ozdoby — każdy ma własne osiągnięcie.
+        Pod ofertami botów znajdziesz też <b>🔑 Kody</b> — wszystkie z kolekcji, w tym
+        <b>jeden bardzo rzadki</b>. Każdy kod kupisz u bota tylko raz.
+      </div>
+    </div>
+    <div class="bot-grid" id="botGrid"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🔑 Kody u botów <span class="line"></span><span class="muted" id="codeShopHint"></span></h2>
+    <div class="code-note">
+      <span class="cn-ico">🔑</span>
+      <div>
+        <b>Wszystkie kody z kolekcji są też w bazarze.</b> Każdy kod możesz kupić u botów
+        <b>tylko raz na profil</b> — potem zostaje w Twojej kolekcji. Ceny są poniżej nagrody,
+        ale to jednorazowa okazja. Wśród nich jest <b>jeden bardzo rzadki kod</b> 🌌 — najdroższy
+        i najbardziej opłacalny, dostępny <b>tylko u botów</b>. Pozostałe kody wypadają też
+        bardzo rzadko ze zwykłych skrzynek.
+      </div>
+    </div>
+    <div class="code-very-banner">🌌 <span><b>Dodatkowy kod bardzo rzadki:</b> Kod Otchłani — nagroda 🪙 10 000 000. Tylko u botów, raz na profil.</span></div>
+    <div class="code-grid" id="codeShop"></div>
+  </section>
+
+  <section class="view" id="view-market">
+    <h2 class="sec-title">🛒 Sklep <span class="line"></span>
+      <span class="muted" id="marketHint"></span>
+      <button class="tb-btn" id="shopRefresh" title="Poproś sprzedawców o nowy towar">🔄 Nowe oferty</button>
+    </h2>
+    <div class="bot-note">
+      <span class="bnote-ico">🛒</span>
+      <div>
+        <b>Sklep działa jak bazar botów, ale ma więcej sprzedawców i większe zapasy.</b>
+        Kupujesz tu bronie i zwykłe skrzynki — bez skrzynek zastrzeżonych tylko dla bazaru.
+        Oferty rotują co kilka minut, a ceny są <b>niższe albo wyższe</b> od normalnych:
+        zielona plakietka to okazja, czerwona to przepłacanie.
+        Kupione skrzynki trafiają do <b>zapasu</b> w zakładce Skrzynki.
+      </div>
+    </div>
+    <div class="bot-grid" id="shopGrid"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🎁 Pakiety <span class="line"></span><span class="muted" id="packHint"></span></h2>
+    <div class="bot-note event-note">
+      <span class="bnote-ico">🎁</span>
+      <div>
+        <b>Pakiet startowy jest darmowy i jednorazowy.</b> Pozostałe pakiety kupujesz za monety,
+        a ich zawartość jest losowa — <b>czasem okazja, czasem strata</b>.
+        Bronie trafiają do ekwipunku, skrzynki do zapasu, a kody do zakładki Kody.
+      </div>
+    </div>
+    <div class="pack-grid" id="packGrid"></div>
+    <div id="packResult" aria-live="polite"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🎰 Eventy efektów <span class="line"></span><span class="muted" id="fxEventHint"></span></h2>
+    <div class="bot-note event-note">
+      <span class="bnote-ico">🎰</span>
+      <div>
+        <b>Kup czasowy event na wybrany efekt broni</b> — np. 💎 Diamentowy albo 🌈 Tęczowy.
+        Przez <b>10 minut</b> ten efekt ma <b>4× większą wagę</b> przy dropach, a każdy aktywny event
+        dodaje <b>+5% ogólnej szansy na efekt</b> (eventowe szczęście / luck).
+        Możesz mieć kilka eventów naraz; kolejny zakup tego samego efektu przedłuża czas.
+      </div>
+    </div>
+    <div class="event-grid" id="fxEventGrid"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🎉 Oferty eventowe <span class="line"></span><span class="muted" id="eventHint"></span></h2>
+    <div class="bot-note event-note">
+      <span class="bnote-ico">🎉</span>
+      <div>
+        <b>Eventowe oferty:</b> bronie, skrzynie i — <b>bardzo rzadko</b> — kody.
+        Kod pojawia się tylko w nielicznych rotacjach (około <b>5%</b>) i znika razem z nowymi ofertami.
+        To okazja, ale nie licz na nią co kilka minut.
+      </div>
+    </div>
+    <div class="event-grid" id="eventGrid"></div>
+  </section>
+
+  <section class="view" id="view-codes">
+    <h2 class="sec-title">🔑 Kody <span class="line"></span><span class="muted" id="codeHint"></span></h2>
+    <div class="code-note">
+      <span class="cn-ico">🔑</span>
+      <div>
+        Kody to <b>bardzo rzadkie bonusy</b> — mogą wypaść dodatkowo przy otwieraniu skrzynki
+        (szansa <b>0,06%</b> na otwarcie, czyli około 1 na 1667). Wpisz kod poniżej albo kliknij
+        <b>Odbierz</b> na karcie, żeby zamienić go na monety. Kod zużywa się po odebraniu, ale jego
+        nazwa zostaje w osiągnięciach. Wszystkie kody znajdziesz też u botów w zakładce
+        <b>Bazar botów</b>. <b>Kod Otchłani</b> jest dodatkową, bardzo rzadką ofertą dostępną
+        <b>tylko u botów</b>.
+      </div>
+    </div>
+    <div class="code-redeem">
+      <input id="codeInput" placeholder="Wpisz kod, np. KOD-NEON-25" autocomplete="off" spellcheck="false">
+      <button class="btn primary" id="codeRedeem">Odbierz kod</button>
+      <span class="muted" id="codeRedeemHint"></span>
+    </div>
+    <h2 class="sec-title" style="margin-top:28px">Twoje kody <span class="line"></span><span class="muted" id="codeOwnedHint"></span></h2>
+    <div class="code-grid" id="codeOwned"></div>
+  </section>
+
+  <section class="view" id="view-inv">
+    <h2 class="sec-title">Ekwipunek <span class="line"></span></h2>
+    <div class="inv-toolbar">
+      <span class="pill">Przedmiotów: <b id="invTotal">0</b></span>
+      <span class="pill">Wartość: <span class="big" id="invValue">0</span></span>
+      <span class="muted">Kliknij przedmiot, aby sprzedać (<span id="sellRateHint">90% wartości</span>)</span>
+      <div class="spacer"></div>
+      <select id="invFilter">
+        <option value="all">Wszystkie rzadkości</option>
+        <option value="special">★ Rzadkie specjalne</option>
+        <option value="relic">✦ Relikty</option>
+        <option value="covert">Covert</option>
+        <option value="classified">Classified</option>
+        <option value="restricted">Restricted</option>
+        <option value="mil">Mil-Spec</option>
+      </select>
+      <select id="invSort">
+        <option value="value">Najdroższe</option>
+        <option value="new">Najnowsze</option>
+        <option value="rarity">Najrzadsze</option>
+      </select>
+      <button class="tb-btn" id="sellCheap">Sprzedaj poniżej progu</button>
+      <button class="tb-btn" id="sellAll">Sprzedaj wszystko</button>
+    </div>
+    <div class="inv-grid" id="invGrid"></div>
+  </section>
+
+  <section class="view" id="view-up">
+    <h2 class="sec-title">Ulepszenia <span class="line"></span><span class="muted" id="upHint"></span></h2>
+    <div class="up-grid" id="upGrid"></div>
+  </section>
+
+  <section class="view" id="view-battle">
+    <h2 class="sec-title">Bitwy na skrzynki <span class="line"></span><span class="muted" id="battleHint"></span></h2>
+    <div class="battle-note">
+      <span class="bn-ico">⚔️</span>
+      <div class="bn-txt">
+        Wybierz skrzynkę i ile skrzynek losuje każda strona. <b>Kto ma lepszy zestaw
+        (suma wartości), ten bierze wszystko</b> — przy równych sumach decyduje najlepszy tier.
+        Pełny remis oznacza, że pula przepada. Twoje 🎯 Szczęście i 🔪 Łowca Noży liczą się
+        tylko dla Ciebie, ale przewaga jest ograniczona — AI gra na bazowych szansach.
+        ⚔️ <b>Wojownik</b> zwiększa wartość przedmiotów, które <b>wygrywasz</b>, a nie szansę
+        na wygraną, więc walki pozostają wyrównane. Perk 📦 Hurt daje rabat w bitwie 5×5.
+        Aktywna 🍀 <b>koniczyna</b> ze skrzynek działa też tutaj.
+      </div>
+    </div>
+    <div class="battle-pick" id="battlePick"></div>
+    <div class="battle-size">
+      <span class="bs-label">Ile skrzynek na stronę?</span>
+      <div class="bs-opts" id="battleSize"></div>
+      <span class="bs-note" id="battleSizeNote"></span>
+    </div>
+    <div class="battle-go">
+      <button class="btn primary" id="fightBtn">⚔️ Walcz</button>
+      <button class="btn auto-btn" id="autoBtn" title="Walcz automatycznie, dopóki starcza monet">🔁 Auto-walka</button>
+      <button class="btn boss-btn" id="bossBtn" title="Walcz z bossem — ogromna stawka, potężne nagrody">👹 Boss</button>
+      <button class="btn koh-btn" id="kohBtn" title="Królowa góry — ryzyko wszystkiego za potężną pulę">🎰 Królowa góry</button>
+      <div class="battle-cost" id="battleCost"></div>
+    </div>
+    <h2 class="sec-title">Ostatnie bitwy <span class="line"></span></h2>
+    <div class="battle-log" id="battleLog"></div>
+  </section>
+
+  <section class="view" id="view-stats">
+    <h2 class="sec-title">Statystyki <span class="line"></span></h2>
+    <div class="stat-grid" id="statGrid"></div>
+    <h2 class="sec-title">🏆 Osiągnięcia <span class="line"></span><span class="muted" id="achHint"></span></h2>
+    <div class="ach-grid" id="achGrid"></div>
+    <h2 class="sec-title">🎨 Kosmetyki <span class="line"></span><span class="muted" id="cosHint"></span></h2>
+    <div class="cos-grid" id="cosGrid"></div>
+    <h2 class="sec-title">Ostatnie zdobycze <span class="line"></span></h2>
+    <div class="recent-list" id="recentList"></div>
+  </section>
+
+  <section class="view" id="view-album">
+    <h2 class="sec-title">📖 Album kolekcji <span class="line"></span><span class="muted" id="albumHint"></span></h2>
+    <div class="alb-sum" id="albSum"></div>
+    <div class="alb-pick" id="albPick"></div>
+    <div class="alb-body" id="albBody"></div>
+  </section>
+
+  <section class="view" id="view-daily">
+    <h2 class="sec-title">🎯 Misje dzienne <span class="line"></span><span class="muted" id="dailyHint"></span></h2>
+    <div class="mission-grid" id="missionGrid"></div>
+    <div class="daily-note">
+      <span class="dn-ico">🎯</span>
+      <div><b>Cztery misje na dziś</b> — trzy spokojne i jedno <b>wyzwanie ★</b>. Nowe dostajesz o północy.
+      Nagrodą są monety albo 🍀 czas koniczyny (ta sama, która wypada ze skrzynek). Dwie misje możesz
+      <b>wymienić w ciągu dnia</b> przyciskiem 🔄. Postęp liczy się z tego, co robisz w grze — otwieranie,
+      sprzedaż, bitwy (także te w 🔁 auto-walce) oraz zakupy w 🚀 ulepszeniach.</div>
+    </div>
+
+    <h2 class="sec-title" style="margin-top:34px">📅 Misje tygodniowe <span class="line"></span><span class="muted" id="weeklyHint"></span></h2>
+    <div class="mission-grid" id="weeklyGrid"></div>
+    <div class="daily-note wn">
+      <span class="dn-ico">📅</span>
+      <div><b>Dziesięć misji na cały tydzień</b> — zestaw startuje, gdy go pierwszy raz zobaczysz, i trwa
+      <b>7 dni</b>, potem losuje się nowy (licznik w nagłówku). Każda misja ma <b>poziom trudności</b>:
+      ⭐ Łatwa, ⭐⭐ Średnia, ⭐⭐⭐ Trudna, ⭐⭐⭐⭐ Ekstremalna — poziomy widać na karcie, a trudniejsze mają
+      <b>znacznie większy cel i większą nagrodę</b> (monety albo dłuższą 🍀 koniczynę). W zestawie są
+      3 łatwe, 3 średnie, 2 trudne i 2 ekstremalne. Dwie misje możesz <b>wymienić w ciągu tygodnia</b> (🔄),
+      a postęp liczy się z tej samej gry co dziennie — w tym ✨ efekty na broniach.</div>
+    </div>
+  </section>
+  <section class="view" id="view-casino">
+    <h2 class="sec-title">🎰 Kasyno skinów & Rangi CS2 <span class="line"></span></h2>
+    
+    <!-- Profil Rangi -->
+    <div id="casinoRankBox" class="casino-rank-box"></div>
+
+    <div class="casino-grid">
+      <!-- COINFLIP -->
+      <div class="casino-card">
+        <div class="cc-head">
+          <h3>🪙 Coinflip — Rzut monetą skinami</h3>
+          <span class="tag">50 / 50</span>
+        </div>
+        <p class="muted">Zaznacz od 1 do 10 skinów z ekwipunku, wybierz stronę monety (CT lub T) i rzuć wyzwanie! Wygrana podwaja pulę w monetach, przegrana zabiera skiny.</p>
+
+        <div class="cf-stage">
+          <div class="cf-coin" id="cfCoin">
+            <div class="cf-side cf-ct">CT</div>
+            <div class="cf-side cf-t">T</div>
+          </div>
+        </div>
+
+        <div class="cf-actions">
+          <button class="btn primary cf-btn ct" id="cfPickCT">Obstaw CT (Niebiescy)</button>
+          <button class="btn gold cf-btn t" id="cfPickT">Obstaw T (Terroryści)</button>
+        </div>
+
+        <div class="cf-summary">
+          <span>Wybrane skiny:</span>
+          <b id="cfSumVal">🪙 0</b>
+        </div>
+        <div class="cf-items" id="cfItems"></div>
+      </div>
+
+      <!-- CRASH -->
+      <div class="casino-card">
+        <div class="cc-head">
+          <h3>🚀 Crash — Rakieta mnożnika</h3>
+          <span class="tag">Ryzyko vs Zysk</span>
+        </div>
+        <p class="muted">Obstaw monety i patrz jak rośnie mnożnik. Wypłać w idealnym momencie zanim rakieta eksploduje!</p>
+
+        <div class="crash-arena">
+          <div class="crash-grid-bg"></div>
+          <div class="crash-rocket" id="crashRocket">🚀</div>
+          <div class="crash-mult" id="crashMultVal">1.00×</div>
+          <div class="crash-status" id="crashStatus">Gotowy do startu</div>
+        </div>
+
+        <div class="crash-controls">
+          <div class="crash-bet-row">
+            <input type="number" id="crashBetInput" value="500" min="100" step="100">
+            <button class="tb-btn" id="crashHalf">½</button>
+            <button class="tb-btn" id="crash2x">2×</button>
+            <button class="tb-btn" id="crashMax">MAX</button>
+          </div>
+          <div class="crash-btn-row">
+            <button class="btn primary" id="crashStartBtn">🚀 Rozpocznij lot</button>
+            <button class="btn gold" id="crashCashoutBtn" disabled>Wypłać</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+</div>
+
+<div class="overlay" id="spinOverlay">
+  <div class="panel">
+    <div class="panel-head">
+      <h3 id="spinTitle">Otwieranie…</h3>
+      <span class="tag" id="spinTag"></span>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="spinClose" title="Zamknij (przedmiot zachowasz)" aria-label="Zamknij okno otwierania">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="roulette">
+        <div class="marker"><span class="trail"></span></div>
+        <div class="strip" id="strip"></div>
+      </div>
+      <div class="spin-info">
+        <span class="spin-status"><span class="pulse-dot"></span><span id="spinStatus">Losowanie…</span></span>
+        <button class="tb-btn" id="skipBtn">Pomiń animację</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="resultOverlay">
+  <div class="panel" id="resultPanel" style="max-width:900px">
+    <div class="panel-head">
+      <h3 id="resTitle">Wynik</h3>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="resClose" aria-label="Zamknij wynik" title="Zamknij">✕</button>
+    </div>
+    <div class="panel-body result-wrap" id="resBody"></div>
+  </div>
+</div>
+
+<div class="overlay" id="battleOverlay">
+  <div class="panel battle-panel">
+    <div class="panel-head">
+      <h3>Bitwa na skrzynki</h3>
+      <span class="tag" id="battleTag"></span>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="battleClose" title="Pomiń / zamknij" aria-label="Zamknij bitwę">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="arena">
+        <div class="fighter" id="fighterMe">
+          <div class="fighter-name me">TY</div>
+          <div class="fighter-slot"><div class="slot-q">?</div><div class="slot-card" id="slotMe"></div></div>
+          <div class="fighter-val" id="valMe"></div>
+        </div>
+        <div class="arena-mid"><span class="vs-badge">VS</span></div>
+        <div class="fighter" id="fighterAi">
+          <div class="fighter-name ai">🤖 AI</div>
+          <div class="fighter-slot"><div class="slot-q">?</div><div class="slot-card" id="slotAi"></div></div>
+          <div class="fighter-val" id="valAi"></div>
+        </div>
+      </div>
+      <div class="battle-banner" id="battleBanner"></div>
+      <div class="result-actions" id="battleActions"></div>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="lootOverlay">
+  <div class="panel loot-panel">
+    <div class="panel-head">
+      <h3 id="lootTitle">Zawartość skrzynki</h3>
+      <span class="tag" id="lootTag"></span>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="lootClose" title="Zamknij" aria-label="Zamknij zawartość skrzynki">✕</button>
+    </div>
+    <div class="panel-body loot-body" id="lootBody"></div>
+  </div>
+</div>
+
+<div id="cloverPill">
+  <span class="cp-ico">🍀</span>
+  <span class="cp-col">
+    <span class="cp-t">Koniczyna</span>
+    <span class="cp-time" id="cloverTime">80s</span>
+  </span>
+  <span class="cp-bar"><i id="cloverBar"></i></span>
+</div>
+
+<div id="idlePill">
+  <span class="ip-ico">💤</span>
+  <span class="ip-col">
+    <span class="ip-t">Nagroda za czas gry</span>
+    <span class="ip-time" id="idleTime">0:00 do noża</span>
+  </span>
+  <span class="ip-bar"><i id="idleBar"></i></span>
+</div>
+
+<!-- 🤖 panel auto-otwierania (pokazywany tylko, gdy auto działa) -->
+<div class="auto-panel" id="autoPanel">
+  <div class="ap-head">
+    <span class="ap-title" id="autoTitle">🤖 Auto</span>
+    <button class="tb-btn ap-stop" id="autoStop" title="Zatrzymaj auto-otwieranie (Esc)">⏹ Stop</button>
+  </div>
+  <div class="ap-run" id="autoRun"></div>
+  <div class="ap-set">
+    <button class="ap-turbo" id="autoTurbo" title="Tryb turbo">⚡ Turbo</button>
+    <span class="ap-limlbl">limit:</span>
+    <div class="ap-lims" id="autoLims">
+      <button data-lim="0" title="Bez limitu — otwieraj, dopóki wystarcza monet">∞</button>
+      <button data-lim="25" title="Zatrzymaj po 25 otwarciach">25</button>
+      <button data-lim="100" title="Zatrzymaj po 100 otwarciach">100</button>
+      <button data-lim="500" title="Zatrzymaj po 500 otwarciach">500</button>
+    </div>
+  </div>
+  <div class="ap-bar hide" id="autoLimBar"><i id="autoLimFill"></i></div>
+  <div class="ap-feed" id="autoFeed"></div>
+  <div class="ap-best" id="autoBest"></div>
+</div>
+
+<div class="particles" id="particles"></div>
+<div id="toasts"></div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/market.js"></script>
+<script src="js/battle.js"></script>
+<script src="js/daily.js"></script>
+<script src="js/casino.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
