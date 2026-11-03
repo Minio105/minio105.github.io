@@ -1,7 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
+<meta name="description" content="Symulator otwierania skrzynek CS2 — bez prawdziwych pieniędzy. Otwieraj, kolekcjonuj, walcz z AI!">
+<meta name="theme-color" content="#05070d">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Case Opener — symulator skrzynek CS2</title>
 <style>
@@ -42,13 +44,11 @@ body{
   background-size:46px 46px;
   mask-image:radial-gradient(circle at 50% 0%,#000 0%,transparent 78%);
 }
-#bgfx .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.4;will-change:transform}
-#bgfx .o1{width:620px;height:620px;left:-160px;top:-220px;background:#1d3b8a;animation:drift1 26s ease-in-out infinite}
-#bgfx .o2{width:560px;height:560px;right:-180px;top:-140px;background:#6b1f7a;animation:drift2 32s ease-in-out infinite}
-#bgfx .o3{width:700px;height:700px;left:34%;bottom:-420px;background:#0e5a63;animation:drift3 38s ease-in-out infinite;opacity:.3}
-@keyframes drift1{50%{transform:translate(120px,90px) scale(1.15)}}
-@keyframes drift2{50%{transform:translate(-140px,120px) scale(1.1)}}
-@keyframes drift3{50%{transform:translate(90px,-90px) scale(1.18)}}
+#bgfx .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.36;will-change:auto}
+#bgfx .o1{width:620px;height:620px;left:-160px;top:-220px;background:#1d3b8a}
+#bgfx .o2{width:560px;height:560px;right:-180px;top:-140px;background:#6b1f7a;opacity:.32}
+#bgfx .o3{width:700px;height:700px;left:34%;bottom:-420px;background:#0e5a63;opacity:.27}
+/* drift1/2/3 keyframes usuniete — nieuzywane */
 #app{position:relative;z-index:1}
 
 button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
@@ -62,8 +62,8 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
   position:sticky;top:0;z-index:50;
   display:flex;align-items:center;gap:14px;flex-wrap:wrap;
   padding:11px 18px;
-  background:rgba(6,9,16,.78);
-  backdrop-filter:blur(18px) saturate(1.4);
+  background:rgba(6,9,16,.9);
+  backdrop-filter:blur(8px) saturate(1.2);
   border-bottom:1px solid rgba(51,69,111,.5);
   box-shadow:0 12px 40px -22px #000;
 }
@@ -193,6 +193,10 @@ button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit
   background:#3b4c78;font-size:11px;line-height:17px;text-align:center;font-variant-numeric:tabular-nums;
 }
 .tab.active .cnt{background:var(--acc);color:#231502}
+@media (max-width:760px){
+  .tabs{flex-wrap:wrap}
+  .tab{flex:1 1 auto;padding:8px 10px;text-align:center}
+}
 
 /* ======================= LAYOUT ======================= */
 main{max-width:1380px;margin:0 auto;padding:24px 18px 90px}
@@ -247,7 +251,18 @@ main{max-width:1380px;margin:0 auto;padding:24px 18px 90px}
   border:1px solid var(--line);overflow:hidden;
   transition:transform .25s cubic-bezier(.2,.8,.3,1),box-shadow .25s,border-color .25s;
   animation:cardIn .5s backwards cubic-bezier(.2,.8,.3,1);
+  content-visibility:auto;contain-intrinsic-size:auto 430px;
 }
+/* Po pierwszym narysowaniu sklepu karty nie odtwarzają już animacji wejścia. */
+#caseGrid.ready .case-card,
+#botGrid.ready .bot-card,
+#shopGrid.ready .bot-card,
+#eventGrid.ready .event-card,
+#fxEventGrid.ready .event-card,
+#packGrid.ready .pack-card,
+#codeShop.ready .code-card,
+#codeOwned.ready .code-card{animation:none}
+#invGrid .item-card{content-visibility:auto;contain-intrinsic-size:auto 280px}
 @keyframes cardIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}
 .case-card::before{
   content:"";position:absolute;inset:0;pointer-events:none;
@@ -268,14 +283,25 @@ main{max-width:1380px;margin:0 auto;padding:24px 18px 90px}
 .crate .halo{
   position:absolute;width:190px;height:190px;border-radius:50%;
   background:conic-gradient(from 0deg,transparent,var(--cc),transparent 42%);
-  filter:blur(28px);opacity:.5;animation:spin 9s linear infinite;
+  filter:blur(19px);opacity:.45;animation:spin 12s linear infinite;
 }
 .crate .shine{
   position:absolute;top:0;left:-70%;width:40%;height:100%;z-index:3;
   background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);
   animation:shine 5.5s ease-in-out infinite;
-}
+} 
 @keyframes shine{0%,72%{left:-70%}100%{left:140%}}
+
+/* Wydajność: dekoracyjne animacje działają tylko na karcie pod kursorem.
+   Na dotyku są zatrzymane — mniej pracy dla GPU przy długiej liście skrzynek. */
+@media (hover:hover){
+  .case-card:not(:hover) .crate *{animation-play-state:paused}
+  .case-card.opening .crate *{animation-play-state:running}
+}
+@media (hover:none), (pointer:coarse){
+  .case-card .crate *{animation-play-state:paused}
+  .case-card.opening .crate *{animation-play-state:running !important}
+}
 /* pseudo-3D skrzynia */
 .box3d{position:relative;width:132px;height:112px;perspective:620px;transition:transform .35s cubic-bezier(.2,.8,.3,1);z-index:2}
 .case-card:hover .box3d{transform:translateY(-7px) rotate(-1.5deg)}
@@ -312,7 +338,7 @@ main{max-width:1380px;margin:0 auto;padding:24px 18px 90px}
 .box3d .b4{right:8px;bottom:8px;border-left:0;border-top:0}
 .crate .glowfloor{
   position:absolute;bottom:6px;left:50%;translate:-50% 0;width:120px;height:16px;border-radius:50%;
-  background:var(--cc);filter:blur(16px);opacity:.55;
+  background:var(--cc);filter:blur(10px);opacity:.5;
 }
 /* otwieranie: wstrząs skrzynki */
 .case-card.opening .box3d{animation:crateShake .4s ease-in-out}
@@ -734,8 +760,14 @@ main{max-width:1380px;margin:0 auto;padding:24px 18px 90px}
 @keyframes starTwinkle{50%{transform:scale(1.2) rotate(12deg);filter:drop-shadow(0 0 14px rgba(255,215,0,1))}}
 .item-card.tier-special{border-color:rgba(255,215,0,.45)}
 .item-card.tier-special::before{opacity:.4}
+/* ✦ relikty — najrzadsze przedmioty w grze, tylko z bazaru botów */
+.item-card.tier-relic{border-color:rgba(255,236,170,.7);
+  box-shadow:0 0 0 1px rgba(255,236,170,.22),0 18px 38px -18px rgba(255,215,100,.65)}
+.item-card.tier-relic::before{opacity:.55;background:radial-gradient(240px 130px at 50% -8%,#ffe9a8,transparent 70%)}
+.item-card.tier-relic::after{background:linear-gradient(90deg,transparent,#ffe9a8,transparent)}
+.star.relic-star{color:#fff7d6;text-shadow:0 0 10px #fff,0 0 22px #ffd76a}
 /* efekt foil dla rzadkich */
-.item-card.tier-special .art-foil,.item-card.tier-covert .art-foil{
+.item-card.tier-special .art-foil,.item-card.tier-covert .art-foil,.item-card.tier-relic .art-foil{
   position:absolute;inset:0;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
   background:linear-gradient(115deg,transparent 20%,#ffd70033 38%,#ff5fa833 50%,#4bd6ff33 62%,transparent 80%);
   animation:foil 4.5s linear infinite;background-size:280% 100%;
@@ -955,6 +987,22 @@ select:hover{border-color:var(--line2)}
 .result-actions .btn{flex:0 0 auto;min-width:180px}
 .multi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(182px,1fr));gap:14px;max-height:54vh;overflow-y:auto;padding:2px 6px 2px 2px}
 .multi-grid .item-card{animation:cardIn .45s backwards cubic-bezier(.2,.8,.3,1)}
+/* 🤡 wynik Skrzynki Troll */
+.troll-result{position:relative;padding:30px 18px;border-radius:18px;text-align:center;overflow:hidden;
+  border:1px solid rgba(148,163,184,.35);background:radial-gradient(circle at 50% 0%,rgba(148,163,184,.16),#0a101d 72%);
+  animation:pop .5s cubic-bezier(.15,1.5,.4,1)}
+.troll-result.jackpot{--c:#fbbf24;border-color:rgba(251,191,36,.55);
+  background:radial-gradient(circle at 50% 0%,rgba(251,191,36,.26),#0a101d 72%);
+  box-shadow:0 28px 60px -30px rgba(251,191,36,.7),inset 0 0 0 1px rgba(251,191,36,.25)}
+.troll-result:not(.jackpot){--c:#94a3b8}
+.troll-coin{font-size:62px;line-height:1;filter:drop-shadow(0 8px 18px rgba(0,0,0,.55));animation:pop .6s cubic-bezier(.15,1.5,.4,1)}
+.troll-result.jackpot .troll-coin{filter:drop-shadow(0 0 22px rgba(251,191,36,.8))}
+.troll-amount{margin-top:10px;font-size:clamp(30px,7vw,50px);font-weight:900;letter-spacing:.5px;color:var(--c)}
+.troll-label{margin-top:7px;font-size:12px;font-weight:900;letter-spacing:2px;color:var(--dim)}
+.troll-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;max-height:54vh;overflow-y:auto;padding:2px 6px 2px 2px}
+.troll-grid .troll-result{padding:22px 12px}
+.troll-grid .troll-coin{font-size:42px}
+.troll-grid .troll-amount{font-size:28px}
 
 /* wstrząs ekranu przy dobrym dropie */
 .shake{animation:screenShake .55s cubic-bezier(.36,.07,.19,.97)}
@@ -1365,6 +1413,182 @@ select:hover{border-color:var(--line2)}
 .stock-tag b{color:#d6ffe6}
 @media (max-width:760px){ .bot-grid{grid-template-columns:1fr} }
 
+/* ======================= 🛒 SKLEP + 🎉 EVENTY ======================= */
+.event-note{background:linear-gradient(180deg,#1d1831,#0d101a);border-color:rgba(251,191,36,.38)}
+.event-note .bnote-ico{filter:drop-shadow(0 0 12px rgba(251,191,36,.45))}
+.event-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.event-card{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:10px;padding:15px;border-radius:16px;
+  background:linear-gradient(165deg,#1a1730,#0b101c 62%,#090e18);border:1px solid rgba(251,191,36,.38);
+  box-shadow:0 18px 40px -26px #000,inset 0 0 34px rgba(251,191,36,.045);
+  animation:cardIn .45s backwards cubic-bezier(.2,.8,.3,1)}
+.event-card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(260px 150px at 50% -12%,var(--c,#fbbf24),transparent 72%);opacity:.12}
+.event-card.sold{opacity:.45;filter:grayscale(.55)}
+.event-card.event-code{border-color:rgba(168,85,247,.6);box-shadow:0 20px 44px -26px rgba(168,85,247,.5),inset 0 0 34px rgba(168,85,247,.07)}
+.event-badge{position:relative;z-index:1;align-self:flex-start;font-size:9.5px;font-weight:900;letter-spacing:1.1px;
+  padding:3px 8px;border-radius:99px;color:#ffe8a3;background:rgba(251,191,36,.12);border:1px solid rgba(251,191,36,.42)}
+.event-card.event-code .event-badge{color:#e9d5ff;background:rgba(168,85,247,.14);border-color:rgba(168,85,247,.5)}
+.event-head{position:relative;z-index:1;display:flex;align-items:center;gap:10px}
+.event-ico{width:44px;height:44px;flex:none;display:grid;place-items:center;font-size:22px;border-radius:12px;
+  background:radial-gradient(circle at 50% 120%,color-mix(in srgb,var(--c,#fbbf24) 50%,transparent),#080d18 72%);
+  border:1px solid color-mix(in srgb,var(--c,#fbbf24) 38%,transparent)}
+.event-name{position:relative;z-index:1;font-size:14px;font-weight:900;line-height:1.25}
+.event-sub{position:relative;z-index:1;font-size:10.5px;color:var(--dim2);font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.event-art{position:relative;z-index:1;height:86px;display:grid;place-items:center;border-radius:11px;overflow:hidden;
+  background:radial-gradient(circle at 50% 120%,color-mix(in srgb,var(--c,#fbbf24) 42%,transparent),#070c15 72%);
+  border:1px solid color-mix(in srgb,var(--c,#fbbf24) 26%,transparent)}
+.event-art svg{width:100%;height:100%;display:block;padding:5px;filter:drop-shadow(0 4px 7px rgba(0,0,0,.65))}
+.event-art.event-case{font-size:38px}
+.event-code-string{position:relative;z-index:1;padding:9px 10px;border-radius:9px;background:#070c15;
+  border:1px dashed color-mix(in srgb,var(--c,#a855f7) 55%,transparent);color:#f5e9ff;
+  font-size:12px;font-weight:900;letter-spacing:1px;text-align:center;font-variant-numeric:tabular-nums}
+.event-meta{position:relative;z-index:1;display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-size:10.5px}
+.event-price{font-weight:900;color:var(--acc);font-variant-numeric:tabular-nums}
+.event-base{color:var(--dim2);text-decoration:line-through}
+.event-stock{font-size:9.5px;color:var(--dim2);font-weight:800;letter-spacing:.4px}
+.event-stock.low{color:#ffb84d}
+.event-buy{position:relative;z-index:1;width:100%;margin-top:auto;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:900;
+  background:linear-gradient(180deg,#ffd063,#e0890f);color:#2b1a02;border:1px solid #ffe093;transition:.15s}
+.event-buy:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.event-buy:disabled{opacity:.4;cursor:not-allowed}
+.event-card.event-code .event-buy{background:linear-gradient(180deg,#d8b4fe,#9333ea);border-color:#e9d5ff;color:#fff}
+.fx-event-card .event-head{gap:9px}
+.fx-event-card .event-ico{font-size:23px}
+.fx-event-card.active{border-color:color-mix(in srgb,var(--c,#fbbf24) 72%,#fff 6%);
+  box-shadow:0 0 0 1px color-mix(in srgb,var(--c,#fbbf24) 38%,transparent),0 20px 44px -24px color-mix(in srgb,var(--c,#fbbf24) 55%,transparent)}
+.fx-event-card.active::before{opacity:.22}
+.fx-event-card.active .event-badge{color:#dcfce7;background:rgba(34,197,94,.14);border-color:rgba(74,222,128,.5)}
+.fx-event-card.active .event-buy{background:linear-gradient(180deg,#d9f99d,#65a30d);border-color:#ecfccb;color:#132000}
+.fx-event-chance{position:relative;z-index:1;font-size:11px;color:var(--dim);line-height:1.5}
+.fx-event-chance b{color:var(--txt)}
+.fx-event-time{position:relative;z-index:1;font-size:10.5px;font-weight:900;letter-spacing:.3px;color:var(--dim2)}
+.fx-event-time.on{color:#86efac}
+/* ======================= 🎁 PAKIETY ======================= */
+.pack-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(225px,1fr));gap:14px;margin-top:12px}
+.pack-card{position:relative;display:flex;flex-direction:column;gap:10px;padding:15px;border-radius:16px;overflow:hidden;
+  background:linear-gradient(165deg,#121a2c,#080d17 72%);
+  border:1px solid color-mix(in srgb,var(--c,#60a5fa) 28%,var(--line2));
+  box-shadow:0 14px 34px -24px #000;transition:transform .16s,border-color .16s,box-shadow .16s}
+.pack-card::before{content:"";position:absolute;inset:0;pointer-events:none;opacity:.6;
+  background:radial-gradient(circle at 10% 0%,color-mix(in srgb,var(--c,#60a5fa) 22%,transparent),transparent 58%)}
+.pack-card:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--c,#60a5fa) 62%,#fff 5%);
+  box-shadow:0 18px 38px -24px color-mix(in srgb,var(--c,#60a5fa) 45%,transparent)}
+.pack-card.free{border-color:rgba(74,222,128,.58);box-shadow:0 0 0 1px rgba(74,222,128,.12),0 16px 34px -25px rgba(34,197,94,.65)}
+.pack-card.free::before{background:radial-gradient(circle at 10% 0%,rgba(74,222,128,.22),transparent 58%)}
+.pack-card.claimed{opacity:.6;filter:saturate(.5)}
+.pack-badge{position:relative;z-index:1;align-self:flex-start;padding:4px 7px;border-radius:6px;font-size:8.5px;font-weight:900;
+  letter-spacing:.6px;color:color-mix(in srgb,var(--c,#60a5fa) 76%,#fff 12%);
+  background:color-mix(in srgb,var(--c,#60a5fa) 12%,transparent);
+  border:1px solid color-mix(in srgb,var(--c,#60a5fa) 35%,transparent)}
+.pack-card.free .pack-badge{color:#dcfce7;background:rgba(34,197,94,.14);border-color:rgba(74,222,128,.5)}
+.pack-head{position:relative;z-index:1;display:flex;align-items:center;gap:9px}
+.pack-ico{font-size:25px;line-height:1;filter:drop-shadow(0 0 12px color-mix(in srgb,var(--c,#60a5fa) 65%,transparent))}
+.pack-name{font-size:14px;font-weight:900;letter-spacing:.2px;color:var(--txt)}
+.pack-sub{font-size:9.5px;color:var(--dim2);font-weight:800;letter-spacing:.4px;text-transform:uppercase;margin-top:2px}
+.pack-desc{position:relative;z-index:1;font-size:11.5px;line-height:1.55;color:var(--dim);min-height:52px}
+.pack-meta{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;padding-top:2px}
+.pack-price{font-size:13px;font-weight:900;color:var(--acc);font-variant-numeric:tabular-nums}
+.pack-card.free .pack-price{color:#86efac}
+.pack-tag{font-size:9px;font-weight:800;letter-spacing:.4px;color:var(--dim2);text-transform:uppercase}
+.pack-buy{position:relative;z-index:1;width:100%;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:900;
+  background:linear-gradient(180deg,#ffd063,#e0890f);color:#2b1a02;border:1px solid #ffe093;transition:.15s}
+.pack-buy:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.pack-buy:disabled{opacity:.45;cursor:not-allowed}
+.pack-card.free .pack-buy{background:linear-gradient(180deg,#bbf7d0,#22c55e);border-color:#dcfce7;color:#052e16}
+.pack-card.claimed .pack-buy{background:#263044;border-color:#3a465e;color:#8290a8}
+#packResult{margin-top:14px}
+#packResult:empty{display:none}
+.pack-result-box{padding:14px;border-radius:16px;background:linear-gradient(165deg,#101827,#080d15);
+  border:1px solid #2b3850;box-shadow:0 16px 36px -26px #000}
+.pack-result-box.pos{border-color:rgba(74,222,128,.38)}
+.pack-result-box.neg{border-color:rgba(248,113,113,.32)}
+.pack-result-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pack-result-kicker{display:block;font-size:9px;font-weight:900;letter-spacing:.9px;text-transform:uppercase;color:var(--dim2);margin-bottom:4px}
+.pack-result-head b{font-size:16px;color:var(--txt)}
+.pack-verdict{padding:7px 10px;border-radius:9px;font-size:11px;font-weight:900;font-variant-numeric:tabular-nums;
+  background:rgba(148,163,184,.1);border:1px solid rgba(148,163,184,.2);color:var(--dim)}
+.pack-verdict.pos{color:#86efac;background:rgba(34,197,94,.12);border-color:rgba(74,222,128,.35)}
+.pack-verdict.neg{color:#fca5a5;background:rgba(239,68,68,.1);border-color:rgba(248,113,113,.3)}
+.pack-loot{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px;margin-top:12px}
+.pack-loot-item{display:flex;align-items:center;gap:9px;min-width:0;padding:9px 10px;border-radius:10px;
+  background:#0b1220;border:1px solid color-mix(in srgb,var(--c,#60a5fa) 22%,var(--line2));
+  border-left:3px solid color-mix(in srgb,var(--c,#60a5fa) 70%,transparent)}
+.pack-loot-item .pl-ico{flex:0 0 auto;font-size:19px;line-height:1;filter:drop-shadow(0 0 8px color-mix(in srgb,var(--c,#60a5fa) 55%,transparent))}
+.pack-loot-item > div{min-width:0;flex:1}
+.pack-loot-item b{display:block;font-size:11.5px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pack-loot-item small{display:block;font-size:9px;color:var(--dim2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.pack-loot-item .pl-val{flex:0 0 auto;font-size:10px;font-weight:900;color:var(--acc);font-variant-numeric:tabular-nums}
+.pack-loot-item.coins{border-left-color:#fbbf24}
+.pack-loot-item.code{border-left-color:#a855f7;background:linear-gradient(90deg,rgba(88,28,135,.22),#0b1220)}
+.pack-result-foot{margin-top:10px;font-size:10.5px;font-weight:700;color:var(--dim)}
+.pack-code-note{margin-top:8px;padding:8px 10px;border-radius:9px;font-size:10.5px;color:#e9d5ff;
+  background:rgba(88,28,135,.22);border:1px solid rgba(168,85,247,.35)}
+@media (max-width:760px){
+  .event-grid{grid-template-columns:1fr}
+  .pack-grid{grid-template-columns:1fr}
+  .pack-loot{grid-template-columns:1fr}
+  .pack-result-head{align-items:flex-start;flex-direction:column}
+  .pack-desc{min-height:0}
+}
+
+/* ======================= 🔑 KODY ======================= */
+.code-note{display:flex;gap:12px;align-items:flex-start;padding:13px 15px;margin-bottom:18px;border-radius:13px;
+  background:linear-gradient(180deg,#151327,#0b0d18);border:1px solid #342b57;
+  font-size:12.5px;color:var(--dim);line-height:1.6}
+.code-note b{color:#e9d5ff}
+.code-note .cn-ico{font-size:25px;line-height:1;filter:drop-shadow(0 0 12px rgba(168,85,247,.7))}
+.code-very-banner{display:flex;align-items:center;gap:10px;margin:-8px 0 16px;padding:10px 14px;border-radius:12px;
+  font-size:12px;color:#e9d5ff;background:linear-gradient(90deg,rgba(88,28,135,.45),rgba(30,27,75,.3));
+  border:1px solid rgba(168,85,247,.5);box-shadow:inset 0 0 30px rgba(168,85,247,.08)}
+.code-very-banner b{color:#fff}
+.code-redeem{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:14px;margin-bottom:20px;border-radius:14px;
+  background:linear-gradient(165deg,#151b31,#0a101c);border:1px solid var(--line)}
+.code-redeem input{flex:1;min-width:230px;padding:11px 13px;border-radius:11px;background:#070c15;
+  border:1px solid #3b2d63;color:var(--txt);font:inherit;font-size:14px;font-weight:900;letter-spacing:1.2px;
+  text-transform:uppercase;outline:none}
+.code-redeem input:focus{border-color:#a855f7;box-shadow:0 0 0 3px rgba(168,85,247,.16)}
+.code-redeem input::placeholder{color:#5d6b8a;letter-spacing:.4px;text-transform:none;font-weight:600}
+.code-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(292px,1fr));gap:14px}
+.code-card{position:relative;overflow:hidden;display:flex;flex-direction:column;gap:9px;padding:15px;border-radius:15px;
+  background:linear-gradient(165deg,#121b2f,#0a1120);border:1px solid var(--line);
+  box-shadow:0 18px 40px -28px #000;animation:cardIn .4s backwards cubic-bezier(.2,.8,.3,1)}
+.code-card::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(circle at 100% 0%,color-mix(in srgb,var(--cc,#a855f7) 18%,transparent),transparent 58%)}
+.code-card.veryRare{border-color:rgba(168,85,247,.65);
+  box-shadow:0 20px 48px -26px rgba(168,85,247,.55),inset 0 0 40px rgba(168,85,247,.08)}
+.code-card.veryRare::after{content:"";position:absolute;left:0;right:0;top:0;height:2px;
+  background:linear-gradient(90deg,#22d3ee,#a855f7,#f43f5e,#fbbf24)}
+.code-card.bought{opacity:.55;filter:grayscale(.25)}
+.code-card .cc-top{display:flex;align-items:center;gap:10px;position:relative;z-index:1}
+.code-ico{width:44px;height:44px;flex:none;display:grid;place-items:center;font-size:22px;border-radius:12px;
+  background:radial-gradient(circle at 50% 120%,color-mix(in srgb,var(--cc,#a855f7) 50%,transparent),#080d18 72%);
+  border:1px solid color-mix(in srgb,var(--cc,#a855f7) 38%,transparent)}
+.code-name{font-size:14px;font-weight:900;line-height:1.2}
+.code-rarity{display:inline-flex;align-items:center;gap:5px;margin-top:3px;padding:2px 7px;border-radius:99px;
+  font-size:9.5px;font-weight:900;letter-spacing:.6px;text-transform:uppercase;
+  color:#d8b4fe;background:rgba(168,85,247,.12);border:1px solid rgba(168,85,247,.35)}
+.code-card.rare .code-rarity{color:#93c5fd;background:rgba(59,130,246,.12);border-color:rgba(59,130,246,.35)}
+.code-string{position:relative;z-index:1;padding:8px 10px;border-radius:9px;background:#070c15;border:1px dashed #3b2d63;
+  font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;font-weight:800;letter-spacing:1.1px;
+  color:#e9d5ff;text-align:center;overflow-wrap:anywhere}
+.code-reward{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  font-size:11.5px;color:var(--dim)}
+.code-reward b{color:var(--acc);font-size:13px;font-variant-numeric:tabular-nums}
+.code-reward .cc-qty{color:#d8b4fe;font-weight:900}
+.code-actions{position:relative;z-index:1;display:flex;align-items:center;gap:8px;margin-top:auto}
+.code-actions .btn{flex:1;padding:9px 10px;font-size:11.5px}
+.code-empty{grid-column:1/-1;padding:26px;text-align:center;border-radius:14px;border:1px dashed var(--line2);
+  color:var(--dim);font-size:13px;background:rgba(10,16,28,.45)}
+.code-empty b{color:#d8b4fe}
+.result-code{position:relative;margin:14px 0 0;padding:12px 14px;border-radius:12px;text-align:center;
+  font-size:12.5px;line-height:1.55;color:#e9d5ff;
+  background:linear-gradient(180deg,rgba(88,28,135,.34),rgba(20,12,35,.55));
+  border:1px solid rgba(168,85,247,.55);box-shadow:inset 0 0 32px rgba(168,85,247,.12)}
+.result-code .rc-code{display:block;margin-top:5px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;
+  font-size:13px;font-weight:900;letter-spacing:1.3px;color:#fff}
+.result-code .btn{margin-top:9px;padding:8px 12px;font-size:11.5px}
+@media (max-width:760px){ .code-grid{grid-template-columns:1fr} }
+
 /* ---- skórki dwóch skrzynek dostępnych tylko u botów ---- */
 [data-skin="smuggler"]{--pat:repeating-linear-gradient(90deg,rgba(0,0,0,.38) 0 10px,rgba(16,185,129,.14) 10px 20px);--patop:.8}
 [data-skin="smuggler"] .body{background:linear-gradient(158deg,#0f766e,#064e3b 46%,#041d16)}
@@ -1423,6 +1647,38 @@ select:hover{border-color:var(--line2)}
 .case-card.elite{border-color:rgba(56,189,248,.45);box-shadow:0 28px 70px -30px rgba(56,189,248,.6),inset 0 0 40px rgba(56,189,248,.06)}
 .case-card.elite::after{background:linear-gradient(90deg,#34d399,#38bdf8,#f472b6)}
 .case-card.elite .case-tag{color:#e0f2fe;border-color:#7dd3fc;background:linear-gradient(180deg,#0c4a6e,#082f49);box-shadow:0 0 22px -4px #38bdf8}
+/* ================= 💠 SKRZYNKI ULTRA (20T – 1Qd) ================= */
+[data-skin="quad"]{--pat:repeating-linear-gradient(0deg,rgba(34,211,238,.22) 0 1px,transparent 1px 18px),repeating-linear-gradient(90deg,rgba(34,211,238,.22) 0 1px,transparent 1px 18px);--patop:.85}
+[data-skin="quad"] .body{background:linear-gradient(158deg,#22d3ee,#0e7490 46%,#082f49)}
+[data-skin="quad"] .lid{background:linear-gradient(180deg,#a5f3fc,#0891b2 55%,#155e75)}
+[data-skin="quad"] .emblem{filter:drop-shadow(0 0 14px #67e8f9)}
+[data-skin="quint"]{--pat:repeating-linear-gradient(60deg,rgba(129,140,248,.28) 0 2px,transparent 2px 20px);--patop:.85}
+[data-skin="quint"] .body{background:linear-gradient(158deg,#818cf8,#4338ca 46%,#1e1b4b)}
+[data-skin="quint"] .lid{background:linear-gradient(180deg,#c7d2fe,#4f46e5 55%,#312e81)}
+[data-skin="quint"] .emblem{filter:drop-shadow(0 0 14px #a5b4fc)}
+[data-skin="sext"]{--pat:repeating-linear-gradient(45deg,rgba(251,113,133,.28) 0 2px,transparent 2px 16px);--patop:.85}
+[data-skin="sext"] .body{background:linear-gradient(158deg,#fb7185,#be123c 46%,#4c0519)}
+[data-skin="sext"] .lid{background:linear-gradient(180deg,#fecdd3,#e11d48 55%,#9f1239)}
+[data-skin="sext"] .emblem{filter:drop-shadow(0 0 14px #fda4af)}
+[data-skin="sept"]{--pat:repeating-linear-gradient(120deg,rgba(245,158,11,.3) 0 3px,transparent 3px 22px);--patop:.85}
+[data-skin="sept"] .body{background:linear-gradient(158deg,#f59e0b,#b45309 46%,#451a03)}
+[data-skin="sept"] .lid{background:linear-gradient(180deg,#fde68a,#d97706 55%,#92400e)}
+[data-skin="sept"] .emblem{filter:drop-shadow(0 0 14px #fbbf24)}
+[data-skin="oct"]{--pat:radial-gradient(rgba(45,212,191,.7) .9px,transparent 1.8px);--pats:20px 20px;--patop:.9}
+[data-skin="oct"] .body{background:linear-gradient(158deg,#2dd4bf,#0f766e 46%,#042f2e)}
+[data-skin="oct"] .lid{background:linear-gradient(180deg,#99f6e4,#0d9488 55%,#115e59)}
+[data-skin="oct"] .emblem{filter:drop-shadow(0 0 14px #5eead4)}
+[data-skin="non"]{--pat:radial-gradient(circle,rgba(192,132,252,.8) .8px,transparent 1.6px);--pats:16px 16px;--patop:.9}
+[data-skin="non"] .body{background:linear-gradient(158deg,#c084fc,#6b21a8 46%,#0c0a09)}
+[data-skin="non"] .lid{background:linear-gradient(180deg,#e9d5ff,#a855f7 55%,#6b21a8)}
+[data-skin="non"] .emblem{filter:drop-shadow(0 0 16px #d8b4fe)}
+.case-card.ultra{border-color:rgba(250,204,21,.55);box-shadow:0 30px 80px -28px rgba(250,204,21,.55),inset 0 0 50px rgba(168,85,247,.10)}
+.case-card.ultra::after{background:linear-gradient(90deg,#22d3ee,#a855f7,#f43f5e,#f59e0b)}
+.case-card.ultra .case-tag{color:#fef3c7;border-color:#fbbf24;background:linear-gradient(180deg,#78350f,#1e1b4b);box-shadow:0 0 26px -4px #f59e0b}
+
+/* idlePill i cloverPill aktywne — toasty wyzej, zeby sie nie przykrywaly */
+body:has(#idlePill.show) #toasts { bottom: 80px; }
+body:has(#cloverPill.show) #toasts { bottom: 80px; }
 </style>
 </head>
 <body>
@@ -1438,10 +1694,12 @@ select:hover{border-color:var(--line2)}
     <span>CASE OPENER<small>SYMULATOR SKRZYNEK</small></span>
   </div>
   <div class="tabs">
-    <button class="tab active" data-view="shop">Skrzynki</button>
+    <button class="tab active" data-view="shop">🗝️ Skrzynki</button>
     <button class="tab" data-view="bots">🤖 Bazar botów<span class="cnt" id="botCount">0</span></button>
-    <button class="tab" data-view="inv">Ekwipunek<span class="cnt" id="invCount">0</span></button>
-    <button class="tab" data-view="stats">Statystyki</button>
+    <button class="tab" data-view="market">🛒 Sklep<span class="cnt" id="shopCount">0</span></button>
+    <button class="tab" data-view="codes">🔑 Kody<span class="cnt" id="codeCount">0</span></button>
+    <button class="tab" data-view="inv">🎒 Ekwipunek<span class="cnt" id="invCount">0</span></button>
+    <button class="tab" data-view="stats">📊 Statystyki</button>
     <button class="tab" data-view="up">🚀 Ulepszenia<span class="cnt" id="upCount">0</span></button>
     <button class="tab" data-view="battle">⚔️ Bitwy<span class="cnt" id="battleCount">0</span></button>
     <button class="tab" data-view="album">📖 Album<span class="cnt" id="albumCount">0</span></button>
@@ -1474,12 +1732,105 @@ select:hover{border-color:var(--line2)}
         <b>Boty sprzedają ograniczoną liczbę broni i skrzynek.</b> Każda oferta ma swój zapas —
         gdy go wykupisz, znika do następnej rotacji. Ceny są <b>niższe albo wyższe</b> od normalnych,
         więc opłaca się porównywać: zielona plakietka to okazja, czerwona to przepłacanie.
-        Tylko tutaj kupisz <b>2 skrzynki niedostępne w zwykłym sklepie</b>: 🕶️ Przemytnika i 🎲 Hazardzisty.
-        Kupione skrzynki lądują w <b>zapasie</b> w zakładce Skrzynki — po pierwszym zakupie zostają
-        <b>odblokowane na stałe</b>, więc możesz je później otwierać także za monety.
+        Tylko tutaj kupisz <b>4 skrzynki niedostępne w zwykłym sklepie</b>: 🕶️ Przemytnika, 🎲 Hazardzisty,
+        🌾 Żniwiarza i 🏷️ Naklejek. Kupione skrzynki lądują w <b>zapasie</b> w zakładce Skrzynki —
+        ale są <b>jednorazowe</b>: po otwarciu znikają i <b>nie da się ich wznowić za monety</b>.
+        Kolejną musisz upolować u bota. W dwóch nowych skrzynkach czekają <b>✦ Relikty</b>:
+        kosy, noże, naklejki i ozdoby — każdy ma własne osiągnięcie.
+        Pod ofertami botów znajdziesz też <b>🔑 Kody</b> — wszystkie z kolekcji, w tym
+        <b>jeden bardzo rzadki</b>. Każdy kod kupisz u bota tylko raz.
       </div>
     </div>
     <div class="bot-grid" id="botGrid"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🔑 Kody u botów <span class="line"></span><span class="muted" id="codeShopHint"></span></h2>
+    <div class="code-note">
+      <span class="cn-ico">🔑</span>
+      <div>
+        <b>Wszystkie kody z kolekcji są też w bazarze.</b> Każdy kod możesz kupić u botów
+        <b>tylko raz na profil</b> — potem zostaje w Twojej kolekcji. Ceny są poniżej nagrody,
+        ale to jednorazowa okazja. Wśród nich jest <b>jeden bardzo rzadki kod</b> 🌌 — najdroższy
+        i najbardziej opłacalny, dostępny <b>tylko u botów</b>. Pozostałe kody wypadają też
+        bardzo rzadko ze zwykłych skrzynek.
+      </div>
+    </div>
+    <div class="code-very-banner">🌌 <span><b>Dodatkowy kod bardzo rzadki:</b> Kod Otchłani — nagroda 🪙 10 000 000. Tylko u botów, raz na profil.</span></div>
+    <div class="code-grid" id="codeShop"></div>
+  </section>
+
+  <section class="view" id="view-market">
+    <h2 class="sec-title">🛒 Sklep <span class="line"></span>
+      <span class="muted" id="marketHint"></span>
+      <button class="tb-btn" id="shopRefresh" title="Poproś sprzedawców o nowy towar">🔄 Nowe oferty</button>
+    </h2>
+    <div class="bot-note">
+      <span class="bnote-ico">🛒</span>
+      <div>
+        <b>Sklep działa jak bazar botów, ale ma więcej sprzedawców i większe zapasy.</b>
+        Kupujesz tu bronie i zwykłe skrzynki — bez skrzynek zastrzeżonych tylko dla bazaru.
+        Oferty rotują co kilka minut, a ceny są <b>niższe albo wyższe</b> od normalnych:
+        zielona plakietka to okazja, czerwona to przepłacanie.
+        Kupione skrzynki trafiają do <b>zapasu</b> w zakładce Skrzynki.
+      </div>
+    </div>
+    <div class="bot-grid" id="shopGrid"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🎁 Pakiety <span class="line"></span><span class="muted" id="packHint"></span></h2>
+    <div class="bot-note event-note">
+      <span class="bnote-ico">🎁</span>
+      <div>
+        <b>Pakiet startowy jest darmowy i jednorazowy.</b> Pozostałe pakiety kupujesz za monety,
+        a ich zawartość jest losowa — <b>czasem okazja, czasem strata</b>.
+        Bronie trafiają do ekwipunku, skrzynki do zapasu, a kody do zakładki Kody.
+      </div>
+    </div>
+    <div class="pack-grid" id="packGrid"></div>
+    <div id="packResult" aria-live="polite"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🎰 Eventy efektów <span class="line"></span><span class="muted" id="fxEventHint"></span></h2>
+    <div class="bot-note event-note">
+      <span class="bnote-ico">🎰</span>
+      <div>
+        <b>Kup czasowy event na wybrany efekt broni</b> — np. 💎 Diamentowy albo 🌈 Tęczowy.
+        Przez <b>10 minut</b> ten efekt ma <b>4× większą wagę</b> przy dropach, a każdy aktywny event
+        dodaje <b>+5% ogólnej szansy na efekt</b> (eventowe szczęście / luck).
+        Możesz mieć kilka eventów naraz; kolejny zakup tego samego efektu przedłuża czas.
+      </div>
+    </div>
+    <div class="event-grid" id="fxEventGrid"></div>
+
+    <h2 class="sec-title" style="margin-top:34px">🎉 Oferty eventowe <span class="line"></span><span class="muted" id="eventHint"></span></h2>
+    <div class="bot-note event-note">
+      <span class="bnote-ico">🎉</span>
+      <div>
+        <b>Eventowe oferty:</b> bronie, skrzynie i — <b>bardzo rzadko</b> — kody.
+        Kod pojawia się tylko w nielicznych rotacjach (około <b>5%</b>) i znika razem z nowymi ofertami.
+        To okazja, ale nie licz na nią co kilka minut.
+      </div>
+    </div>
+    <div class="event-grid" id="eventGrid"></div>
+  </section>
+
+  <section class="view" id="view-codes">
+    <h2 class="sec-title">🔑 Kody <span class="line"></span><span class="muted" id="codeHint"></span></h2>
+    <div class="code-note">
+      <span class="cn-ico">🔑</span>
+      <div>
+        Kody to <b>bardzo rzadkie bonusy</b> — mogą wypaść dodatkowo przy otwieraniu skrzynki
+        (szansa <b>0,06%</b> na otwarcie, czyli około 1 na 1667). Wpisz kod poniżej albo kliknij
+        <b>Odbierz</b> na karcie, żeby zamienić go na monety. Kod zużywa się po odebraniu, ale jego
+        nazwa zostaje w osiągnięciach. Wszystkie kody znajdziesz też u botów w zakładce
+        <b>Bazar botów</b>. <b>Kod Otchłani</b> jest dodatkową, bardzo rzadką ofertą dostępną
+        <b>tylko u botów</b>.
+      </div>
+    </div>
+    <div class="code-redeem">
+      <input id="codeInput" placeholder="Wpisz kod, np. KOD-NEON-25" autocomplete="off" spellcheck="false">
+      <button class="btn primary" id="codeRedeem">Odbierz kod</button>
+      <span class="muted" id="codeRedeemHint"></span>
+    </div>
+    <h2 class="sec-title" style="margin-top:28px">Twoje kody <span class="line"></span><span class="muted" id="codeOwnedHint"></span></h2>
+    <div class="code-grid" id="codeOwned"></div>
   </section>
 
   <section class="view" id="view-inv">
@@ -1492,6 +1843,7 @@ select:hover{border-color:var(--line2)}
       <select id="invFilter">
         <option value="all">Wszystkie rzadkości</option>
         <option value="special">★ Rzadkie specjalne</option>
+        <option value="relic">✦ Relikty</option>
         <option value="covert">Covert</option>
         <option value="classified">Classified</option>
         <option value="restricted">Restricted</option>
@@ -1521,7 +1873,9 @@ select:hover{border-color:var(--line2)}
         Wybierz skrzynkę i ile skrzynek losuje każda strona. <b>Kto ma lepszy zestaw
         (suma wartości), ten bierze wszystko</b> — przy równych sumach decyduje najlepszy tier.
         Pełny remis oznacza, że pula przepada. Twoje 🎯 Szczęście i 🔪 Łowca Noży liczą się
-        tylko dla Ciebie, więc z ulepszeniami masz realną przewagę. Perk 📦 Hurt daje rabat w bitwie 5×5.
+        tylko dla Ciebie, ale przewaga jest ograniczona — AI gra na bazowych szansach.
+        ⚔️ <b>Wojownik</b> zwiększa wartość przedmiotów, które <b>wygrywasz</b>, a nie szansę
+        na wygraną, więc walki pozostają wyrównane. Perk 📦 Hurt daje rabat w bitwie 5×5.
         Aktywna 🍀 <b>koniczyna</b> ze skrzynek działa też tutaj.
       </div>
     </div>
@@ -1592,7 +1946,7 @@ select:hover{border-color:var(--line2)}
       <h3 id="spinTitle">Otwieranie…</h3>
       <span class="tag" id="spinTag"></span>
       <div class="spacer"></div>
-      <button class="icon-btn" id="spinClose" title="Zamknij (przedmiot zachowasz)">✕</button>
+      <button class="icon-btn" id="spinClose" title="Zamknij (przedmiot zachowasz)" aria-label="Zamknij okno otwierania">✕</button>
     </div>
     <div class="panel-body">
       <div class="roulette">
@@ -1612,7 +1966,7 @@ select:hover{border-color:var(--line2)}
     <div class="panel-head">
       <h3 id="resTitle">Wynik</h3>
       <div class="spacer"></div>
-      <button class="icon-btn" id="resClose">✕</button>
+      <button class="icon-btn" id="resClose" aria-label="Zamknij wynik" title="Zamknij">✕</button>
     </div>
     <div class="panel-body result-wrap" id="resBody"></div>
   </div>
@@ -1624,7 +1978,7 @@ select:hover{border-color:var(--line2)}
       <h3>Bitwa na skrzynki</h3>
       <span class="tag" id="battleTag"></span>
       <div class="spacer"></div>
-      <button class="icon-btn" id="battleClose" title="Pomiń / zamknij">✕</button>
+      <button class="icon-btn" id="battleClose" title="Pomiń / zamknij" aria-label="Zamknij bitwę">✕</button>
     </div>
     <div class="panel-body">
       <div class="arena">
@@ -1652,7 +2006,7 @@ select:hover{border-color:var(--line2)}
       <h3 id="lootTitle">Zawartość skrzynki</h3>
       <span class="tag" id="lootTag"></span>
       <div class="spacer"></div>
-      <button class="icon-btn" id="lootClose" title="Zamknij">✕</button>
+      <button class="icon-btn" id="lootClose" title="Zamknij" aria-label="Zamknij zawartość skrzynki">✕</button>
     </div>
     <div class="panel-body loot-body" id="lootBody"></div>
   </div>
@@ -1707,15 +2061,16 @@ select:hover{border-color:var(--line2)}
 /* =======================================================================
    1. DANE
    ======================================================================= */
-const TIERS = ["mil","restricted","classified","covert","special"];
+const TIERS = ["mil","restricted","classified","covert","special","relic"];
 const TIER = {
   mil:        {name:"Mil-Spec",            color:"#4b69ff", hue:214},
   restricted: {name:"Restricted",          color:"#8847ff", hue:274},
   classified: {name:"Classified",          color:"#d32ce6", hue:302},
   covert:     {name:"Covert",              color:"#eb4b4b", hue:2},
-  special:    {name:"★ Rzadkie specjalne", color:"#ffd700", hue:46}
+  special:    {name:"★ Rzadkie specjalne", color:"#ffd700", hue:46},
+  relic:      {name:"✦ Relikt",             color:"#ffe9a8", hue:48}
 };
-const RATIO    = {mil:1, restricted:3.6, classified:13, covert:47, special:170};
+const RATIO    = {mil:1, restricted:3.6, classified:13, covert:47, special:170, relic:650};
 const EV_MULT  = 1.05;
 const SELL_RATE= 0.90;
 
@@ -1765,8 +2120,25 @@ function eventFxList(){
   return eventFxActive() ? EVENT_FX : [];
 }
 const FX_CHANCE = FX.reduce((a,f)=>a+f.chance,0);   // suma szans (na tierze ×1)
-const FX_TIER_BOOST = {mil:1, restricted:1, classified:1.3, covert:1.6, special:2.2};
+const FX_TIER_BOOST = {mil:1, restricted:1, classified:1.3, covert:1.6, special:2.2, relic:3.0};
 const FX_BIG = 4;                                    // od tego mnożnika odpalamy wielką fetę
+
+/* 🎰 EVENTY EFEKTÓW — czasowe boosty kupowane w Sklepie.
+   Aktywny event zwielokrotnia wagę wybranego efektu przy dropach i dodaje
+   trochę ogólnego „lucka” na jakikolwiek efekt. */
+const FX_EVENT_DUR   = 10*60*1000;   // 10 minut
+const FX_EVENT_BOOST = 4;            // ×4 waga wybranego efektu
+const FX_EVENT_LUCK  = 0.05;         // +5% ogólnej szansy na efekt za aktywny event
+const FX_EVENT_PRICE = {
+  neon:7500, gold:14000, diamond:50000, rainbow:180000, cosmic:500000,
+  xmas:22000, hallow:30000, ny:80000, easter:36000
+};
+
+/* 🤡 Skrzynka Troll — prawie zawsze 1 moneta, bardzo rzadki jackpot 1M. */
+const TROLL_PRICE       = 5000;
+const TROLL_CHANCE      = 0.001;      // 0,1% na jackpot
+const TROLL_JACKPOT     = 1000000;
+const TROLL_CONSOLATION = 1;
 
 const CASES = [
   { id:"start", name:"Skrzynka Startowa", price:100, color:"#3b82f6", icon:"📦",
@@ -1892,7 +2264,13 @@ const CASES = [
                   ["P90","Diadem","smg"],["R8 Revolver","Regalia","revolver"]],
       covert:    [["AK-47","Królewski Rubin","rifle"],["AWP","Cesarska Korona","awp"],["M4A1-S","Złoty Ornament","rifle"],
                   ["Desert Eagle","Cesarstwo","pistol"]],
-      special:   [["Karambit","Królewski","knife"],["Nóż Motylkowy","Tron","knife"],["Nóż Talon","Cesarstwo","knife"],["Bayonet","Monarcha","knife"]] } }
+      special:   [["Karambit","Królewski","knife"],["Nóż Motylkowy","Tron","knife"],["Nóż Talon","Cesarstwo","knife"],["Bayonet","Monarcha","knife"]] } },
+
+  { id:"troll", name:"Skrzynka Troll", price:TROLL_PRICE, color:"#a855f7", icon:"🤡",
+    sub:"Albo 1 000 000 monet, albo 1 moneta. Naprawdę.",
+    troll:true, noBattle:true, noAlbum:true, noItems:true,
+    trollChance:TROLL_CHANCE, trollJackpot:TROLL_JACKPOT, trollConsolation:TROLL_CONSOLATION,
+    odds:{mil:1-TROLL_CHANCE, special:TROLL_CHANCE}, items:{} }
 ];
 
 /* =======================================================================
@@ -2500,9 +2878,10 @@ CASES.forEach(c=>{
 });
 
 /* =======================================================================
-   1a5. DWIE SKRZYNKI TYLKO DLA BAZARU BOTÓW 🕶️🎲
+   1a5. CZTERY SKRZYNKI TYLKO DLA BAZARU BOTÓW 🕶️🎲🌾🏷️
    Oznaczone botOnly:true — renderShop ich nie pokazuje, można je zdobyć
-   wyłącznie kupując od bota. Zwrot liczy się z ceny tak samo jak reszta.
+   wyłącznie kupując od bota. Po otwarciu znikają z zapasu i nie da się
+   ich wznawiać za monety — kolejną trzeba kupić u bota.
    ======================================================================= */
 const BOT_CASES = [
   { id:"smuggler", name:"Skrzynka Przemytnika", price:7500, color:"#10b981", icon:"🕶️", botOnly:true,
@@ -2535,7 +2914,40 @@ const BOT_CASES = [
       covert:    [["AK-47","Król Kasyna","rifle"],["AWP","Wielki Szuler","awp"],["M4A1-S","Ostatni Zakład","rifle"],
                   ["Desert Eagle","Fortuna Kołem","pistol"]],
       special:   [["Karambit","Hazard","knife"],["Nóż Motylkowy","Ruletka","knife"],["Nóż Skeleton","Jackpot","knife"],
-                  ["Bayonet","Fortuna","knife"],["Nóż Flip","Zakład","knife"]] } }
+                  ["Bayonet","Fortuna","knife"],["Nóż Flip","Zakład","knife"]] } },
+
+  /* ✦ Nowe skrzynki wyłącznie z bazaru botów — z bardzo rzadkimi reliktami.
+     Po otwarciu znikają z zapasu; nie można ich wznawiać za monety. */
+  { id:"reaper", name:"Skrzynka Żniwiarza", price:2500000, color:"#b91c1c", icon:"🌾", botOnly:true,
+    sub:"Ostatnie żniwo. Kosy, widma i relikty, których nie kupisz nigdzie indziej.",
+    odds:{mil:.550, restricted:.280, classified:.110, covert:.050, special:.009, relic:.001},
+    items:{
+      mil:       [["MP9","Kościany Pył","smg"],["P250","Grzechotnik","pistol"],["Galil AR","Cmentarna Brama","rifle"],
+                  ["Nova","Mgła Cmentarna","shotgun"],["Tec-9","Żniwo","pistol"],["MAC-10","Kruk","smg"]],
+      restricted:[["AK-47","Wieczny Głód","rifle"],["AWP","Ostatnie Żniwo","awp"],["M4A1-S","Koszmar","rifle"],
+                  ["USP-S","Modlitwa","pistol"],["SG 553","Kaplica","rifle"]],
+      classified:[["AK-47","Żniwiarz","rifle"],["Desert Eagle","Księga Umarłych","pistol"],
+                  ["AWP","Noc Żniw","awp"],["P90","Kruk Nocy","smg"]],
+      covert:    [["AWP","Kosa Śmierci","awp"],["AK-47","Pan Żniw","rifle"],["M4A4","Ostatni Oddech","rifle"]],
+      special:   [["Karambit","Żniwiarz","knife"],["Nóż Motylkowy","Ostatnie Żniwo","knife"],
+                  ["Nóż Talon","Cień Śmierci","knife"]],
+      relic:     [["Kosa Żniwiarza","Ostrze Otchłani","scythe"],["Nóż Widmo","Ostatni Cień","knife"],
+                  ["Naklejka: Ostatni Znak","Żniwiarz","sticker"],["Ozdoba: Klepsydra","Ostatnia Godzina","charm"]] } },
+
+  { id:"sticker", name:"Skrzynka Naklejek", price:350000, color:"#f59e0b", icon:"🏷️", botOnly:true,
+    sub:"Holograficzne naklejki, ozdoby i ostrza kolekcjonera. Tylko z bazaru.",
+    odds:{mil:.620, restricted:.240, classified:.090, covert:.040, special:.009, relic:.001},
+    items:{
+      mil:       [["MP9","Kalkomania","smg"],["P250","Etykieta","pistol"],["Galil AR","Szablon","rifle"],
+                  ["Nova","Folia","shotgun"],["Tec-9","Winyl","pistol"],["MAC-10","Nadruk","smg"]],
+      restricted:[["AK-47","Holo","rifle"],["AWP","Foil","awp"],["M4A1-S","Grafika","rifle"],
+                  ["USP-S","Naklejka","pistol"],["SG 553","Sitodruk","rifle"]],
+      classified:[["AK-47","Kolekcjoner","rifle"],["Desert Eagle","Złota Naklejka","pistol"],
+                  ["AWP","Holograf","awp"],["P90","Sticker Bomb","smg"]],
+      covert:    [["AWP","Katastrofa","awp"],["AK-47","Arcydzieło","rifle"],["M4A4","Folia","rifle"]],
+      special:   [["Karambit","Holo","knife"],["Nóż Motylkowy","Sticker","knife"],["Nóż Talon","Folia","knife"]],
+      relic:     [["Naklejka: Oko Burzy","Kolekcja Legend","sticker"],["Naklejka: Czaszka Króla","Złota Seria","sticker"],
+                  ["Ozdoba: Kryształ Otchłani","Bursztyn","charm"],["Nóż Kolekcjonera","Ostatni Egzemplarz","knife"]] } }
 ];
 
 /* =======================================================================
@@ -2686,7 +3098,98 @@ const ELITE_CASES = [
                   ["Bayonet","Mrok Absolutny","knife"],["Nóż Skeleton","Apogeum","knife"],["Nóż Flip","Halo","knife"]] } }
 ];
 
-CASES.push(...BOT_CASES, ...MEGA_CASES, ...ELITE_CASES);
+/* =======================================================================
+   1a8. 💠 SKRZYNKI ULTRA — od 20 bilionów (20T) do 1 kwadryliona (1Qd)
+   Oznaczone ultra:true — poza bazarem botów i poza zwykłą skalą.
+   ======================================================================= */
+const ULTRA_CASES = [
+  { id:"quad", name:"Kwadra", price:2e13, color:"#22d3ee", icon:"💠", ultra:true,
+    sub:"Dwadzieścia bilionów monet. Cztery wymiary, jedna skrzynka.",
+    odds:{mil:.002, restricted:.250, classified:.350, covert:.320, special:.078},
+    items:{
+      mil:       [["MP9","Kwadrat","smg"],["P250","Tetrada","pistol"],["Galil AR","Kwadrant","rifle"],
+                  ["Nova","Cztery Wiatry","shotgun"],["Tec-9","Kwartet","pistol"],["MAC-10","Poczwórny","smg"]],
+      restricted:[["AK-47","Kwadryga","rifle"],["AWP","Cztery Światy","awp"],
+                  ["M4A1-S","Kwadrant Nieskończoności","rifle"],["USP-S","Poczwórna Gra","pistol"]],
+      classified:[["AK-47","Pan Kwadrantów","rifle"],["Desert Eagle","Tetrarcha","pistol"],
+                  ["AWP","Poczwórna Gwiazda","awp"],["P90","Kwadrypol","smg"]],
+      covert:    [["AWP","Kwadrylion","awp"],["AK-47","Cztery Korony","rifle"],["M4A4","Tetrada Absolutna","rifle"]],
+      special:   [["Karambit","Kwadra","knife"],["Nóż Motylkowy","Kwartet","knife"],
+                  ["Nóż Talon","Kwadrant","knife"],["Bayonet","Cztery Ostrza","knife"]] } },
+
+  { id:"quint", name:"Kwinta", price:5e13, color:"#818cf8", icon:"🔷", ultra:true,
+    sub:"Pięćdziesiąt bilionów monet. Piąty wymiar otwiera się tylko tutaj.",
+    odds:{mil:.0015, restricted:.230, classified:.350, covert:.340, special:.0785},
+    items:{
+      mil:       [["P250","Pięciokąt","pistol"],["MP9","Kwinta","smg"],["Galil AR","Pentagon","rifle"],
+                  ["Nova","Pięć Wiatrów","shotgun"],["Tec-9","Piątka","pistol"],["MAC-10","Pięciokrotny","smg"]],
+      restricted:[["AK-47","Pentagram","rifle"],["AWP","Pięć Światów","awp"],
+                  ["M4A1-S","Piąty Krąg","rifle"],["USP-S","Kwintesencja","pistol"]],
+      classified:[["AK-47","Pan Pięciu","rifle"],["Desert Eagle","Pentarcha","pistol"],
+                  ["AWP","Pięcioramienna Gwiazda","awp"],["P90","Pentaktyl","smg"]],
+      covert:    [["AWP","Kwintylion","awp"],["AK-47","Pięć Koron","rifle"],["M4A4","Pentagram Absolutny","rifle"]],
+      special:   [["Karambit","Kwinta","knife"],["Nóż Motylkowy","Pentagram","knife"],
+                  ["Nóż Talon","Pięciokąt","knife"],["Bayonet","Pięć Ostrzy","knife"]] } },
+
+  { id:"sext", name:"Seksta", price:1e14, color:"#fb7185", icon:"🔶", ultra:true,
+    sub:"Sto bilionów monet. Sześć pieczęci pęka naraz.",
+    odds:{mil:.001, restricted:.210, classified:.350, covert:.359, special:.080},
+    items:{
+      mil:       [["P250","Heksagon","pistol"],["MP9","Seksta","smg"],["Galil AR","Sześcian","rifle"],
+                  ["Nova","Sześć Wiatrów","shotgun"],["Tec-9","Szóstka","pistol"],["MAC-10","Sześciokrotny","smg"]],
+      restricted:[["AK-47","Heksagram","rifle"],["AWP","Sześć Światów","awp"],
+                  ["M4A1-S","Szósty Zmysł","rifle"],["USP-S","Sekstens","pistol"]],
+      classified:[["AK-47","Pan Sześciu","rifle"],["Desert Eagle","Heksarcha","pistol"],
+                  ["AWP","Sześcioramienna Gwiazda","awp"],["P90","Heksaktyl","smg"]],
+      covert:    [["AWP","Sekstylion","awp"],["AK-47","Sześć Koron","rifle"],["M4A4","Heksagram Absolutny","rifle"]],
+      special:   [["Karambit","Seksta","knife"],["Nóż Motylkowy","Heksagram","knife"],
+                  ["Nóż Talon","Sześcian","knife"],["Bayonet","Sześć Ostrzy","knife"]] } },
+
+  { id:"sept", name:"Septa", price:2.5e14, color:"#f59e0b", icon:"🔺", ultra:true,
+    sub:"Dwieście pięćdziesiąt bilionów monet. Siedem kręgów w jednej skrzynce.",
+    odds:{mil:.0008, restricted:.190, classified:.350, covert:.3792, special:.080},
+    items:{
+      mil:       [["P250","Heptagon","pistol"],["MP9","Septyma","smg"],["Galil AR","Siedem Wiatrów","rifle"],
+                  ["Nova","Siódemka","shotgun"],["Tec-9","Siedmioramienny","pistol"],["MAC-10","Siedmiokrotny","smg"]],
+      restricted:[["AK-47","Siedem Pieczęci","rifle"],["AWP","Siedem Światów","awp"],
+                  ["M4A1-S","Siódmy Krąg","rifle"],["USP-S","Septet","pistol"]],
+      classified:[["AK-47","Pan Siedmiu","rifle"],["Desert Eagle","Heptarcha","pistol"],
+                  ["AWP","Siedmioramienna Gwiazda","awp"],["P90","Heptaktyl","smg"]],
+      covert:    [["AWP","Septylion","awp"],["AK-47","Siedem Koron","rifle"],
+                  ["M4A4","Siedem Pieczęci Absolutnych","rifle"]],
+      special:   [["Karambit","Septyma","knife"],["Nóż Motylkowy","Heptagram","knife"],
+                  ["Nóż Talon","Heptagon","knife"],["Bayonet","Siedem Ostrzy","knife"]] } },
+
+  { id:"oct", name:"Okta", price:5e14, color:"#2dd4bf", icon:"🧿", ultra:true,
+    sub:"Pięćset bilionów monet. Osiem cudów, zero litości.",
+    odds:{mil:.0006, restricted:.170, classified:.350, covert:.3994, special:.080},
+    items:{
+      mil:       [["P250","Oktagon","pistol"],["MP9","Oktawa","smg"],["Galil AR","Osiem Wiatrów","rifle"],
+                  ["Nova","Ósemka","shotgun"],["Tec-9","Ośmioramienny","pistol"],["MAC-10","Ośmiokrotny","smg"]],
+      restricted:[["AK-47","Osiem Kręgów","rifle"],["AWP","Osiem Światów","awp"],
+                  ["M4A1-S","Ósmy Cud","rifle"],["USP-S","Oktet","pistol"]],
+      classified:[["AK-47","Pan Ośmiu","rifle"],["Desert Eagle","Oktarcha","pistol"],
+                  ["AWP","Ośmioramienna Gwiazda","awp"],["P90","Oktaktyl","smg"]],
+      covert:    [["AWP","Oktylion","awp"],["AK-47","Osiem Koron","rifle"],["M4A4","Oktagram Absolutny","rifle"]],
+      special:   [["Karambit","Oktawa","knife"],["Nóż Motylkowy","Oktagram","knife"],
+                  ["Nóż Talon","Oktagon","knife"],["Bayonet","Osiem Ostrzy","knife"]] } },
+
+  { id:"non", name:"Nona", price:1e15, color:"#c084fc", icon:"🔮", ultra:true,
+    sub:"Kwadrylion monet. Dziewięć otchłani czeka na śmiałka.",
+    odds:{mil:.0005, restricted:.150, classified:.350, covert:.4195, special:.080},
+    items:{
+      mil:       [["P250","Nonagon","pistol"],["MP9","Nonet","smg"],["Galil AR","Dziewięć Wiatrów","rifle"],
+                  ["Nova","Dziewiątka","shotgun"],["Tec-9","Dziewięcioramienny","pistol"],["MAC-10","Dziewięciokrotny","smg"]],
+      restricted:[["AK-47","Dziewięć Kręgów","rifle"],["AWP","Dziewięć Światów","awp"],
+                  ["M4A1-S","Dziewiąta Fala","rifle"],["USP-S","Nonet","pistol"]],
+      classified:[["AK-47","Pan Dziewięciu","rifle"],["Desert Eagle","Ennearcha","pistol"],
+                  ["AWP","Dziewięcioramienna Gwiazda","awp"],["P90","Enneaktyl","smg"]],
+      covert:    [["AWP","Nonylion","awp"],["AK-47","Dziewięć Koron","rifle"],["M4A4","Enneagram Absolutny","rifle"]],
+      special:   [["Karambit","Nonagon","knife"],["Nóż Motylkowy","Enneagram","knife"],
+                  ["Nóż Talon","Nowenna","knife"],["Bayonet","Dziewięć Ostrzy","knife"]] } }
+];
+
+CASES.push(...BOT_CASES, ...MEGA_CASES, ...ELITE_CASES, ...ULTRA_CASES);
 CASES.sort((a,b)=>a.price - b.price);
 
 /* =======================================================================
@@ -2701,7 +3204,7 @@ const COUPON_STEP = 0.04;   // +4% szans na darmowe otwarcie za poziom
 const VALUE_STEP  = 0.10;   // +10% wartości zdobytych przedmiotów
 const BULK_STEP   = 0.03;   // -3% ceny przy otwieraniu ×10
 const CLOVER_STEP = 15000;  // +15 s działania koniczyny za poziom
-const BATTLE_STEP = 0.05;   // +5% wartości dropów gracza w bitwie
+const BATTLE_STEP = 0.05;   // +5% wartości WYGRANYCH dropów gracza (nie wpływa na szansę wygranej)
 const IDLE_STEP   = 0.20;   // +20% monet za czas gry
 const KOH_STEP    = 0.010;  // +1% szczęścia w Królowej góry
 const TRADE_STEP  = 0.020;  // -2% cen u botów
@@ -2713,7 +3216,7 @@ const BASECASE    = 100;    // najtańsza skrzynka (do ratunku)
    z każdej skrzynki leciałyby same kosy. Wzrost rośnie z rzadkością, żeby
    szczęście zawsze podnosiło wartość otwarcia, a nie ją zaniżało.
    Od samych noży jest osobny perek: 🔪 Łowca Noży. */
-const TIER_LUCK = {mil:0, restricted:0.6, classified:1.0, covert:1.3, special:0.15};
+const TIER_LUCK = {mil:0, restricted:0.6, classified:1.0, covert:1.3, special:0.15, relic:0.05};
 
 const UPGRADES = [
   { id:"luck", icon:"🎯", name:"Szczęście", max:20,
@@ -2758,9 +3261,9 @@ const UPGRADES = [
     costs:[40000,120000,350000,900000,2200000,5500000,14000000,35000000],
     fmt:l => "koniczyna działa "+Math.round((CLOVER_DUR+CLOVER_STEP*l)/1000)+" s" },
   { id:"battle", icon:"⚔️", name:"Wojownik", max:10,
-    desc:"Podnosi wartość dropów, które wypadają dla Ciebie w bitwach. AI tego nie dostaje — z każdym poziomem bijesz mocniej.",
+    desc:"Zwiększa wartość przedmiotów, które wygrywasz w bitwie. Nie zmienia szansy na wygraną — walki są uczciwe, a wygrane coraz cenniejsze.",
     costs:[30000,90000,250000,700000,1800000,4800000,12000000,30000000,75000000,180000000],
-    fmt:l => l ? "+"+Math.round(BATTLE_STEP*l*100)+"% wartości Twoich dropów w bitwie" : "bez bonusu w bitwach" },
+    fmt:l => l ? "+"+Math.round(BATTLE_STEP*l*100)+"% wartości wygranych dropów" : "bez bonusu do wygranych" },
   { id:"idle", icon:"💤", name:"Cierpliwość", max:10,
     desc:"Zwiększa monety, które dostajesz za czas spędzony w grze (nagroda co 30 sekund).",
     costs:[15000,45000,120000,300000,800000,2000000,5000000,12000000,30000000,75000000],
@@ -2852,15 +3355,25 @@ function roundNice(n){
 }
 function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
 const fmt = n => Math.round(n).toLocaleString("pl-PL");
+/* Skróty liczb: K / M / B / T / Qd / Qn / Sx / Sp / O / N / D / Ud / Dd / Td ... */
+const SHORT_UNITS = [
+  [1e63,"Vg"],[1e60,"Nod"],[1e57,"Ocd"],[1e54,"Spd"],[1e51,"Sxd"],
+  [1e48,"Qid"],[1e45,"Qad"],[1e42,"Td"],[1e39,"Dd"],[1e36,"Ud"],[1e33,"D"],
+  [1e30,"N"],[1e27,"O"],[1e24,"Sp"],[1e21,"Sx"],[1e18,"Qn"],[1e15,"Qd"],
+  [1e12,"T"],[1e9,"B"],[1e6,"M"],[1e3,"K"]
+];
 function fmtShort(n){
   n = Math.round(Number(n)||0);
   const neg = n < 0 ? "-" : "";
   const a = Math.abs(n);
   const dec = v => v.toFixed(2).replace(/\.?0+$/,"").replace(".",",");
-  if(a >= 1e12) return neg + dec(a/1e12) + "T";
-  if(a >= 1e9)  return neg + dec(a/1e9)  + "B";
-  if(a >= 1e6)  return neg + dec(a/1e6)  + "M";
-  if(a >= 1e3)  return neg + dec(a/1e3)  + "K";
+  for(let i=0;i<SHORT_UNITS.length;i++){
+    const [v,suf] = SHORT_UNITS[i];
+    if(a < v) continue;
+    // 999,999 staje się "1M", a nie "1000K"
+    if(a/v >= 999.995 && i > 0){ const [pv,ps] = SHORT_UNITS[i-1]; return neg + dec(a/pv) + ps; }
+    return neg + dec(a/v) + suf;
+  }
   return neg + fmt(a);
 }
 
@@ -3059,6 +3572,35 @@ const ART = {
     {d:"M12 48 h44 v5 H12 Z", r:"light"},
     {d:"M2 46 h12 v20 H2 Z", r:"dark"},
     {d:"M5 52 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0", r:"detail"}
+  ],
+  scythe: [
+    {d:"M12 102 L140 14 L150 28 L22 112 Z", r:"dark"},
+    {d:"M18 98 L138 20 L142 26 L22 106 Z", r:"accent"},
+    {d:"M132 28 C 158 8, 188 6, 204 18 C 186 30, 160 32, 138 40 Z", r:"base"},
+    {d:"M138 30 C 160 16, 184 14, 198 20 C 182 28, 160 30, 142 36 Z", r:"light"},
+    {d:"M126 34 L150 24 L156 38 L132 48 Z", r:"accent"},
+    {d:"M34 88 l12 6 M42 76 l12 6 M50 64 l12 6", r:"dark"},
+    {d:"M6 92 a8 8 0 1 0 16 0 a8 8 0 1 0 -16 0", r:"accent"},
+    {d:"M10 92 a4 4 0 1 0 8 0 a4 4 0 1 0 -8 0", r:"detail"}
+  ],
+  sticker: [
+    {d:"M46 24 H164 a20 20 0 0 1 20 20 V84 a20 20 0 0 1 -20 20 H46 a20 20 0 0 1 -20 -20 V44 a20 20 0 0 1 20 -20 Z", r:"base"},
+    {d:"M50 30 H160 a14 14 0 0 1 14 14 V80 a14 14 0 0 1 -14 14 H50 a14 14 0 0 1 -14 -14 V44 a14 14 0 0 1 14 -14 Z", r:"light"},
+    {d:"M58 42 H152 V88 H58 Z", r:"accent"},
+    {d:"M105 44 l8 18 20 2 -15 13 5 19 -18 -10 -18 10 5 -19 -15 -13 20 -2 Z", r:"dark"},
+    {d:"M58 42 H152 V48 H58 Z", r:"detail"},
+    {d:"M170 92 L190 72 L190 92 Z", r:"detail"}
+  ],
+  charm: [
+    {d:"M96 4 h8 v24 h-8 Z", r:"dark"},
+    {d:"M84 22 a16 16 0 0 1 32 0", r:"accent"},
+    {d:"M100 28 L134 52 L118 100 L82 100 L66 52 Z", r:"base"},
+    {d:"M100 28 L116 52 L100 100 L84 52 Z", r:"light"},
+    {d:"M66 52 L134 52 L118 100 L82 100 Z", r:"accent"},
+    {d:"M84 52 L100 28 L116 52 L100 66 Z", r:"detail"},
+    {d:"M100 66 L116 52 L100 100 Z", r:"dark"},
+    {d:"M52 44 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0", r:"detail"},
+    {d:"M136 44 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0", r:"detail"}
   ]
 };
 
@@ -3135,6 +3677,9 @@ function weaponSVG(item, seed){
 
 function guessArt(w){
   const s = w.toLowerCase();
+  if (/kosa|scythe/.test(s)) return "scythe";
+  if (/naklejka|sticker/.test(s)) return "sticker";
+  if (/ozdoba|charm|amulet|klejnot/.test(s)) return "charm";
   if (/nóż|karambit|bayonet|kukri|sztylet|talon|skeleton|falchion|stiletto|ursus|navaja|nomad|paracord|survival|shadow|szpon/.test(s)) return "knife";
   if (s.includes("awp")||s.includes("ssg")||s.includes("scar")||s.includes("g3sg")) return "awp";
   if (s.includes("m249")||s.includes("negev")||s.includes("lmg")) return "lmg";
@@ -3161,13 +3706,36 @@ function itemValue(caseDef, tier, key){
   VALUE_CACHE.set(ck, val);
   return val;
 }
-/* ✨ losowanie efektu — droższe tiery mają go trochę częściej */
+function fxEventPool(){ return FX.concat(eventFxList()); }
+function fxEventActive(id){
+  if(!state.fxEvents || typeof state.fxEvents !== "object" || Array.isArray(state.fxEvents)) return false;
+  return numFrom(state.fxEvents[id]) > Date.now();
+}
+function fxEventCount(){ return fxEventPool().filter(f=>fxEventActive(f.id)).length; }
+function fxEventPrice(f){
+  return FX_EVENT_PRICE[f.id] || Math.max(1000, Math.round(roundNice(f.mult*f.mult*500)));
+}
+
+/* ✨ losowanie efektu — droższe tiery mają go trochę częściej.
+   Event efektu podbija wagę wybranego efektu, a każdy aktywny event dodaje
+   +FX_EVENT_LUCK do ogólnej szansy na jakikolwiek efekt. */
 function rollFx(tier){
   const boost = (FX_TIER_BOOST[tier] || 1) * (1 + FXHUNT_STEP*upLvl("fxhunt"));   // ✨ Łowca błysków
+  const pool = fxEventPool();
+  const baseTotal = pool.reduce((a,f)=>a + f.chance*boost, 0);
+  const active = fxEventCount();
+  const totalChance = Math.min(0.95, baseTotal * (1 + FX_EVENT_LUCK*active));
+  const weights = pool.map(f=>f.chance*boost*(fxEventActive(f.id) ? FX_EVENT_BOOST : 1));
+  const wsum = weights.reduce((a,b)=>a+b,0);
+  if(wsum <= 0) return null;
   const r = Math.random();
+  if(r >= totalChance) return null;
+  let pick = Math.random()*wsum;
   let acc = 0;
-  for(const f of FX){ acc += f.chance*boost; if(r < acc) return f.id; }
-  for(const f of eventFxList()){ acc += f.chance*boost; if(r < acc) return f.id; }
+  for(let i=0;i<pool.length;i++){
+    acc += weights[i];
+    if(pick < acc) return pool[i].id;
+  }
   return null;
 }
 const fxOf    = it => { if(!it || !it.fx) return null; return FX_BY_ID[it.fx] || EVENT_FX_BY_ID[it.fx] || null; };
@@ -3214,11 +3782,15 @@ const LEGACY_KEYS = ["caseOpenerSave_v2","caseOpenerSave_v1"];
 const START_COINS = 5000;
 let state = {
   coins: START_COINS, inv: [], recent: [], battles: [],
-  stats:{opened:0, spent:0, earned:0, sold:0, knives:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{}},
+  stats:{opened:0, spent:0, earned:0, sold:0, knives:0, relics:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{},
+    codeDrops:0, codeRedeems:0, codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0},
   up: UP_ZERO(),
   album:{}, albumClaimed:{}, missions:null, weekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false, idleSec:0,
   caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{},
-  sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, battleCase:"start", battleSize:1,
+  shopSalt:0, shopBought:{}, shopRefreshAt:0,
+  packClaims:{},
+  codes:{}, codeRedeemed:{}, codeBought:{},
+  sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, fxEvents:{}, battleCase:"start", battleSize:1,
   autoTurbo:false, autoLimit:0
 };
 
@@ -3232,6 +3804,13 @@ let bakAt = 0;
 let merging = false;
 let lastSavedCoins = null;      // stan monet w chwili ostatniego zapisu
 let otherTabWarned = false;
+/* Cache zapisu: bez tego każdy drop parsował cały save dwa razy. */
+let lastSaveRaw = null;         // dokładny string ostatniego udanego zapisu
+let externalSaveDirty = true;   // inna karta coś zapisała (storage event)
+let lastExternalCheck = 0;      // awaryjne sprawdzenie innych kart co 5 s
+window.addEventListener("storage", e=>{
+  if(e.key === SAVE_KEY || e.key === SAVE_BAK) externalSaveDirty = true;
+});
 
 function markDirty(){ dirty = true; }
 
@@ -3264,6 +3843,7 @@ function mergeFrom(other){
   m.earned = Math.max(numFrom(m.earned), numFrom(s.earned));
   m.sold   = Math.max(numFrom(m.sold),   numFrom(s.sold));
   m.knives = Math.max(numFrom(m.knives), numFrom(s.knives));
+  m.relics = Math.max(numFrom(m.relics), numFrom(s.relics));
   if (s.best && (!m.best || s.best.value > m.best.value)) m.best = s.best;
   Object.entries(s.cases||{}).forEach(([k,v])=>{ m.cases[k] = Math.max(numFrom(m.cases[k]), numFrom(v)); });
   // ✨ efekty na broniach — bierzemy większą liczbę z obu okien (nic nie ginie)
@@ -3271,6 +3851,24 @@ function mergeFrom(other){
   m.fx = (m.fx && typeof m.fx === "object" && !Array.isArray(m.fx)) ? m.fx : {};
   Object.keys(ofx).forEach(k=>{ m.fx[k] = Math.max(numFrom(m.fx[k]), numFrom(ofx[k])); });
   m.fxTotal = Math.max(numFrom(m.fxTotal), numFrom(s.fxTotal));
+  m.codeDrops = Math.max(numFrom(m.codeDrops), numFrom(s.codeDrops));
+  m.codeRedeems = Math.max(numFrom(m.codeRedeems), numFrom(s.codeRedeems));
+  m.codeBuys = Math.max(numFrom(m.codeBuys), numFrom(s.codeBuys));
+  m.shopBuys = Math.max(numFrom(m.shopBuys), numFrom(s.shopBuys));
+  m.shopSpent = Math.max(numFrom(m.shopSpent), numFrom(s.shopSpent));
+  m.shopCases = Math.max(numFrom(m.shopCases), numFrom(s.shopCases));
+  m.packBuys = Math.max(numFrom(m.packBuys), numFrom(s.packBuys));
+  m.packSpent = Math.max(numFrom(m.packSpent), numFrom(s.packSpent));
+  const opc = (other.packClaims && typeof other.packClaims === "object" && !Array.isArray(other.packClaims)) ? other.packClaims : {};
+  state.packClaims = (state.packClaims && typeof state.packClaims === "object" && !Array.isArray(state.packClaims)) ? state.packClaims : {};
+  Object.keys(opc).forEach(k=>{ if(opc[k]) state.packClaims[k] = true; });
+  const osb = (other.shopBought && typeof other.shopBought === "object" && !Array.isArray(other.shopBought)) ? other.shopBought : {};
+  state.shopBought = (state.shopBought && typeof state.shopBought === "object" && !Array.isArray(state.shopBought)) ? state.shopBought : {};
+  Object.keys(osb).forEach(k=>{ state.shopBought[k] = Math.max(numFrom(state.shopBought[k]), numFrom(osb[k])); });
+  /* 🎰 eventy efektów — przy grze w dwóch oknach liczy się dłuższy czas */
+  const ofxEv = (other.fxEvents && typeof other.fxEvents === "object" && !Array.isArray(other.fxEvents)) ? other.fxEvents : {};
+  state.fxEvents = (state.fxEvents && typeof state.fxEvents === "object" && !Array.isArray(state.fxEvents)) ? state.fxEvents : {};
+  Object.keys(ofxEv).forEach(k=>{ state.fxEvents[k] = Math.max(numFrom(state.fxEvents[k]), numFrom(ofxEv[k])); });
 
   // 📅 misje tygodniowe — ta sama pula: scalamy postęp i odebrania
   const ow = other.weekly;
@@ -3309,6 +3907,19 @@ function mergeFrom(other){
   const oc = other.albumClaimed;
   if(oc && typeof oc === "object")
     Object.keys(oc).forEach(k=>{ if(oc[k]) state.albumClaimed[k] = true; });
+
+  // 🔑 kody — nic nie ginie przy grze w dwóch oknach
+  ["codes","codeRedeemed"].forEach(key=>{
+    const src = other[key];
+    if(!src || typeof src !== "object" || Array.isArray(src)) return;
+    state[key] = (state[key] && typeof state[key] === "object" && !Array.isArray(state[key])) ? state[key] : {};
+    Object.keys(src).forEach(k=>{ state[key][k] = Math.max(numFrom(state[key][k]), numFrom(src[k])); });
+  });
+  const ob = other.codeBought;
+  if(ob && typeof ob === "object" && !Array.isArray(ob)){
+    state.codeBought = (state.codeBought && typeof state.codeBought === "object") ? state.codeBought : {};
+    Object.keys(ob).forEach(k=>{ if(ob[k]) state.codeBought[k] = true; });
+  }
   return added;
 }
 
@@ -3316,9 +3927,15 @@ let flagTimer = null;
 function flashSaved(kind){
   const el = $("#saveFlag");
   if(!el) return;
-  el.textContent = kind === "rare" ? "🛡️ nóż zapisany" : kind === "drop" ? "✓ drop zapisany" : "✓ zapisano";
-  el.classList.toggle("rare", kind === "rare");
-  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+  el.textContent = kind === "relic" ? "✦ relikt zapisany" : kind === "rare" ? "🛡️ nóż zapisany" : kind === "code" ? "🔑 kod zapisany" : kind === "drop" ? "✓ drop zapisany" : "✓ zapisano";
+  el.classList.toggle("rare", kind === "rare" || kind === "relic" || kind === "code");
+  /* Przy auto-otwieraniu nie wymuszamy reflow co drop — plakietka i tak
+     mruga kilka razy na sekundę. */
+  if(autoOpen || state.fast || document.hidden){
+    el.classList.add("show");
+  } else {
+    el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+  }
   clearTimeout(flagTimer);
   flagTimer = setTimeout(()=>el.classList.remove("show"), 1900);
 }
@@ -3331,9 +3948,13 @@ function snapshot(){
     sound:state.sound, fast:state.fast, bonusAt:state.bonusAt, rescueAt:state.rescueAt,
     autoTurbo:state.autoTurbo === true, autoLimit:autoLimitSan(state.autoLimit),
     cloverUntil:state.cloverUntil||0,
+    fxEvents:state.fxEvents || {},
     album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly, achievements:state.achievements, cosmetics:state.cosmetics, bossKills:state.bossKills,
     idleKnifeClaimed:state.idleKnifeClaimed===true, idleSec:numFrom(state.idleSec),
-    caseStock:state.caseStock, botSalt:state.botSalt, botBought:state.botBought, botRefreshAt:state.botRefreshAt, botUnlocked:state.botUnlocked };
+    codes:state.codes, codeRedeemed:state.codeRedeemed, codeBought:state.codeBought,
+    caseStock:state.caseStock, botSalt:state.botSalt, botBought:state.botBought, botRefreshAt:state.botRefreshAt, botUnlocked:state.botUnlocked,
+    shopSalt:state.shopSalt, shopBought:state.shopBought, shopRefreshAt:state.shopRefreshAt,
+    packClaims:state.packClaims || {} };
 }
 
 /* Zapis z weryfikacją + wykrywaniem gry w dwóch oknach.
@@ -3341,7 +3962,18 @@ function snapshot(){
 function save(opts){
   opts = opts || {};
   try{
-    const stored = readSave(SAVE_KEY);
+    // Inną kartę sprawdzamy od razu po storage event albo awaryjnie co 5 s.
+    // Przy zwykłym dropie nie ma sensu parsować całego save'a przed zapisem.
+    let stored = null, storedRaw = null;
+    if(externalSaveDirty || Date.now() - lastExternalCheck > 5000){
+      storedRaw = localStorage.getItem(SAVE_KEY);
+      if(storedRaw){
+        try{ stored = JSON.parse(storedRaw); }catch(e){ stored = null; }
+      }
+      externalSaveDirty = false;
+      lastExternalCheck = Date.now();
+    }
+
     if(stored && stored.tab && stored.tab !== TAB_ID && (stored.rev|0) > knownRev){
       // inne okno zapisało coś po nas — scal zamiast nadpisywać
       const added = mergeFrom(stored);
@@ -3358,19 +3990,20 @@ function save(opts){
       }
     }
 
-    // kopia poprzedniej wersji (max raz na 15 s)
-    if(stored && Date.now() - bakAt > 15000){
-      try{ localStorage.setItem(SAVE_BAK, JSON.stringify(stored)); bakAt = Date.now(); }catch(e){}
+    // kopia poprzedniej wersji (max raz na 15 s) — bez ponownego parsowania
+    if(Date.now() - bakAt > 15000 && (storedRaw || lastSaveRaw)){
+      try{ localStorage.setItem(SAVE_BAK, storedRaw || lastSaveRaw); bakAt = Date.now(); }catch(e){}
     }
 
     saveRev = Math.max(saveRev, knownRev) + 1;
-    localStorage.setItem(SAVE_KEY, JSON.stringify(snapshot()));
+    const raw = JSON.stringify(snapshot());
+    localStorage.setItem(SAVE_KEY, raw);
 
-    // weryfikacja: czy zapis naprawdę jest na dysku i kompletny?
-    const check = readSave(SAVE_KEY);
-    if(!check || (check.rev|0) !== saveRev || (check.inv||[]).length !== state.inv.length)
+    // weryfikacja: dokładnie ten sam string jest już w pamięci przeglądarki
+    if(localStorage.getItem(SAVE_KEY) !== raw)
       throw new Error("weryfikacja zapisu nie powiodła się");
 
+    lastSaveRaw = raw;
     knownRev = saveRev;
     dirty = false; saveFails = 0;
     lastSavedCoins = state.coins;
@@ -3385,7 +4018,8 @@ function save(opts){
 
 /* zapis konkretnie po zdobyciu przedmiotu — najważniejszy moment */
 function saveDrop(item){
-  return save({kind: (item && item.tier === "special") ? "rare" : "drop"});
+  const kind = item && item.tier === "relic" ? "relic" : item && item.tier === "special" ? "rare" : "drop";
+  return save({kind});
 }
 
 function isValidSave(d){
@@ -3414,6 +4048,7 @@ function load(){
   state.bonusAt= d.bonusAt || 0;
   state.rescueAt = d.rescueAt || 0;
   state.cloverUntil = numFrom(d.cloverUntil);   // ⚠ bez |0 — inaczej koniczyna „ginęła” przy odświeżeniu
+  state.fxEvents = (d.fxEvents && typeof d.fxEvents === "object" && !Array.isArray(d.fxEvents)) ? d.fxEvents : {};
   state.autoTurbo = d.autoTurbo === true;       // ⚡ tryb turbo (ustawienie, nie stan biegu)
   state.autoLimit = autoLimitSan(d.autoLimit);  // ⏹ limit otwarć (0 = bez limitu)
   albumLoad(d);                    // 📖 album kolekcji (migruje stare zapisy)
@@ -3428,8 +4063,9 @@ function load(){
   if(typeof state.stats.battles !== "number") state.stats.battles = 0;
   if(typeof state.stats.battleWins !== "number") state.stats.battleWins = 0;
   if(typeof state.stats.albums !== "number") state.stats.albums = 0;
+  if(typeof state.stats.relics !== "number") state.stats.relics = 0;
   state.battles = Array.isArray(d.battles) ? d.battles.filter(b=>b && b.cn).slice(0,8) : [];
-  state.battleCase = CASES.some(c=>c.id===d.battleCase && !c.botOnly) ? d.battleCase : "start";
+  state.battleCase = CASES.some(c=>c.id===d.battleCase && !c.botOnly && !c.noBattle) ? d.battleCase : "start";
   state.battleSize = [1,2,3,5].includes(d.battleSize) ? d.battleSize : 1;
   /* 🤖 bazar botów — zapas skrzynek i wykupione oferty */
   state.caseStock = (d.caseStock && typeof d.caseStock === "object" && !Array.isArray(d.caseStock)) ? d.caseStock : {};
@@ -3440,14 +4076,33 @@ function load(){
   state.botSalt = numFrom(d.botSalt);
   state.botBought = (d.botBought && typeof d.botBought === "object" && !Array.isArray(d.botBought)) ? d.botBought : {};
   state.botRefreshAt = numFrom(d.botRefreshAt);
-  /* skrzynki botów: raz kupiona = odblokowana na stałe (można otwierać za monety) */
-  state.botUnlocked = (d.botUnlocked && typeof d.botUnlocked === "object" && !Array.isArray(d.botUnlocked)) ? d.botUnlocked : {};
-  BOT_CASES.forEach(c=>{
-    if(caseStock(c.id) > 0 || numFrom((state.stats.cases||{})[c.id]) > 0) state.botUnlocked[c.id] = true;
-  });
+  /* 🛒 sklep — osobny zapas, żeby nie kolidował z bazarowym */
+  state.shopSalt = numFrom(d.shopSalt);
+  state.shopBought = (d.shopBought && typeof d.shopBought === "object" && !Array.isArray(d.shopBought)) ? d.shopBought : {};
+  state.shopRefreshAt = numFrom(d.shopRefreshAt);
+  state.packClaims = (d.packClaims && typeof d.packClaims === "object" && !Array.isArray(d.packClaims)) ? d.packClaims : {};
+  /* skrzynki botów są jednorazowe — stary zapis mógł mieć flagę „odblokowana”,
+     ale jej nie używamy: po otwarciu trzeba kupić kolejną u bota. */
+  state.botUnlocked = {};
+  /* 🔑 kody — walidujemy tylko znane wpisy, żeby stare/uszkodzone zapisy nie psuły widoku */
+  const loadCodeMap = (src, onlyTrue) => {
+    const out = {};
+    if(src && typeof src === "object" && !Array.isArray(src)){
+      Object.keys(src).forEach(k=>{
+        if(!CODE_BY_ID[k]) return;
+        if(onlyTrue){ if(src[k]) out[k] = true; }
+        else { const n = numFrom(src[k]); if(n > 0) out[k] = n; }
+      });
+    }
+    return out;
+  };
+  state.codes = loadCodeMap(d.codes, false);
+  state.codeRedeemed = loadCodeMap(d.codeRedeemed, false);
+  state.codeBought = loadCodeMap(d.codeBought, true);
+  ["codeDrops","codeRedeems","codeBuys"].forEach(k=>{ if(typeof state.stats[k] !== "number") state.stats[k] = 0; });
   state.idleKnifeClaimed = d.idleKnifeClaimed === true;
   state.idleSec = numFrom(d.idleSec);
-  ["botBuys","botSpent","botCases","stockOpened","bestDeal"].forEach(k=>{
+  ["botBuys","botSpent","botCases","stockOpened","bestDeal","trollOpened","trollWins","shopBuys","shopSpent","shopCases"].forEach(k=>{
     if(typeof state.stats[k] !== "number") state.stats[k] = 0;
   });
   saveRev = d.rev|0; knownRev = saveRev;
@@ -3478,6 +4133,7 @@ function importSave(){
     localStorage.setItem(SAVE_KEY, JSON.stringify({
       v:3, tab:TAB_ID, rev:0, ts:Date.now(), coins:d.coins||0, inv,
       recent:Array.isArray(d.recent)?d.recent:[], stats:d.stats||state.stats,
+      codes:d.codes||{}, codeRedeemed:d.codeRedeemed||{}, codeBought:d.codeBought||{},
       sound:state.sound, fast:state.fast, bonusAt:0 }));
     location.reload();
   }catch(e){ toast("❌ Nieprawidłowy kod zapisu","bad"); }
@@ -3508,6 +4164,7 @@ function beep(freq, dur, type, vol, when){
 function sfxTick(){ beep(1250 + Math.random()*420, 0.03, "square", 0.022); }
 function sfxWin(tier, fx){
   const sets = {
+    relic:      [392,523,659,784,1046,1318,1568,2093],
     special:    [523,659,784,1046,1318,1568,2093],
     covert:     [523,659,784,1046,1318],
     classified: [440,554,659,880],
@@ -3515,7 +4172,7 @@ function sfxWin(tier, fx){
     mil:        [330,415]
   };
   (sets[tier]||sets.mil).forEach((f,i)=>beep(f, 0.26, "triangle", 0.055, i*0.085));
-  if (tier==="special"||tier==="covert") beep(120, 0.7, "sine", 0.09, 0);
+  if (tier==="relic"||tier==="special"||tier==="covert") beep(120, 0.7, "sine", 0.09, 0);
   /* ✨ rzadki efekt dorzuca własny błysk na koniec fanfary */
   if (fx==="diamond"||fx==="rainbow"||fx==="cosmic"){
     beep(1568,0.22,"triangle",0.05,0.55); beep(2093,0.34,"triangle",0.045,0.73); beep(2637,0.42,"sine",0.04,0.95);
@@ -3525,6 +4182,7 @@ function sfxWin(tier, fx){
 }
 function sfxCoin(){ beep(940,0.055,"triangle",0.05); beep(1420,0.1,"triangle",0.045,0.06); }
 function sfxClover(){ beep(1180,0.07,"triangle",0.042); beep(1580,0.07,"triangle",0.038,0.085); beep(2100,0.16,"triangle",0.034,0.17); }
+function sfxCode(){ beep(880,0.08,"triangle",0.048); beep(1175,0.08,"triangle",0.044,0.075); beep(1568,0.12,"triangle",0.04,0.15); beep(2093,0.22,"sine",0.035,0.24); }
 function sfxErr(){ beep(150,0.18,"sawtooth",0.045); }
 function sfxWhoosh(){
   const c = ac(); if(!c) return;
@@ -3559,10 +4217,22 @@ function renderBalance(instant){
   if(balRAF){ cancelAnimationFrame(balRAF); balRAF = null; }
 
   const bal = document.querySelector(".balance");
-  const from = (instant || lastBalance === null || Math.abs(to-lastBalance) < 1 || balShown === null) ? to : balShown;
+  const prev = lastBalance;
+  el.title = "🪙 " + fmt(to);
+
+  /* Przy auto-otwieraniu licznik zmienia się kilka razy na sekundę.
+     Animowanie go i wymuszanie reflow za każdym razem tylko szkodzi. */
+  if(autoOpen || state.fast || document.hidden){
+    lastBalance = to;
+    balShown = to;
+    el.textContent = fmtShort(to);
+    if(bal) bal.classList.remove("flash","down");
+    return;
+  }
+
+  const from = (instant || prev === null || Math.abs(to-prev) < 1 || balShown === null) ? to : balShown;
   lastBalance = to;
   balShown = from;
-  el.title = "🪙 " + fmt(to);
 
   if(from === to){
     el.textContent = fmtShort(to);
@@ -3597,22 +4267,39 @@ function switchView(v){
   if(v==="daily") renderDaily();
   if(v==="battle") renderBattle();
   if(v==="bots") renderBots();
+  if(v==="market") renderMarket();
+  if(v==="codes") renderCodes();
 }
 
 /* =======================================================================
    8. SKLEP
    ======================================================================= */
 function oddsBar(c){
+  if(c.troll){
+    const p = Math.max(0.8, (c.trollChance||TROLL_CHANCE)*100);
+    return `<i style="width:${100-p}%;background:#64748b"></i><i style="width:${p}%;background:#fbbf24"></i>`;
+  }
   const o = oddsFor(c);
-  return TIERS.map(t=>`<i style="width:${Math.max((o[t]||0)*100,0.8)}%;background:${TIER[t].color}"></i>`).join("");
+  return TIERS.map(t=>{
+    const p = (o[t]||0)*100;
+    return p > 0 ? `<i style="width:${Math.max(p,0.8)}%;background:${TIER[t].color}"></i>` : "";
+  }).join("");
 }
 function oddsLegend(c){
+  if(c.troll){
+    const p = (c.trollChance||TROLL_CHANCE)*100;
+    return `<span style="color:#fbbf24"><i class="dot" style="background:#fbbf24"></i>
+        <span style="color:var(--dim)">🪙 ${fmtShort(c.trollJackpot||TROLL_JACKPOT)} ${p.toFixed(2)}%</span></span>
+      <span style="color:#94a3b8"><i class="dot" style="background:#94a3b8"></i>
+        <span style="color:var(--dim)">🪙 ${fmt(c.trollConsolation||TROLL_CONSOLATION)} ${(100-p).toFixed(2)}%</span></span>`;
+  }
   const o = oddsFor(c);
   return TIERS.map(t=>{
     const p = (o[t]||0)*100;
     if(p<=0) return "";
+    const nm = t==="special" ? "★ Noże" : t==="relic" ? "✦ Relikty" : TIER[t].name;
     return `<span style="color:${TIER[t].color}"><i class="dot" style="background:${TIER[t].color}"></i>
-      <span style="color:var(--dim)">${t==="special"?"★ Noże":TIER[t].name} ${p<0.1?p.toFixed(2):p.toFixed(1)}%</span></span>`;
+      <span style="color:var(--dim)">${nm} ${p<0.1?p.toFixed(2):p.toFixed(1)}%</span></span>`;
   }).join("");
 }
 /* Ranga skrzynki liczona z ceny — nowe skrzynki od razu dostają właściwą oprawę.
@@ -3627,36 +4314,83 @@ function caseTier(c){
 /* kratka ozdób: 5 miejsc w warstwie za skrzynką i 5 przed nią */
 const DEKO = n => `<i></i>`.repeat(n);
 
-function renderShop(){
-  /* skrzynki tylko z bazaru botów pokazujemy dopiero, gdy masz je w zapasie —
-     inaczej nie byłoby jak ich otworzyć (nie ma ich w zwykłej sprzedaży) */
-  const shopCases = CASES.filter(c=>!c.botOnly || caseStock(c.id)>0 || (state.botUnlocked && state.botUnlocked[c.id]));
-  const cheapest = Math.min(...shopCases.map(c=>c.price));
+let lastShopSig = "";
+function shopHintHTML(){
+  const cheapest = Math.min(...CASES.filter(c=>!c.botOnly).map(c=>c.price));
   const lk = upLvl("luck");
   const active = [];
   if(lk) active.push("🎯 Szczęście "+lk+"/"+UP_BY_ID.luck.max);
   const kn = upLvl("knives");
   if(kn) active.push("🔪 Łowca Noży "+kn+"/"+UP_BY_ID.knives.max);
   if(cloverActive()) active.push("🍀 Koniczyna "+Math.ceil(cloverLeft()/1000)+" s — "+cloverDesc());
+  const fxEv = fxEventPool().filter(f=>fxEventActive(f.id));
+  if(fxEv.length) active.push("🎰 Eventy efektów: "+fxEv.map(f=>f.icon+" "+mmss(Math.max(0,numFrom(state.fxEvents[f.id])-Date.now()))).join(" · ")+" — +"+Math.round(FX_EVENT_LUCK*fxEv.length*100)+"% luck");
   if(autoOpen) active.push("🤖 Auto: "+esc(autoOpen.name)+" — "+autoOpen.n+" "+plural(autoOpen.n,"otwarcie","otwarcia","otwarć"));
   const stockN = CASES.reduce((a,c)=>a+caseStock(c.id),0);
-  $("#shopHint").innerHTML = [
+  return [
     state.coins < cheapest ? "Brakuje monet — użyj przycisku 🎁 Bonus" : "★ Noże są rzadsze, ale warte więcej",
-    stockN ? "📦 W zapasie: <b>"+fmt(stockN)+"</b> "+plural(stockN,"skrzynka","skrzynki","skrzynek")+" z bazaru botów" : "🤖 2 skrzynki tylko u botów — zakładka Bazar botów",
-    BOT_CASES.filter(c=>state.botUnlocked && state.botUnlocked[c.id]).length ? "🕶️ Odblokowane u botów: <b>"+BOT_CASES.filter(c=>state.botUnlocked && state.botUnlocked[c.id]).length+"/2</b> — otwierasz je też za monety" : "",
+    stockN ? "📦 W zapasie: <b>"+fmt(stockN)+"</b> "+plural(stockN,"skrzynka","skrzynki","skrzynek")+" z bazaru botów" : "🤖 "+BOT_CASES.length+" "+plural(BOT_CASES.length,"skrzynka","skrzynki","skrzynek")+" tylko u botów — zakładka Bazar botów",
+    "🕶️ Skrzynki botów są jednorazowe — po otwarciu nie wracają za monety.",
     "✨ Efekty na broniach mnożą wartość: "+FX.map(f=>f.icon+"×"+fxM(f)).join(" · "),
     eventFxList().length ? "🎉 EVENT: "+eventFxList().map(f=>f.icon+" "+f.name+" ×"+fxM(f)).join(" · ") : "",
     active.join(" · ") + (active.length ? " — szanse już z ulepszeniami" : "")
   ].filter(Boolean).join(" &nbsp;·&nbsp; ");
-  $("#caseGrid").innerHTML = shopCases.map((c,i)=>{
+}
+function syncShopButtons(){
+  const grid = $("#caseGrid");
+  if(!grid) return;
+  grid.querySelectorAll(".case-card[data-case]").forEach(card=>{
+    const c = CASES.find(x=>x.id===card.dataset.case);
+    if(!c) return;
+    const st = caseStock(c.id);
+    const tag = card.querySelector(".stock-tag");
+    if(tag){
+      if(st) tag.innerHTML = "📦 W zapasie: <b>"+st+"</b> "+plural(st,"skrzynka","skrzynki","skrzynek")+" — otwarcie bez opłat";
+      else tag.remove();
+    }
+    const sb = card.querySelector("[data-stockopen]");
+    if(sb){
+      if(st) sb.textContent = "📦 Otwórz z zapasu ("+st+")";
+      else sb.remove();
+    }
+    const o1 = card.querySelector("[data-open]");
+    if(o1) o1.disabled = state.coins < c.price;
+    const o10 = card.querySelector("[data-open10]");
+    if(o10) o10.disabled = state.coins < Math.round(c.price * (1 - bulkRate())) * 10;
+  });
+}
+function shopSignature(shopCases){
+  return shopCases.map(c=>c.id+":"+(caseStock(c.id)>0?1:0)).join("|")
+    + "|" + UPGRADES.map(u=>upLvl(u.id)).join(",")
+    + "|" + (cloverActive() ? 1 : 0)
+    + "|" + (autoOpen ? autoOpen.id : "");
+}
+function renderShop(force){
+  /* skrzynki tylko z bazaru botów pokazujemy dopiero, gdy masz je w zapasie —
+     inaczej nie byłoby jak ich otworzyć (nie ma ich w zwykłej sprzedaży) */
+  const grid = $("#caseGrid");
+  if(!grid) return;
+  const shopCases = CASES.filter(c=>!c.botOnly || caseStock(c.id)>0);
+  const sig = shopSignature(shopCases);
+  $("#shopHint").innerHTML = shopHintHTML();
+
+  /* Najważniejsza optymalizacja: zmiana samych monet nie przerysowuje 44 kart.
+     Dzięki temu po otwarciu skrzynki nie odtwarza się animacja wejścia. */
+  if(!force && lastShopSig === sig && grid.children.length){
+    syncShopButtons();
+    if(currentView === "battle") renderBattle();
+    return;
+  }
+  lastShopSig = sig;
+
+  grid.innerHTML = shopCases.map((c,i)=>{
     const ten = Math.round(c.price * (1 - bulkRate())) * 10;
     const can = state.coins>=c.price, can10 = state.coins>=ten;
     const tier = caseTier(c);
     const st = caseStock(c.id);
-    const unlockedBot = !!(c.botOnly && state.botUnlocked && state.botUnlocked[c.id]);
     const aOn = !!autoOpen && autoOpen.id===c.id, aUnl = autoUnlocked();
-    return `<div class="case-card tier-${tier}${c.mega?" mega":""}${c.elite?" elite":""}" data-skin="${c.id}" style="--cc:${c.color};animation-delay:${i*70}ms" data-case="${c.id}">
-      <span class="case-tag">${c.mega ? "MEGA · "+TIER_NAME[tier] : c.elite ? "ELITA · "+TIER_NAME[tier] : c.botOnly ? (unlockedBot ? "Odblokowana · bot" : "Tylko u botów") : TIER_NAME[tier]}</span>
+    return `<div class="case-card tier-${tier}${c.mega?" mega":""}${c.elite?" elite":""}${c.ultra?" ultra":""}" data-skin="${c.id}" style="--cc:${c.color};animation-delay:${i*70}ms" data-case="${c.id}">
+      <span class="case-tag">${c.troll ? "TROLL · JACKPOT" : c.ultra ? "ULTRA · "+TIER_NAME[tier] : c.mega ? "MEGA · "+TIER_NAME[tier] : c.elite ? "ELITA · "+TIER_NAME[tier] : c.botOnly ? "Tylko u botów" : TIER_NAME[tier]}</span>
       <div class="crate">
         <div class="deko back">${DEKO(5)}</div>
         <div class="halo"></div>
@@ -3677,12 +4411,12 @@ function renderShop(){
       <div class="odds-legend">${oddsLegend(c)}</div>
       ${st?`<div class="stock-tag">📦 W zapasie: <b>${st}</b> ${plural(st,"skrzynka","skrzynki","skrzynek")} — otwarcie bez opłat</div>`:""}
       <div class="price-row">
-        <span class="price">🪙 ${fmt(c.price)}</span>
-        <span class="price-target">★ nóż ~ ${fmtShort(itemValue(c,"special","Karambit|Fala"))}</span>
+        <span class="price" title="🪙 ${fmt(c.price)}">🪙 ${fmtShort(c.price)}</span>
+        <span class="price-target">${c.troll ? "🤡 jackpot 🪙 "+fmtShort(c.trollJackpot||TROLL_JACKPOT) : "★ nóż ~ "+fmtShort(itemValue(c,"special","Karambit|Fala"))}</span>
       </div>
       <div class="btn-row">
         ${st?`<button class="btn gold open-btn" style="flex:1 1 100%" data-stockopen="${c.id}">📦 Otwórz z zapasu (${st})</button>`:""}
-        ${c.botOnly && !unlockedBot ? "" : `<button class="btn primary open-btn" data-open="${c.id}" ${can?"":"disabled"}>Otwórz</button>
+        ${c.botOnly ? "" : `<button class="btn primary open-btn" data-open="${c.id}" ${can?"":"disabled"}>${c.troll?"🤡 Zaryzykuj":"Otwórz"}</button>
         <button class="btn ghost" data-open10="${c.id}" title="Otwórz 10 skrzynek (🪙 ${fmt(ten)} łącznie)" ${can10?"":"disabled"}>×10</button>`}
         <button class="btn ghost loot-btn" data-loot="${c.id}" title="Zobacz wszystkie bronie w tej skrzynce">📋 Zawartość</button>
         ${c.botOnly ? "" : `<button class="btn ghost auto-btn${aOn?" on":""}${aUnl?"":" locked"}" data-auto="${c.id}"
@@ -3694,7 +4428,9 @@ function renderShop(){
       </div>
     </div>`;
   }).join("");
-  renderBattle();
+  grid.classList.add("ready");
+  syncShopButtons();
+  if(currentView === "battle") renderBattle();
 }
 $("#caseGrid").addEventListener("click", e=>{
   const lo  = e.target.closest("[data-loot]");
@@ -3715,10 +4451,24 @@ $("#caseGrid").addEventListener("click", e=>{
 function showLoot(caseId){
   const c = CASES.find(x=>x.id===caseId);
   if(!c) return;
+  if(c.troll){
+    const p = (c.trollChance||TROLL_CHANCE)*100;
+    $("#lootTitle").textContent = c.name;
+    $("#lootTag").innerHTML = "🪙 "+fmtShort(c.price)+" &nbsp;·&nbsp; skrzynka troll";
+    $("#lootBody").innerHTML = `
+      <div class="loot-bonus lb-fx"><i class="lb-ico">🤡</i><span class="lb-txt">
+        <b>Tu nie ma broni. Tu jest ryzyko.</b>
+        W środku są tylko dwie rzeczy: <b>🪙 ${fmt(c.trollJackpot||TROLL_JACKPOT)}</b> z szansą
+        <b>${p.toFixed(2)}%</b> albo <b>🪙 ${fmt(c.trollConsolation||TROLL_CONSOLATION)}</b>
+        z szansą <b>${(100-p).toFixed(2)}%</b>. Monety trafiają od razu na konto.
+      </span></div>`;
+    $("#lootOverlay").classList.add("show");
+    return;
+  }
   const o = oddsFor(c);
   const total = TIERS.reduce((s,t)=>s+(c.items[t]||[]).length,0);
   $("#lootTitle").textContent = c.name;
-  $("#lootTag").innerHTML = "🪙 "+fmt(c.price)+" &nbsp;·&nbsp; "+total+" "+plural(total,"broń","broni","broni");
+  $("#lootTag").innerHTML = "🪙 "+fmtShort(c.price)+" &nbsp;·&nbsp; "+total+" "+plural(total,"broń","broni","broni");
   $("#lootBody").innerHTML =
     `<div class="loot-bonus"><i class="lb-ico">🍀</i><span class="lb-txt">
       <b>Czterolistna koniczyna — szansa ${(CLOVER_CHANCE*100).toFixed(1)}%</b>
@@ -3734,13 +4484,13 @@ function showLoot(caseId){
     const pool = c.items[t]||[];
     if(!pool.length) return "";
     const pct = (o[t]*100).toFixed(2)+"%";
-    const cards = pool.map(([w,n])=>{
-      const it = { uid:"lp"+hash(w+"|"+n).toString(36), w, n, art:guessArt(w), tier:t, caseId:c.id,
+    const cards = pool.map(([w,n,art])=>{
+      const it = { uid:"lp"+hash(w+"|"+n).toString(36), w, n, art:art||guessArt(w), tier:t, caseId:c.id,
                    value:itemValue(c,t,w+"|"+n), ts:0 };
       return itemCardHTML(it);
     }).join("");
     return `<div class="loot-sec" style="--c:${TIER[t].color}">
-      <div class="loot-sec-h"><i></i>${TIER[t].name}
+      <div class="loot-sec-h"><i></i>${t==="special"?"★ Noże":t==="relic"?"✦ Relikty":TIER[t].name}
         <span>${pool.length} ${plural(pool.length,"pozycja","pozycje","pozycji")} · szansa ${pct}</span></div>
       <div class="loot-grid">${cards}</div>
     </div>`;
@@ -3783,6 +4533,175 @@ const BOT_FACTOR = {   // [min, max] mnożnik ceny względem normalnej wartości
 };
 const BOT_CACHE = {tag:"", list:[]};
 
+/* =======================================================================
+   🔑 KODY — bardzo rzadkie bonusy ze skrzynek i jednorazowe oferty botów
+   ======================================================================= */
+const CODE_DROP_CHANCE = 0.0006;   // 0,06% na otwarcie skrzynki (1 na ~1667)
+const CODES = [
+  {id:"neon",     icon:"💡", name:"Kod Neonowy",    code:"KOD-NEON-25",      rarity:"rare",     reward:25000,   price:20000,  desc:"Neonowe światło i szybki zysk."},
+  {id:"sand",     icon:"🏜️", name:"Kod Pustyni",   code:"KOD-SAND-50",      rarity:"rare",     reward:50000,   price:40000,  desc:"Suchy jak pustynny wiatr."},
+  {id:"storm",    icon:"⛈️", name:"Kod Burzy",     code:"KOD-STORM-100",    rarity:"rare",     reward:100000,  price:80000,  desc:"Ładunek, który zawsze trafia."},
+  {id:"midnight", icon:"🌙", name:"Kod Północy",   code:"KOD-MIDNIGHT-250", rarity:"rare",     reward:250000,  price:200000, desc:"Cichy kod na nocne otwarcia."},
+  {id:"dragon",   icon:"🐉", name:"Kod Smoka",     code:"KOD-DRAGON-500",   rarity:"rare",     reward:500000,  price:400000, desc:"Syczący skarb ze smoczej jaskini."},
+  {id:"void",     icon:"🕳️", name:"Kod Pustki",    code:"KOD-VOID-1M",      rarity:"rare",     reward:1000000, price:800000, desc:"Coś, czego nie powinno się znaleźć."},
+  {id:"royal",    icon:"👑", name:"Kod Królewski", code:"KOD-ROYAL-2M5",    rarity:"rare",     reward:2500000, price:2000000,desc:"Królewska pieczęć i pełna sakiewka."},
+  {id:"otchlan",  icon:"🌌", name:"Kod Otchłani",  code:"KOD-OTCHLAN-10M",  rarity:"veryRare", reward:10000000,price:8000000,desc:"Jeden na całą kolekcję. Bardzo rzadki."}
+];
+const CODE_BY_ID = {};
+CODES.forEach(c=>CODE_BY_ID[c.id] = c);
+const CODE_RARITY = {
+  rare:     {name:"Rzadki",       color:"#60a5fa"},
+  veryRare: {name:"Bardzo rzadki",color:"#a855f7"}
+};
+
+function codeCount(id){ return numFrom(state.codes && state.codes[id]); }
+function codeUniqueRedeemed(){
+  const m = state.codeRedeemed || {};
+  return CODES.filter(c=>numFrom(m[c.id]) > 0).length;
+}
+function codeOwnedTotal(){
+  return CODES.reduce((a,c)=>a + codeCount(c.id), 0);
+}
+function addCode(id, n){
+  if(!CODE_BY_ID[id]) return;
+  state.codes = (state.codes && typeof state.codes === "object" && !Array.isArray(state.codes)) ? state.codes : {};
+  state.codes[id] = codeCount(id) + Math.max(1, n|0);
+}
+function grantCode(id, source){
+  const def = CODE_BY_ID[id];
+  if(!def) return null;
+  addCode(id, 1);
+  if(source === "drop"){
+    state.stats.codeDrops = numFrom(state.stats.codeDrops) + 1;
+    sfxCode();
+    toast("🔑 <b>KOD!</b> " + def.icon + " <b>" + esc(def.name) + "</b> — " + esc(def.code) +
+      " · +🪙 " + fmt(def.reward) + ". Odbierzesz go w zakładce <b>Kody</b>.","good");
+  }
+  markDirty(); save({kind: source === "drop" ? "code" : undefined});
+  renderCodeBadge();
+  return def;
+}
+function rollCodeDrop(){
+  if(Math.random() >= CODE_DROP_CHANCE) return null;
+  // Ze skrzynek wypadają kody rzadkie. Kod Otchłani jest dodatkową, bardzo rzadką
+  // ofertą wyłącznie u botów — dlatego nie ma go w tej puli.
+  const pool = CODES.filter(c => c.rarity === "rare");
+  return grantCode(pool[(Math.random()*pool.length)|0].id, "drop");
+}
+function codeCardHTML(def, mode){
+  const r = CODE_RARITY[def.rarity] || CODE_RARITY.rare;
+  const owned = codeCount(def.id);
+  const redeemed = numFrom((state.codeRedeemed||{})[def.id]);
+  const bought = !!(state.codeBought && state.codeBought[def.id]);
+  const sold = mode === "shop" && bought;
+  let action = "";
+  if(mode === "owned"){
+    action = `<button class="btn primary" data-coderedeem="${def.id}">Odbierz +🪙 ${fmtShort(def.reward)}</button>`;
+  } else {
+    action = sold
+      ? `<button class="btn" disabled>Kupione</button>`
+      : `<button class="btn gold" data-codebuy="${def.id}" ${state.coins < def.price ? "disabled" : ""}>Kup za 🪙 ${fmtShort(def.price)}</button>`;
+  }
+  const qty = mode === "owned"
+    ? `<span class="cc-qty">masz ×${owned}</span>`
+    : redeemed
+      ? `<span class="cc-qty">odebrano ${redeemed}×</span>`
+      : `<span class="cc-qty">jednorazowa oferta</span>`;
+  return `<div class="code-card ${def.rarity}${sold?" bought":""}" style="--cc:${r.color}">
+    <div class="cc-top">
+      <div class="code-ico">${def.icon}</div>
+      <div style="min-width:0">
+        <div class="code-name">${esc(def.name)}</div>
+        <span class="code-rarity" style="color:${r.color};border-color:color-mix(in srgb,${r.color} 45%,transparent);background:color-mix(in srgb,${r.color} 13%,transparent)">${r.name}</span>
+      </div>
+    </div>
+    <div class="code-string">${esc(def.code)}</div>
+    <div class="code-reward"><span>Nagroda: <b>🪙 ${fmt(def.reward)}</b></span>${qty}</div>
+    <div class="code-actions">${action}</div>
+  </div>`;
+}
+function renderCodeShop(){
+  const g = $("#codeShop");
+  if(g){
+    g.innerHTML = CODES.map(c=>codeCardHTML(c, "shop")).join("");
+    g.classList.add("ready");
+    const h = $("#codeShopHint");
+    if(h){
+      const n = CODES.filter(c=>state.codeBought && state.codeBought[c.id]).length;
+      h.innerHTML = `kupione <b>${n}</b> / ${CODES.length} · jeden bardzo rzadki`;
+    }
+  }
+  renderCodeBadge();
+}
+function renderCodes(){
+  const g = $("#codeOwned");
+  if(g){
+    const owned = CODES.filter(c=>codeCount(c.id) > 0);
+    g.innerHTML = owned.length
+      ? owned.map(c=>codeCardHTML(c, "owned")).join("")
+      : `<div class="code-empty">Nie masz jeszcze żadnego kodu. Wypadają <b>bardzo rzadko</b> ze skrzynek, w <b>ofertach eventowych Sklepu</b> albo u botów w <b>Bazarze botów</b>.</div>`;
+    g.classList.add("ready");
+    const h = $("#codeOwnedHint");
+    if(h) h.innerHTML = `do odebrania: <b>${codeOwnedTotal()}</b>`;
+  }
+  const hint = $("#codeHint");
+  if(hint){
+    hint.innerHTML = `w kolekcji: <b>${codeUniqueRedeemed()}</b> / ${CODES.length} · odebrane kody: <b>${numFrom(state.stats.codeRedeems)}</b>`;
+  }
+  const rh = $("#codeRedeemHint");
+  if(rh) rh.innerHTML = "Kod musi być w Twojej kolekcji — zdobądź go ze skrzynki, z oferty eventowej Sklepu albo kup u bota.";
+  renderCodeBadge();
+}
+function renderCodeBadge(){
+  const badge = $("#codeCount");
+  if(!badge) return;
+  const n = codeOwnedTotal();
+  badge.textContent = n ? String(n) : "";
+  badge.style.display = n ? "" : "none";
+}
+function buyCodeOffer(id){
+  const def = CODE_BY_ID[id];
+  if(!def) return;
+  if(state.codeBought && state.codeBought[id]){ sfxErr(); toast("Ten kod już kupiłeś — oferta jest jednorazowa","bad"); return; }
+  if(state.coins < def.price){ sfxErr(); toast("Za mało monet na ten kod","bad"); return; }
+  state.coins -= def.price;
+  state.stats.spent += def.price;
+  state.stats.codeBuys = numFrom(state.stats.codeBuys) + 1;
+  state.codeBought = (state.codeBought && typeof state.codeBought === "object") ? state.codeBought : {};
+  state.codeBought[id] = true;
+  addCode(id, 1);
+  sfxCoin();
+  toast("🔑 Kupiono <b>"+esc(def.name)+"</b> — kod czeka w zakładce Kody","good");
+  markDirty(); save(); renderBalance(); renderCodeShop(); renderCodes(); checkAchievements();
+}
+function redeemCodeById(id){
+  const def = CODE_BY_ID[id];
+  if(!def) return;
+  if(codeCount(id) <= 0){ sfxErr(); toast("Nie masz tego kodu","bad"); return; }
+  state.codes[id] = codeCount(id) - 1;
+  if(!state.codes[id]) delete state.codes[id];
+  state.codeRedeemed = (state.codeRedeemed && typeof state.codeRedeemed === "object") ? state.codeRedeemed : {};
+  state.codeRedeemed[id] = numFrom(state.codeRedeemed[id]) + 1;
+  state.stats.codeRedeems = numFrom(state.stats.codeRedeems) + 1;
+  state.coins += def.reward;
+  sfxCoin(); confetti(["#a855f7","#ffd76a","#ffffff"]);
+  toast("🔑 Odebrano <b>"+esc(def.name)+"</b>: +🪙 "+fmt(def.reward),"good");
+  markDirty(); save(); renderBalance(); renderCodes(); checkAchievements();
+}
+function redeemCodeString(raw){
+  const code = String(raw||"").trim().toUpperCase();
+  if(!code){ sfxErr(); toast("Wpisz kod","bad"); return; }
+  const def = CODES.find(c=>c.code === code);
+  if(!def){ sfxErr(); toast("❌ Nieprawidłowy kod. Sprawdź go dokładnie.","bad"); return; }
+  if(codeCount(def.id) <= 0){
+    sfxErr();
+    toast("Nie masz tego kodu. Znajdź go w skrzynce albo kup u bota.","bad");
+    return;
+  }
+  redeemCodeById(def.id);
+  const inp = $("#codeInput"); if(inp) inp.value = "";
+}
+
 function mulberry32(a){
   return function(){
     a |= 0; a = a + 0x6D2B79F5 | 0;
@@ -3815,7 +4734,7 @@ function botOffers(){
   const rndF = mulberry32(hash("botmarket|"+tag));
   const bought = botStockMap();
   Object.keys(bought).forEach(k=>{ if(k.indexOf("b"+tag+"_") !== 0) delete bought[k]; });
-  const pool = CASES.filter(c=>!c.secret && !c.mega && !c.elite);
+  const pool = CASES.filter(c=>!c.secret && !c.mega && !c.elite && !c.ultra && !c.noItems);
   const trade = 1 - TRADE_STEP*upLvl("trade");   // 🏷️ Targowanie
   const list = [];
   BOT_SELLERS.forEach((s, si)=>{
@@ -3859,8 +4778,8 @@ function botOfferHTML(o){
       <div class="bo-main">
         <div class="bo-w">${c.botOnly ? "tylko u botów" : "skrzynka"}</div>
         <div class="bo-n">${esc(c.name)}</div>
-        <div class="bo-meta"><span class="bo-price">🪙 ${fmt(o.price)}</span>
-          <span class="bo-base">🪙 ${fmt(o.base)}</span>${deal}
+        <div class="bo-meta"><span class="bo-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
+          <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}
           <span class="${stockCls}">${stockTxt}</span></div>
       </div>
       <button class="bo-buy" data-botbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
@@ -3872,8 +4791,8 @@ function botOfferHTML(o){
     <div class="bo-main">
       <div class="bo-w">${esc(o.w)}</div>
       <div class="bo-n">${esc(o.n)}</div>
-      <div class="bo-meta"><span class="bo-price">🪙 ${fmt(o.price)}</span>
-        <span class="bo-base">🪙 ${fmt(o.base)}</span>${deal}
+      <div class="bo-meta"><span class="bo-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
+        <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}
         <span class="${stockCls}">${stockTxt}</span></div>
     </div>
     <button class="bo-buy" data-botbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
@@ -3904,8 +4823,11 @@ function botTick(){
     badge.style.display = n ? "" : "none";
   }
 }
-function renderBots(){
+function renderBots(force){
   const g = $("#botGrid"); if(!g) return;
+  /* Bazar przerysowujemy tylko wtedy, gdy jest widoczny (albo po wymuszonym
+     odświeżeniu). Otwarcie skrzynki nie mieli w tle czterech kart bazaru. */
+  if(currentView !== "bots" && !force){ botTick(); return; }
   const offers = botOffers();
   g.innerHTML = BOT_SELLERS.map((s,i)=>{
     const mine = offers.filter(o=>o.seller===s.id);
@@ -3920,7 +4842,9 @@ function renderBots(){
       <div class="bot-offers">${mine.map(botOfferHTML).join("")}</div>
     </div>`;
   }).join("");
+  g.classList.add("ready");
   botTick();
+  renderCodeShop();
 }
 function buyBotOffer(id){
   const off = botOffers().find(o=>o.id===id);
@@ -3938,11 +4862,9 @@ function buyBotOffer(id){
     state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
     state.caseStock[off.caseId] = caseStock(off.caseId) + 1;
     state.stats.botCases = numFrom(state.stats.botCases) + 1;
-    state.botUnlocked = state.botUnlocked || {};
-    state.botUnlocked[off.caseId] = true;
     const c = CASES.find(x=>x.id===off.caseId);
     sfxCoin();
-    toast("📦 Kupiono <b>"+esc(c ? c.name : "skrzynkę")+"</b> — czeka w zapasie w zakładce Skrzynki. Od teraz możesz ją otwierać też za monety.","good");
+    toast("📦 Kupiono <b>"+esc(c ? c.name : "skrzynkę")+"</b> — czeka w zapasie w zakładce Skrzynki. To skrzynka jednorazowa: po otwarciu zniknie, a kolejną kupisz tylko u bota.","good");
   } else {
     const item = { uid:"b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
       w:off.w, n:off.n, art:off.art, tier:off.tier, caseId:off.caseId, fx:null,
@@ -3972,10 +4894,633 @@ $("#botGrid").addEventListener("click", e=>{
   const b = e.target.closest("[data-botbuy]");
   if(b) buyBotOffer(b.dataset.botbuy);
 });
+$("#codeShop").addEventListener("click", e=>{
+  const b = e.target.closest("[data-codebuy]");
+  if(b) buyCodeOffer(b.dataset.codebuy);
+});
+$("#codeOwned").addEventListener("click", e=>{
+  const b = e.target.closest("[data-coderedeem]");
+  if(b) redeemCodeById(b.dataset.coderedeem);
+});
+$("#codeInput").addEventListener("keydown", e=>{
+  if(e.key === "Enter") redeemCodeString($("#codeInput").value);
+});
+$("#codeRedeem").addEventListener("click", ()=>redeemCodeString($("#codeInput").value));
+$("#codeInput").addEventListener("keydown", e=>{ if(e.key === "Enter") redeemCodeString(e.target.value); });
 setInterval(()=>{
   if(currentView !== "bots") return;
   if(BOT_CACHE.tag !== botTag()) renderBots();
   else botTick();
+}, 1000);
+
+/* =======================================================================
+   8a. 🛒 SKLEP + 🎉 EVENTY
+   -----------------------------------------------------------------------
+   Większy, spokojniejszy kuzyn bazaru: pięciu sprzedawców, po pięć
+   ofert każdy, własny zapas i rzadsza rotacja. Eventowe oferty dodają
+   broń, skrzynię i — tylko w niektórych rotacjach — kod.
+   ======================================================================= */
+const SHOP_TTL          = 6*60*1000;  // rotacja sklepu
+const SHOP_REFRESH_CD   = 45*1000;    // przerwa między ręcznymi odświeżeniami
+const SHOP_SLOTS        = 5;          // 4 bronie + 1 skrzynka
+const SHOP_EVENT_CODE_CHANCE = 0.05;  // kod tylko w ~5% rotacji eventowych
+const SHOP_SELLERS = [
+  {id:"bruno", icon:"🧔", name:"Bruno",  tag:"sklep ogólny",   line:"„U mnie nie ma kolejek.”"},
+  {id:"mira",  icon:"👩‍🔧", name:"Mira",   tag:"zbrojmistrzyni", line:"„Broń? Tylko sprawdzona.”"},
+  {id:"kruk",  icon:"🦅", name:"Kruk",   tag:"kolekcjoner",     line:"„Każda skrzynka ma swoją historię.”"},
+  {id:"neo",   icon:"🛰️", name:"NEO-7",  tag:"technologie",     line:"„System poleca: kupuj więcej.”"},
+  {id:"vega",  icon:"💫", name:"Vega",   tag:"eventy i okazje", line:"„Okazje nie czekają.”"}
+];
+const SHOP_TIER_W = {
+  bruno:{mil:48, restricted:34, classified:12, covert:4.5, special:1},
+  mira: {mil:18, restricted:36, classified:28, covert:14,   special:4},
+  kruk: {mil:32, restricted:32, classified:22, covert:10,   special:4},
+  neo:  {mil:40, restricted:32, classified:18, covert:7,    special:3},
+  vega: {mil:22, restricted:30, classified:26, covert:15,   special:7}
+};
+const SHOP_FACTOR = {
+  bruno:[0.60, 0.95],
+  mira: [0.72, 1.08],
+  kruk: [0.58, 1.35],
+  neo:  [0.82, 1.02],
+  vega: [0.55, 1.20]
+};
+const SHOP_CACHE = {tag:"", list:[]};
+let FX_EVENT_SIG = "";
+
+/* =======================================================================
+   8a-2. 🎁 PAKIETY — darmowy starter i losowe pakiety za monety
+   -----------------------------------------------------------------------
+   Pakiety nie są gwarantowanym zyskiem. Zawartość losuje się przy zakupie:
+   czasem trafi się coś droższego, czasem strata. Starter jest jednorazowy.
+   ======================================================================= */
+const PACK_CODE_CHANCE = 0.01;
+const PACKS = [
+  { id:"starter", icon:"🎁", name:"Pakiet startowy", badge:"FREE · JEDNORAZOWY",
+    color:"#38e08a", price:0, once:true,
+    desc:"2 500 monet, Skrzynka Startowa i losowa broń z Pryzmatu. Jednorazowy zastrzyk na start." },
+  { id:"bronie", icon:"🔫", name:"Pakiet broni", badge:"3 LOSOWE BRONIE",
+    color:"#60a5fa", price:9000,
+    desc:"Trzy bronie z Widma. Bez gwarancji zysku — czasem trafi się rzadszy model." },
+  { id:"skrzynki", icon:"📦", name:"Pakiet skrzynek", badge:"2 LOSOWE SKRZYNKI",
+    color:"#34d399", price:6000,
+    desc:"Dwie skrzynki z puli Pryzmat / Widmo / Chroma. Wszystkie trafiają do zapasu." },
+  { id:"kolekcjoner", icon:"💼", name:"Pakiet kolekcjonera", badge:"CHROMA + SZANSA NA KOD",
+    color:"#f472b6", price:32000,
+    desc:"Broń z Chromy, skrzynka Chroma i mała (1%) szansa na rzadki kod. Dla lubiących ryzyko." },
+  { id:"hazard", icon:"🎲", name:"Pakiet hazardzisty", badge:"WYSOKIE RYZYKO",
+    color:"#f59e0b", price:15000,
+    desc:"Cztery bronie z Widma, głównie tanie — ale może wypaść nóż. Czasem wielka strata, czasem jackpot." }
+];
+const PACK_BY_ID = Object.fromEntries(PACKS.map(p=>[p.id,p]));
+
+const shopCycle = () => Math.floor(Date.now()/SHOP_TTL);
+function shopStockMap(){
+  if(!state.shopBought || typeof state.shopBought !== "object" || Array.isArray(state.shopBought)) state.shopBought = {};
+  return state.shopBought;
+}
+function shopLeft(o){ return Math.max(0, o.max - numFrom(shopStockMap()[o.id])); }
+function shopTag(){ return shopCycle()+"_"+numFrom(state.shopSalt)+"_"+upLvl("trade"); }
+/* Eventy rotują tylko z czasem — ręczne odświeżenie sklepu nie pozwala
+   przelosowywać szansy na kod. Dzięki temu kody naprawdę pozostają rzadkie. */
+function eventTag(){ return "ev"+shopCycle()+"_"+upLvl("trade"); }
+function shopCacheKey(){ return shopTag()+"|"+eventTag(); }
+
+/* Wybiera przedmiot z tieru, a gdy skrzynka nie ma danego tieru — awaryjnie
+   losuje inny dostępny tier. Dzięki temu nowe/nietypowe skrzynki nie wywalą
+   generowania ofert. */
+function shopPickItem(c, tier, rndF){
+  let t = tier;
+  let arr = (c.items && Array.isArray(c.items[t])) ? c.items[t] : [];
+  if(!arr.length){
+    const tiers = Object.keys(TIER).filter(k=>c.items && Array.isArray(c.items[k]) && c.items[k].length);
+    if(!tiers.length) return null;
+    t = tiers[(rndF()*tiers.length)|0];
+    arr = c.items[t];
+  }
+  return {tier:t, it:arr[(rndF()*arr.length)|0]};
+}
+
+function shopOffers(){
+  const tag = shopTag();
+  const evTag = eventTag();
+  const cacheKey = tag+"|"+evTag;
+  if(SHOP_CACHE.tag === cacheKey) return SHOP_CACHE.list;
+  const rndF = mulberry32(hash("playershop|"+tag));
+  const evRnd = mulberry32(hash("playerevent|"+evTag));
+  const bought = shopStockMap();
+  Object.keys(bought).forEach(k=>{
+    if(k.indexOf("s"+tag+"_") !== 0 && k.indexOf("e"+evTag+"_") !== 0) delete bought[k];
+  });
+  const pool = CASES.filter(c=>!c.botOnly && !c.secret && !c.mega && !c.elite && !c.ultra && !c.noItems);
+  const trade = 1 - TRADE_STEP*upLvl("trade");
+  const list = [];
+
+  SHOP_SELLERS.forEach((s, si)=>{
+    for(let k=0;k<SHOP_SLOTS;k++){
+      const id = "s"+tag+"_"+si+"_"+k;
+      if(k === SHOP_SLOTS-1){                      // skrzynka
+        const c = pool[(rndF()*pool.length)|0];
+        const base = c.price;
+        const f = 0.76 + rndF()*0.34;
+        list.push({ id, seller:s.id, kind:"case", caseId:c.id, base,
+                    price:Math.max(1, Math.round(roundNice(base*f) * trade)),
+                    max: 1 + ((rndF()*4)|0) });
+      } else {                                    // broń
+        const c = pool[(rndF()*pool.length)|0];
+        const tier = pickWeighted(SHOP_TIER_W[s.id], rndF);
+        const pick = shopPickItem(c, tier, rndF);
+        if(!pick) continue;
+        const it = pick.it;
+        const base = itemValue(c, pick.tier, it[0]+"|"+it[1]);
+        const f = SHOP_FACTOR[s.id][0] + rndF()*(SHOP_FACTOR[s.id][1]-SHOP_FACTOR[s.id][0]);
+        list.push({ id, seller:s.id, kind:"weapon", caseId:c.id, tier:pick.tier, w:it[0], n:it[1], art:it[2], base,
+                    price:Math.max(1, Math.round(roundNice(base*f) * trade)),
+                    max: 1 + ((rndF()*4)|0) });
+      }
+    }
+  });
+
+  /* 🎉 Eventy — zawsze broń + skrzynia, kod tylko czasami.
+     Losowanie eventów ma własny seed powiązany wyłącznie z czasem (evTag),
+     więc ręczne odświeżenie sklepu nie zmienia eventów ani szansy na kod. */
+  const evId = "e"+evTag;
+  const evCase = pool[(evRnd()*pool.length)|0];
+  const evCaseBase = evCase.price;
+  list.push({ id:evId+"_case", seller:"event", kind:"case", event:true, caseId:evCase.id, base:evCaseBase,
+              price:Math.max(1, Math.round(roundNice(evCaseBase*(0.76+evRnd()*0.22)) * trade)),
+              max: 1 + ((evRnd()*3)|0) });
+
+  const evWeaponCase = pool[(evRnd()*pool.length)|0];
+  const evTier = pickWeighted({mil:24, restricted:32, classified:26, covert:13, special:5}, evRnd);
+  const evPick = shopPickItem(evWeaponCase, evTier, evRnd);
+  if(evPick){
+    const it = evPick.it;
+    const evBase = itemValue(evWeaponCase, evPick.tier, it[0]+"|"+it[1]);
+    list.push({ id:evId+"_weapon", seller:"event", kind:"weapon", event:true,
+                caseId:evWeaponCase.id, tier:evPick.tier, w:it[0], n:it[1], art:it[2], base:evBase,
+                price:Math.max(1, Math.round(roundNice(evBase*(0.72+evRnd()*0.26)) * trade)),
+                max: 1 + ((evRnd()*3)|0) });
+  }
+
+  if(evRnd() < SHOP_EVENT_CODE_CHANCE){
+    const codePool = CODES.filter(c=>c.rarity === "rare");
+    const def = codePool[(evRnd()*codePool.length)|0];
+    const base = def.price;
+    list.push({ id:evId+"_code", seller:"event", kind:"code", event:true, codeId:def.id, base,
+                price:Math.max(1, Math.round(roundNice(base*(0.82+evRnd()*0.12)) * trade)),
+                max:1 });
+  }
+
+  SHOP_CACHE.tag = cacheKey; SHOP_CACHE.list = list;
+  return list;
+}
+
+function shopOfferHTML(o){
+  const left = shopLeft(o);
+  const sold = left <= 0;
+  const diff = Math.round((o.price/Math.max(1,o.base) - 1)*100);
+  const deal = diff <= 0 ? `<span class="bo-deal">${diff}%</span>` : `<span class="bo-deal bad">+${diff}%</span>`;
+  const stockTxt = sold ? "wykupione" : "zostało "+left+" z "+o.max;
+  const stockCls = "bo-stock"+(left>0 && left<=1 ? " low" : "");
+  const eventTag = o.event ? "🎉 event · " : "";
+  if(o.kind === "case"){
+    const c = CASES.find(x=>x.id===o.caseId);
+    if(!c) return "";
+    return `<div class="bot-offer${sold?" sold":""}" style="--c:${c.color}${sold?";--c:#44506b":""}">
+      <div class="bo-art bo-case" style="--cc:${c.color}">${c.icon}</div>
+      <div class="bo-main">
+        <div class="bo-w">${eventTag}skrzynka</div>
+        <div class="bo-n">${esc(c.name)}</div>
+        <div class="bo-meta"><span class="bo-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
+          <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}
+          <span class="${stockCls}">${stockTxt}</span></div>
+      </div>
+      <button class="bo-buy" data-shopbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
+    </div>`;
+  }
+  const t = TIER[o.tier];
+  return `<div class="bot-offer${sold?" sold":""}" style="--c:${t.color}">
+    <div class="bo-art">${weaponSVG({w:o.w,n:o.n,tier:o.tier,art:o.art}, hash(o.id).toString(36))}</div>
+    <div class="bo-main">
+      <div class="bo-w">${eventTag}${esc(o.w)}</div>
+      <div class="bo-n">${esc(o.n)}</div>
+      <div class="bo-meta"><span class="bo-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
+        <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}
+        <span class="${stockCls}">${stockTxt}</span></div>
+    </div>
+    <button class="bo-buy" data-shopbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
+  </div>`;
+}
+
+function eventOfferHTML(o){
+  const left = shopLeft(o);
+  const sold = left <= 0;
+  const diff = Math.round((o.price/Math.max(1,o.base) - 1)*100);
+  const deal = diff <= 0 ? `<span class="bo-deal">${diff}%</span>` : `<span class="bo-deal bad">+${diff}%</span>`;
+  const stockTxt = sold ? "wykupione" : "zostało "+left+" z "+o.max;
+  const stockCls = "event-stock"+(left>0 && left<=1 ? " low" : "");
+
+  if(o.kind === "code"){
+    const def = CODE_BY_ID[o.codeId];
+    if(!def) return "";
+    const r = CODE_RARITY[def.rarity] || CODE_RARITY.rare;
+    return `<div class="event-card event-code${sold?" sold":""}" style="--c:${r.color}">
+      <div class="event-badge">🎉 EVENT · KOD</div>
+      <div class="event-head">
+        <div class="event-ico">${def.icon}</div>
+        <div style="min-width:0"><div class="event-name">${esc(def.name)}</div>
+          <div class="event-sub">${r.name} · bardzo rzadka oferta</div></div>
+      </div>
+      <div class="event-code-string">${esc(def.code)}</div>
+      <div class="event-meta"><span class="event-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
+        <span class="event-base">🪙 ${fmtShort(o.base)}</span>${deal}
+        <span class="${stockCls}">${stockTxt}</span></div>
+      <button class="event-buy" data-shopbuy="${o.id}" ${sold?"disabled":""}>${sold?"Sprzedane":"Kup kod"}</button>
+    </div>`;
+  }
+
+  if(o.kind === "case"){
+    const c = CASES.find(x=>x.id===o.caseId);
+    if(!c) return "";
+    return `<div class="event-card${sold?" sold":""}" style="--c:${c.color}">
+      <div class="event-badge">🎉 EVENT · SKRZYNKA</div>
+      <div class="event-art event-case" style="--c:${c.color}">${c.icon}</div>
+      <div class="event-name">${esc(c.name)}</div>
+      <div class="event-sub">skrzynka eventowa</div>
+      <div class="event-meta"><span class="event-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
+        <span class="event-base">🪙 ${fmtShort(o.base)}</span>${deal}
+        <span class="${stockCls}">${stockTxt}</span></div>
+      <button class="event-buy" data-shopbuy="${o.id}" ${sold?"disabled":""}>${sold?"Sprzedane":"Kup skrzynkę"}</button>
+    </div>`;
+  }
+
+  const t = TIER[o.tier];
+  return `<div class="event-card${sold?" sold":""}" style="--c:${t.color}">
+    <div class="event-badge">🎉 EVENT · BROŃ</div>
+    <div class="event-art">${weaponSVG({w:o.w,n:o.n,tier:o.tier,art:o.art}, hash(o.id).toString(36))}</div>
+    <div class="event-name">${esc(o.n)}</div>
+    <div class="event-sub">${esc(o.w)}</div>
+    <div class="event-meta"><span class="event-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
+      <span class="event-base">🪙 ${fmtShort(o.base)}</span>${deal}
+      <span class="${stockCls}">${stockTxt}</span></div>
+    <button class="event-buy" data-shopbuy="${o.id}" ${sold?"disabled":""}>${sold?"Sprzedane":"Kup broń"}</button>
+  </div>`;
+}
+
+function fxEventSignature(){
+  return fxEventPool().map(f=>f.id+":"+(fxEventActive(f.id)?"1":"0")).join("|");
+}
+function updateFxEventHint(){
+  const h = $("#fxEventHint");
+  if(!h) return;
+  const active = fxEventPool().filter(f=>fxEventActive(f.id));
+  if(!active.length){
+    h.innerHTML = "nieaktywne · każdy event daje +"+Math.round(FX_EVENT_LUCK*100)+"% luck";
+    return;
+  }
+  const next = Math.min(...active.map(f=>numFrom(state.fxEvents[f.id]) - Date.now()));
+  h.innerHTML = "aktywne: <b>"+active.length+"</b> · +<b>"+Math.round(FX_EVENT_LUCK*active.length*100)+
+    "%</b> luck · najbliższy koniec za <b>"+mmss(Math.max(0,next))+"</b>";
+}
+function fxEventCardHTML(f){
+  const left = Math.max(0, numFrom(state.fxEvents && state.fxEvents[f.id]) - Date.now());
+  const active = left > 0;
+  const price = fxEventPrice(f);
+  const ch = f.chance*100;
+  const chTxt = ch < 0.1 ? ch.toFixed(2) : ch.toFixed(1);
+  return `<div class="event-card fx-event-card${active?" active":""}" style="--c:${f.color}">
+    <div class="event-badge">🎰 EVENT EFEKTU${active?" · AKTYWNY":""}</div>
+    <div class="event-head">
+      <div class="event-ico">${f.icon}</div>
+      <div style="min-width:0"><div class="event-name">${esc(f.name)}</div>
+        <div class="event-sub">×${FX_EVENT_BOOST} waga · +${Math.round(FX_EVENT_LUCK*100)}% luck</div></div>
+    </div>
+    <div class="fx-event-chance">Szansa bazowa: <b>${chTxt}%</b> na drop · mnożnik wartości <b>×${fxM(f)}</b></div>
+    <div class="fx-event-time${active?" on":""}" data-fx-left="${f.id}">${active?"aktywny jeszcze "+mmss(left):"nieaktywny"}</div>
+    <div class="event-meta"><span class="event-price">🪙 ${fmtShort(price)}</span><span class="event-stock">${Math.round(FX_EVENT_DUR/60000)} min</span></div>
+    <button class="event-buy" data-fxevent="${f.id}">${active?"Przedłuż +"+Math.round(FX_EVENT_DUR/60000)+" min":"Kup event"}</button>
+  </div>`;
+}
+function renderFxEvents(){
+  const g = $("#fxEventGrid");
+  if(!g) return;
+  g.innerHTML = fxEventPool().map(fxEventCardHTML).join("");
+  g.classList.add("ready");
+  FX_EVENT_SIG = fxEventSignature();
+  updateFxEventHint();
+}
+function fxEventTick(){
+  if(currentView !== "market") return;
+  const g = $("#fxEventGrid");
+  if(!g || !g.children.length) return;
+  if(FX_EVENT_SIG !== fxEventSignature()){ renderFxEvents(); return; }
+  updateFxEventHint();
+  $$("[data-fx-left]").forEach(el=>{
+    const id = el.dataset.fxLeft;
+    const f = FX_BY_ID[id] || EVENT_FX_BY_ID[id];
+    if(!f) return;
+    const left = Math.max(0, numFrom(state.fxEvents && state.fxEvents[id]) - Date.now());
+    el.textContent = left > 0 ? "aktywny jeszcze "+mmss(left) : "nieaktywny";
+    el.classList.toggle("on", left > 0);
+  });
+}
+function buyFxEvent(id){
+  const f = fxEventPool().find(x=>x.id===id);
+  if(!f) return;
+  const price = fxEventPrice(f);
+  if(state.coins < price){ sfxErr(); toast("Za mało monet na event efektu","bad"); return; }
+  state.coins -= price;
+  state.stats.spent += price;
+  state.stats.shopBuys = numFrom(state.stats.shopBuys) + 1;
+  state.stats.shopSpent = numFrom(state.stats.shopSpent) + price;
+  state.fxEvents = (state.fxEvents && typeof state.fxEvents === "object" && !Array.isArray(state.fxEvents)) ? state.fxEvents : {};
+  const before = numFrom(state.fxEvents[id]);
+  const now = Date.now();
+  state.fxEvents[id] = Math.max(now, before) + FX_EVENT_DUR;
+  markDirty(); save();
+  sfxCoin();
+  toast((before>now ? "🎰 Przedłużono event: " : "🎰 Kupiono event: ")+"<b>"+f.icon+" "+esc(f.name)+
+    "</b> — ×"+FX_EVENT_BOOST+" wagi przez "+Math.round(FX_EVENT_DUR/60000)+" min.","good");
+  renderBalance(); renderMarket(true); renderShop(); renderStats(); checkAchievements();
+}
+
+function shopTick(){
+  const offers = shopOffers();
+  const sold = offers.filter(o=>shopLeft(o)<=0).length;
+  const left = offers.length - sold;
+  const h = $("#marketHint");
+  if(h) h.innerHTML = "rotacja za <b>"+mmss(SHOP_TTL - (Date.now()%SHOP_TTL))+"</b> · dostępne: <b>"+
+    left+"</b> / "+offers.length;
+  const btn = $("#shopRefresh");
+  if(btn){
+    const cd = Math.max(0, numFrom(state.shopRefreshAt) - Date.now());
+    btn.disabled = cd > 0;
+    btn.textContent = cd > 0 ? "⏳ "+mmss(cd) : "🔄 Nowe oferty";
+  }
+  const badge = $("#shopCount");
+  if(badge){
+    badge.textContent = left ? String(left) : "";
+    badge.style.display = left ? "" : "none";
+  }
+  const eh = $("#eventHint");
+  if(eh){
+    const code = offers.find(o=>o.seller==="event" && o.kind==="code");
+    eh.innerHTML = "rotacja za <b>"+mmss(SHOP_TTL - (Date.now()%SHOP_TTL))+"</b> · " +
+      (code ? (shopLeft(code)>0 ? "🔑 <b>kod dostępny!</b>" : "🔑 kod wykupiony") : "🔑 kod: brak w tej rotacji");
+  }
+  fxEventTick();
+}
+
+function renderMarket(force){
+  const g = $("#shopGrid"); if(!g) return;
+  if(currentView !== "market" && !force){ shopTick(); return; }
+  const offers = shopOffers();
+  g.innerHTML = SHOP_SELLERS.map((s,i)=>{
+    const mine = offers.filter(o=>o.seller===s.id);
+    const any = mine.some(o=>shopLeft(o)>0);
+    return `<div class="bot-card" style="animation-delay:${i*60}ms">
+      <div class="bot-head">
+        <div class="bot-ava">${s.icon}</div>
+        <div><div class="bot-name">${esc(s.name)}</div><div class="bot-tag">${esc(s.tag)}</div></div>
+        <div class="bot-live${any?"":" off"}">● ${any?"ONLINE":"WYKUPIONY"}</div>
+      </div>
+      <div class="bot-line">${s.line}</div>
+      <div class="bot-offers">${mine.map(shopOfferHTML).join("")}</div>
+    </div>`;
+  }).join("");
+  g.classList.add("ready");
+  const ev = $("#eventGrid");
+  if(ev){
+    ev.innerHTML = offers.filter(o=>o.seller==="event").map(eventOfferHTML).join("");
+    ev.classList.add("ready");
+  }
+  renderPacks();
+  renderFxEvents();
+  shopTick();
+}
+
+function buyShopOffer(id){
+  const off = shopOffers().find(o=>o.id===id);
+  if(!off) return;
+  if(off.kind === "code" && !CODE_BY_ID[off.codeId]) return;
+  if(shopLeft(off) <= 0){ sfxErr(); toast("Ta oferta została już wykupiona","bad"); return; }
+  if(state.coins < off.price){ sfxErr(); toast("Za mało monet!","bad"); return; }
+
+  state.coins -= off.price;
+  state.stats.spent += off.price;
+  state.stats.shopBuys = numFrom(state.stats.shopBuys) + 1;
+  state.stats.shopSpent = numFrom(state.stats.shopSpent) + off.price;
+  shopStockMap()[off.id] = numFrom(shopStockMap()[off.id]) + 1;
+
+  if(off.kind === "case"){
+    state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+    state.caseStock[off.caseId] = caseStock(off.caseId) + 1;
+    state.stats.shopCases = numFrom(state.stats.shopCases) + 1;
+    const c = CASES.find(x=>x.id===off.caseId);
+    sfxCoin();
+    toast((off.event ? "🎉 Event: " : "📦 ") + "kupiono <b>"+esc(c ? c.name : "skrzynkę")+"</b> — czeka w zapasie w zakładce Skrzynki.","good");
+  } else if(off.kind === "code"){
+    const def = CODE_BY_ID[off.codeId];
+    addCode(off.codeId, 1);
+    state.stats.codeBuys = numFrom(state.stats.codeBuys) + 1;
+    sfxCode();
+    toast("🎉 Event: kupiono <b>"+esc(def.name)+"</b> — kod czeka w zakładce Kody.","good");
+    renderCodes();
+  } else {
+    const item = { uid:"s"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+      w:off.w, n:off.n, art:off.art, tier:off.tier, caseId:off.caseId, fx:null,
+      value:Math.round(off.base), ts:Date.now() };
+    addToInv(item);
+    const diff = Math.round((off.price/Math.max(1,off.base) - 1)*100);
+    if(diff < 0) state.stats.bestDeal = Math.min(100, Math.max(numFrom(state.stats.bestDeal), -diff));
+    sfxCoin();
+    toast((diff<=0 ? "🏷️ <b>Okazja!</b> " : "🛒 Kupiono ")+"<b>"+esc(item.n)+"</b> ("+esc(item.w)+") za 🪙 "+
+      fmt(off.price)+(diff<0 ? " · "+(-diff)+"% taniej" : diff>0 ? " · +"+diff+"% drożej" : " · cena rynkowa"),"good");
+  }
+  markDirty(); save();
+  renderBalance(); renderMarket(true); renderShop(); renderInv(); renderStats();
+  checkAchievements();
+}
+
+function caseById(id){ return CASES.find(c=>c.id===id); }
+function packClaimed(p){
+  return !!(p && p.once && state.packClaims && state.packClaims[p.id]);
+}
+function packRandomCode(){
+  const pool = CODES.filter(c=>c.rarity === "rare" && c.id !== "otchlan");
+  return pool.length ? pool[(Math.random()*pool.length)|0] : null;
+}
+function packContents(p){
+  const out = {items:[], cases:{}, coins:0, codes:[]};
+  if(!p) return out;
+  if(p.id === "starter"){
+    const starterCase = caseById("start"), prism = caseById("prism");
+    out.coins = 2500;
+    if(starterCase) out.cases.start = 1;
+    if(prism) out.items.push(makeItem(prism, pickTier(prism)));
+  } else if(p.id === "bronie"){
+    const c = caseById("spectral");
+    if(c) for(let i=0;i<3;i++) out.items.push(makeItem(c, pickTier(c)));
+  } else if(p.id === "skrzynki"){
+    for(let i=0;i<2;i++){
+      const id = pickWeighted({prism:55, spectral:35, chroma:10}, Math.random);
+      if(caseById(id)) out.cases[id] = (out.cases[id]||0) + 1;
+    }
+  } else if(p.id === "kolekcjoner"){
+    const c = caseById("chroma");
+    if(c){ out.items.push(makeItem(c, pickTier(c))); out.cases.chroma = 1; }
+    if(Math.random() < PACK_CODE_CHANCE){
+      const code = packRandomCode();
+      if(code) out.codes.push(code);
+    }
+  } else if(p.id === "hazard"){
+    const c = caseById("spectral");
+    const w = {mil:70, restricted:22, classified:6, covert:1.5, special:.5};
+    if(c) for(let i=0;i<4;i++) out.items.push(makeItem(c, pickWeighted(w, Math.random)));
+  }
+  return out;
+}
+function addPackItems(items){
+  for(const item of items){
+    item.ts = item.ts || Date.now();
+    state.inv.unshift(item);
+    noteDrop(item);
+    albumRegister(item);
+  }
+}
+function packTotals(out){
+  const itemVal = out.items.reduce((a,i)=>a + i.value, 0);
+  const caseVal = Object.entries(out.cases).reduce((a,[id,n])=>a + casePrice(id)*n, 0);
+  return {itemVal, caseVal, total:itemVal + caseVal + out.coins};
+}
+function packLootHTML(out){
+  const rows = [];
+  if(out.coins)
+    rows.push(`<div class="pack-loot-item coins"><span class="pl-ico">🪙</span><div><b>+${fmt(out.coins)}</b><small>monet od razu</small></div></div>`);
+  for(const item of out.items){
+    const t = TIER[item.tier] || TIER.mil;
+    const f = fxOf(item);
+    rows.push(`<div class="pack-loot-item" style="--c:${t.color}">
+      <span class="pl-ico">${f ? f.icon : "🔫"}</span>
+      <div><b>${esc(item.w)}</b><small>${esc(item.n)} · ${t.name}${f ? " · "+f.name : ""}</small></div>
+      <span class="pl-val">🪙 ${fmtShort(item.value)}</span></div>`);
+  }
+  Object.entries(out.cases).forEach(([id,n])=>{
+    const c = caseById(id);
+    if(!c) return;
+    rows.push(`<div class="pack-loot-item" style="--c:${c.color}">
+      <span class="pl-ico">${c.icon}</span>
+      <div><b>${esc(c.name)}</b><small>×${n} · trafia do zapasu</small></div>
+      <span class="pl-val">🪙 ${fmtShort(casePrice(id)*n)}</span></div>`);
+  });
+  out.codes.forEach(def=>{
+    rows.push(`<div class="pack-loot-item code"><span class="pl-ico">${def.icon}</span>
+      <div><b>${esc(def.name)}</b><small>kod · odbierz w zakładce Kody</small></div></div>`);
+  });
+  return rows.join("");
+}
+function showPackResult(p,out){
+  const el = $("#packResult");
+  if(!el) return;
+  const v = packTotals(out);
+  const net = v.total - p.price;
+  const verdict = net > 0 ? "+🪙 "+fmtShort(net)+" · opłaca się"
+                : net < 0 ? "−🪙 "+fmtShort(-net)+" · strata"
+                : "🪙 0 · na zero";
+  const codeNote = out.codes.length
+    ? `<div class="pack-code-note">🔑 Bonus: ${out.codes.map(c=>esc(c.name)).join(", ")} — kod nie jest doliczony do wartości, odbierzesz go w Kody.</div>`
+    : "";
+  el.innerHTML = `<div class="pack-result-box ${net>=0?"pos":"neg"}">
+    <div class="pack-result-head">
+      <div><span class="pack-result-kicker">🎁 Otworzono pakiet</span><b>${p.icon} ${esc(p.name)}</b></div>
+      <span class="pack-verdict ${net>=0?"pos":"neg"}">${verdict}</span>
+    </div>
+    <div class="pack-loot">${packLootHTML(out)}</div>
+    <div class="pack-result-foot">Szacowana wartość: 🪙 ${fmtShort(v.total)}${p.price ? " · cena: 🪙 "+fmtShort(p.price) : " · pakiet darmowy"}</div>
+    ${codeNote}
+  </div>`;
+}
+function packCardHTML(p){
+  const claimed = packClaimed(p), free = p.price === 0;
+  return `<div class="pack-card${free?" free":""}${claimed?" claimed":""}" style="--c:${p.color}">
+    <div class="pack-badge">${p.badge}${claimed ? " · ODEBRANY" : ""}</div>
+    <div class="pack-head">
+      <div class="pack-ico">${p.icon}</div>
+      <div style="min-width:0"><div class="pack-name">${esc(p.name)}</div>
+        <div class="pack-sub">${free ? "prezent na start" : "losowy zestaw"}</div></div>
+    </div>
+    <div class="pack-desc">${p.desc}</div>
+    <div class="pack-meta"><span class="pack-price">${free ? "DARMOWY" : "🪙 "+fmtShort(p.price)}</span>
+      <span class="pack-tag">${free ? (claimed ? "odebrany" : "raz na konto") : "bez limitu"}</span></div>
+    <button class="pack-buy" data-pack="${p.id}" ${claimed?"disabled":""}>${claimed ? "✔ Odebrany" : free ? "Odbierz za darmo" : "Kup i otwórz"}</button>
+  </div>`;
+}
+function renderPacks(){
+  const g = $("#packGrid");
+  if(!g) return;
+  g.innerHTML = PACKS.map(packCardHTML).join("");
+  g.classList.add("ready");
+  const h = $("#packHint");
+  if(h) h.innerHTML = "5 rodzajów · starter jednorazowy · losowa zawartość";
+}
+function buyPack(id){
+  const p = PACK_BY_ID[id];
+  if(!p) return;
+  state.packClaims = (state.packClaims && typeof state.packClaims === "object" && !Array.isArray(state.packClaims)) ? state.packClaims : {};
+  if(p.once && packClaimed(p)){ sfxErr(); toast("Ten pakiet został już odebrany","bad"); return; }
+  if(state.coins < p.price){ sfxErr(); toast("Za mało monet na ten pakiet","bad"); return; }
+
+  if(p.price){
+    state.coins -= p.price;
+    state.stats.spent = numFrom(state.stats.spent) + p.price;
+  }
+  const out = packContents(p);
+  if(out.coins){
+    state.coins += out.coins;
+    state.stats.earned = numFrom(state.stats.earned) + out.coins;
+  }
+  addPackItems(out.items);
+  Object.entries(out.cases).forEach(([id,n])=>{
+    state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+    state.caseStock[id] = caseStock(id) + n;
+  });
+  out.codes.forEach(def=>{ addCode(def.id, 1); state.stats.codeDrops = numFrom(state.stats.codeDrops) + 1; });
+  state.stats.packBuys = numFrom(state.stats.packBuys) + 1;
+  state.stats.packSpent = numFrom(state.stats.packSpent) + p.price;
+  if(p.once) state.packClaims[p.id] = true;
+
+  markDirty(); save({kind:"pack"});
+  sfxCoin();
+  toast("🎁 Otwarto <b>"+esc(p.name)+"</b> — wynik zobaczysz pod pakietami.", "good");
+  renderBalance(); renderInv(); renderShop(); renderStats(); renderCodes(); renderMarket(true);
+  showPackResult(p, out);
+  checkAchievements();
+}
+
+function refreshShopOffers(){
+  const cd = numFrom(state.shopRefreshAt) - Date.now();
+  if(cd > 0){ sfxErr(); toast("Sklep potrzebuje jeszcze "+mmss(cd)+" na nowy towar","bad"); return; }
+  state.shopSalt = numFrom(state.shopSalt) + 1;
+  state.shopRefreshAt = Date.now() + SHOP_REFRESH_CD;
+  SHOP_CACHE.tag = ""; SHOP_CACHE.list = [];
+  markDirty(); save(); renderMarket(true);
+  toast("🔄 Sklep wystawił nowy towar","good");
+}
+
+$("#shopRefresh").addEventListener("click", refreshShopOffers);
+$("#view-market").addEventListener("click", e=>{
+  const pk = e.target.closest("[data-pack]");
+  if(pk){ buyPack(pk.dataset.pack); return; }
+  const fx = e.target.closest("[data-fxevent]");
+  if(fx){ buyFxEvent(fx.dataset.fxevent); return; }
+  const b = e.target.closest("[data-shopbuy]");
+  if(b) buyShopOffer(b.dataset.shopbuy);
+});
+setInterval(()=>{
+  if(currentView !== "market") return;
+  if(SHOP_CACHE.tag !== shopCacheKey()) renderMarket();
+  else shopTick();
 }, 1000);
 
 /* =======================================================================
@@ -4009,7 +5554,7 @@ function renderUp(){
       + '<div class="up-effect">'+eff+'</div>'
       + (maxed
         ? '<div class="up-buy"><span class="up-price" style="color:var(--ok)">✔ maksymalny poziom</span></div>'
-        : '<div class="up-buy"><span class="up-price">🪙 '+fmt(price)+'</span>'
+        : '<div class="up-buy"><span class="up-price" title="🪙 '+fmt(price)+'">🪙 '+fmtShort(price)+'</span>'
           + '<button class="btn primary" data-up="'+u.id+'" '+(can?"":"disabled")+'>Ulepsz</button></div>')
       + '</div>';
   }).join("");
@@ -4040,7 +5585,7 @@ $("#upGrid").addEventListener("click", e=>{
 /* =======================================================================
    9. OTWIERANIE
    ======================================================================= */
-const STRIP_LEN = 64, WIN_INDEX = 54, ITEM_W = 140, GAP = 8, STEP = ITEM_W+GAP;
+const STRIP_LEN = 48, WIN_INDEX = 40, ITEM_W = 140, GAP = 8, STEP = ITEM_W+GAP;
 let spinning=false, currentWin=null, spinTimer=null, spinRAF=null;
 
 /* Wspólny rdzeń otwarcia: opłata, statystyki, misje i sam drop.
@@ -4055,7 +5600,7 @@ function doOpen(c, free){
   missionTrack("opencase:"+c.id, 1);
   missionTrack("spend", paid);
   if(cloverActive()) missionTrack("cloveropen",1);
-  return obtainDrop(c, pickTier(c));      // drop zapisuje się od razu (saveDrop)
+  return c.troll ? trollDrop(c) : obtainDrop(c, pickTier(c));   // drop zapisuje się od razu
 }
 
 function openCase(caseId, cardEl, fromStock){
@@ -4064,7 +5609,11 @@ function openCase(caseId, cardEl, fromStock){
   if(!c) return;
   const stock = caseStock(c.id);
   const useStock = !!fromStock && stock > 0;
-  if(c.botOnly){ state.botUnlocked = state.botUnlocked || {}; state.botUnlocked[c.id] = true; }
+  if(c.botOnly && !useStock){
+    sfxErr();
+    toast("Tę skrzynkę otworzysz tylko z zapasu kupionego u bota — bez wznawiania za monety.","bad");
+    return;
+  }
   const free = useStock || Math.random() < couponChance();
   if(!free && state.coins < c.price){ sfxErr(); toast("Za mało monet!","bad"); return; }
   if(useStock){
@@ -4076,11 +5625,12 @@ function openCase(caseId, cardEl, fromStock){
   spinning = true;                        // blokada na czas animacji skrzynki
   if(useStock) toast("📦 <b>Otwierasz z zapasu</b> — bez opłat. Zostało: "+caseStock(c.id),"good");
   else if(free) toast("🎟️ <b>Kupon!</b> Otwarcie nic Cię nie kosztowało","good");
-  const win = doOpen(c, free);
+  const win = doOpen(c, free);   // addToInv/saveDrop już utrwalił drop i statystyki
   renderBalance(); renderShop(); renderBots();
-  save();
 
-  if (state.fast){ spinning = false; showResult([win], true); return; }
+  /* Troll nie ma puli broni, więc nie budujemy roulette’a z przedmiotów —
+     wynik (monety) pokazujemy od razu. */
+  if (c.troll || state.fast){ spinning = false; showResult([win], true); return; }
 
   // animacja "wstrząsu" skrzynki przed losowaniem
   if(cardEl){
@@ -4106,7 +5656,7 @@ function spin(c, win, free, fromStock){
   spinning = true;
 
   $("#spinTitle").textContent = "Otwieranie: " + c.name;
-  $("#spinTag").textContent = fromStock ? "📦 ZAPAS" : free ? "🎟️ DARMOWE" : "🪙 " + fmt(c.price);
+  $("#spinTag").textContent = fromStock ? "📦 ZAPAS" : free ? "🎟️ DARMOWE" : "🪙 " + fmtShort(c.price);
   $("#spinStatus").textContent = "Losowanie…";
   $("#skipBtn").disabled = false;
   $("#spinOverlay").classList.add("show");
@@ -4122,28 +5672,29 @@ function spin(c, win, free, fromStock){
     kicked = true;
     strip.style.transition = "transform "+DUR+"ms cubic-bezier(.06,.72,.05,1)";
     strip.style.transform = "translateX("+target+"px)";
-    runTicks(strip, DUR);
+    runTicks(strip, DUR, target);
     spinTimer = setTimeout(finishSpin, DUR+50);
   };
   requestAnimationFrame(()=>requestAnimationFrame(kick));
   setTimeout(kick, 90);
 }
 
-function runTicks(strip, dur){
+function runTicks(strip, dur, target){
   const t0 = performance.now();
-  let lastIdx = -1, blurred = false;
+  let lastIdx = -1, blurred = false, lastSfx = 0;
   const loop = ()=>{
     if(!spinning) return;
-    const t = Math.min(1,(performance.now()-t0)/dur);
-    const m = getComputedStyle(strip).transform;
-    let x = 0;
-    if(m && m!=="none"){
-      const n = m.match(/-?[\d.]+(?:e-?\d+)?/g);
-      if(n && n.length>=6) x = parseFloat(n[4]);
-      else if(n && n.length) x = parseFloat(n[n.length-1]);
-    }
+    const now = performance.now();
+    const t = Math.min(1,(now-t0)/dur);
+    /* Nie czytamy getComputedStyle w każdej klatce — to wymuszało
+       przeliczanie stylów 60 razy na sekundę i powodowało przycinki.
+       Przybliżamy tę samą krzywą (szybki start, długie wyhamowanie). */
+    const x = target * (1 - Math.pow(1-t, 4));
     const idx = Math.floor(-x/STEP);
-    if(idx!==lastIdx){ lastIdx = idx; if(t<0.99) sfxTick(); }
+    if(idx!==lastIdx){
+      lastIdx = idx;
+      if(t<0.99 && now-lastSfx>45){ lastSfx = now; sfxTick(); }
+    }
     if(t<0.55 && !blurred){ blurred = true; strip.classList.add("fast"); }
     if(t>0.72 && blurred){ blurred = false; strip.classList.remove("fast"); }
     spinRAF = requestAnimationFrame(loop);
@@ -4170,8 +5721,15 @@ function openMany(caseId, count){
   const c = CASES.find(x=>x.id===caseId);
   if(!c) return;
   const stock = caseStock(c.id);
+  if(c.botOnly){
+    if(stock <= 0){
+      sfxErr();
+      toast("Tę skrzynkę otworzysz tylko z zapasu kupionego u bota.","bad");
+      return;
+    }
+    count = Math.min(count, stock);
+  }
   const useStock = Math.min(stock, count);
-  if(c.botOnly){ state.botUnlocked = state.botUnlocked || {}; state.botUnlocked[c.id] = true; }
   const rest = count - useStock;
   // kupony mogą pokryć część płatnych otwarć
   let freeN = 0;
@@ -4194,10 +5752,10 @@ function openMany(caseId, count){
   missionTrack("spend", cost);
   if(cloverActive()) missionTrack("cloveropen", count);
   const wins = [];
-  for(let i=0;i<count;i++) wins.push(obtainDrop(c, pickTier(c)));
+  for(let i=0;i<count;i++) wins.push(c.troll ? trollDrop(c) : obtainDrop(c, pickTier(c)));
   if(useStock) toast("📦 <b>"+useStock+"×</b> z zapasu — bez opłat","good");
   if(freeN) toast("🎟️ <b>Kupony!</b> " + freeN + " z " + rest + " płatnych otwarć darmowych","good");
-  save(); renderBalance(); renderShop(); renderBots();
+  renderBalance(); renderShop(); renderBots();
   showResult(wins, false);
 }
 
@@ -4239,7 +5797,7 @@ function switchAuto(caseId){
   const c = CASES.find(x=>x.id===caseId);
   if(!c) return;
   if(state.coins < c.price){ sfxErr(); toast("Za mało monet na auto-otwieranie","bad"); return; }
-  autoOpen = {id:c.id, name:c.name, color:c.color, timer:null, n:0, spent:0, free:0, best:null, feed:[]};
+  autoOpen = {id:c.id, name:c.name, color:c.color, timer:null, n:0, spent:0, earned:0, free:0, best:null, feed:[]};
   const fe = $("#autoFeed"); if(fe) fe.innerHTML = "";      // nowy bieg = czysta lista dropów
   sfxWhoosh();
   renderAutoPanel(); renderShop();
@@ -4256,6 +5814,7 @@ function autoStep(){
   autoOpen.n++;
   if(free) autoOpen.free++;
   autoOpen.spent += free ? 0 : c.price;
+  autoOpen.earned += win.value || 0;
   if(!autoOpen.best || win.value > autoOpen.best.value) autoOpen.best = win;
   autoOpen.feed.unshift(win);
   if(autoOpen.feed.length > AUTO_FEED) autoOpen.feed.length = AUTO_FEED;
@@ -4281,8 +5840,10 @@ function autoStop(reason, bad, quiet){
   if(quiet) return;
   if(o.n){
     const best = o.best ? " · najlepszy: <b>"+esc(o.best.n)+"</b> 🪙 "+fmt(o.best.value) : "";
+    const net = (o.earned||0) - o.spent;
+    const netTxt = (net >= 0 ? "+🪙 " : "-🪙 ") + fmt(Math.abs(net));
     toast("🤖 Auto-otwieranie"+(reason?" ("+reason+")":"")+" — <b>"+o.n+"</b> "
-      +plural(o.n,"otwarcie","otwarcia","otwarć")+" · wydane 🪙 "+fmt(o.spent)
+      +plural(o.n,"otwarcie","otwarcia","otwarć")+" · wydane 🪙 "+fmt(o.spent)+" · bilans <b>"+netTxt+"</b>"
       +(o.free?" · 🎟️ "+o.free:"")+best+(autoTurboOn()?" · ⚡ turbo":""), bad?"bad":"good");
   } else if(reason){
     toast("🤖 Auto-otwieranie — "+reason, bad?"bad":"good");
@@ -4329,11 +5890,15 @@ function renderAutoPanel(){
   p.classList.add("show");
   p.style.setProperty("--ac", autoOpen.color || "#ffb02e");
   $("#autoTitle").innerHTML = '🤖 Auto: <b>'+esc(autoOpen.name)+'</b>'+(turbo ? ' <span class="ap-tb">⚡ turbo</span>' : '');
+  const net = (autoOpen.earned||0) - autoOpen.spent;
+  const netTxt = (net >= 0 ? "+🪙 " : "-🪙 ") + fmt(Math.abs(net));
+  const netColor = net >= 0 ? "var(--ok)" : "var(--cov)";
   $("#autoRun").innerHTML =
-    '<span>otwarć <b>'+autoOpen.n+(lim ? ' / '+lim : '')+'</b></span>'+
-    (lim ? '' : '<span>limit <b>∞</b></span>')+
-    '<span>wydane <b>🪙 '+fmt(autoOpen.spent)+'</b></span>'+
-    (autoOpen.free ? '<span>🎟️ darmowe <b>'+autoOpen.free+'</b></span>' : '');
+    "<span>otwarć <b>"+autoOpen.n+(lim ? " / "+lim : "")+"</b></span>"+
+    (lim ? "" : "<span>limit <b>∞</b></span>")+
+    "<span>wydane <b>🪙 "+fmt(autoOpen.spent)+"</b></span>"+
+    "<span>bilans <b style=\"color:"+netColor+"\">"+netTxt+"</b></span>"+
+    (autoOpen.free ? "<span>🎟️ darmowe <b>"+autoOpen.free+"</b></span>" : "");
   const bar = $("#autoLimBar"), fill = $("#autoLimFill");
   if(bar){
     bar.classList.toggle("hide", !lim);
@@ -4377,6 +5942,7 @@ function noteDrop(item){
   state.recent.unshift({w:item.w,n:item.n,tier:item.tier,value:item.value,uid:item.uid,ts:item.ts,fx:item.fx||null});
   state.recent = state.recent.slice(0,24);
   if(item.tier==="special"){ state.stats.knives++; missionTrack("knife",1); }
+  if(item.tier==="relic"){ state.stats.relics = numFrom(state.stats.relics) + 1; }
   if(item.tier==="covert" || item.tier==="special") missionTrack("covert",1);
   if(item.fx){                                  // ✨ rzadki efekt — liczymy do statystyk
     const st = state.stats;
@@ -4391,12 +5957,43 @@ function noteDrop(item){
     state.stats.best = {w:item.w,n:item.n,tier:item.tier,value:item.value,fx:item.fx||null};
 }
 
+/* 🤡 Skrzynka Troll — monety zamiast przedmiotu. Jackpot trafia od razu na konto. */
+function trollDrop(c){
+  const chance  = typeof c.trollChance === "number" ? c.trollChance : TROLL_CHANCE;
+  const jackpot = Math.random() < chance;
+  const reward  = jackpot
+    ? (typeof c.trollJackpot === "number" ? c.trollJackpot : TROLL_JACKPOT)
+    : (typeof c.trollConsolation === "number" ? c.trollConsolation : TROLL_CONSOLATION);
+
+  state.coins += reward;
+  state.stats.earned = numFrom(state.stats.earned) + reward;
+  state.stats.trollOpened = numFrom(state.stats.trollOpened) + 1;
+  if(jackpot) state.stats.trollWins = numFrom(state.stats.trollWins) + 1;
+  if(jackpot && (!state.stats.best || reward > state.stats.best.value))
+    state.stats.best = {w:"🪙 "+fmt(reward), n:"Troll Jackpot", tier:"special", value:reward, fx:null};
+
+  const win = {
+    uid:"tr"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
+    w: jackpot ? "🪙 "+fmt(reward) : "🪙 1",
+    n: jackpot ? "Troll Jackpot" : "Troll — 1 moneta",
+    tier: jackpot ? "special" : "mil",
+    caseId:c.id, value:reward, ts:Date.now(),
+    trollCoins:reward, trollJackpot:jackpot
+  };
+  markDirty();
+  save({kind:"drop"});       // jackpot / 1 moneta zapisane od razu
+  checkAchievements();
+  return win;
+}
+
 /* obsługa zdobytego przedmiotu: trafia do ekwipunku i jest od razu zapisany */
 function obtainDrop(c, tier){
   const win = makeItem(c, tier);
   const clover = rollClover();     // 🍀 koniczyna losuje się niezależnie od przedmiotu
   addToInv(win);                   // zapis obejmie już też stan koniczyny
   if(clover) cloverHit();
+  const code = rollCodeDrop();     // 🔑 bardzo rzadki bonus niezależny od dropu
+  if(code) win.codeDrop = code;
   return win;
 }
 
@@ -4407,24 +6004,25 @@ function addToInv(item){
   albumRegister(item);     // 📖 album kolekcji — zapisuje znalezisko na stałe
   markDirty();
   saveDrop(item);          // natychmiastowy, weryfikowany zapis dropu
+  checkAchievements();     // 🏆 od razu odblokowuje osiągnięcia za rzadkie znaleziska
 }
 
 function itemCardHTML(item, extra){
   const t = TIER[item.tier];
   const h = hash(item.w+item.n+item.uid);
   const f = fxOf(item);
-  const foil = (item.tier==="special"||item.tier==="covert") ? '<div class="art-foil"></div>' : "";
+  const foil = (item.tier==="special"||item.tier==="covert"||item.tier==="relic") ? '<div class="art-foil"></div>' : "";
   return `<div class="item-card tier-${item.tier}${fxClass(item)} ${extra||""}" style="--c:${t.color}${f?";--fx:"+f.color:""}" data-uid="${item.uid}">
     ${foil}
     ${f?'<div class="fx-shine"></div>':""}
-    ${item.tier==="special" ? '<span class="star">★</span>' : ""}
+    ${item.tier==="special" ? '<span class="star">★</span>' : item.tier==="relic" ? '<span class="star relic-star">✦</span>' : ""}
     ${fxBadge(item)}
     <div class="item-art">${weaponSVG(item, h.toString(36))}</div>
     <div class="item-body">
       <div class="item-weapon">${esc(item.w)}</div>
       <div class="item-skin">${esc(item.n)}</div>
       <div class="item-foot">
-        <span class="item-tier">${item.tier==="special"?"★ Special":t.name}</span>
+        <span class="item-tier">${item.tier==="special"?"★ Special":item.tier==="relic"?"✦ Relikt":t.name}</span>
         <span class="item-price">🪙 ${fmtShort(item.value)}</span>
       </div>
     </div>
@@ -4433,20 +6031,20 @@ function itemCardHTML(item, extra){
 function invCardHTML(item, i){
   const f = fxOf(item);
   return `<div class="item-card tier-${item.tier}${fxClass(item)}" style="--c:${TIER[item.tier].color}${f?";--fx:"+f.color:""};animation-delay:${Math.min(i*22,420)}ms" data-uid="${item.uid}">
-    ${(item.tier==="special"||item.tier==="covert") ? '<div class="art-foil"></div>' : ""}
+    ${(item.tier==="special"||item.tier==="covert"||item.tier==="relic") ? '<div class="art-foil"></div>' : ""}
     ${f?'<div class="fx-shine"></div>':""}
-    ${item.tier==="special" ? '<span class="star">★</span>' : ""}
+    ${item.tier==="special" ? '<span class="star">★</span>' : item.tier==="relic" ? '<span class="star relic-star">✦</span>' : ""}
     ${fxBadge(item)}
     <div class="item-art">${weaponSVG(item, hash(item.uid).toString(36))}</div>
     <div class="item-body">
       <div class="item-weapon">${esc(item.w)}</div>
       <div class="item-skin">${esc(item.n)}</div>
       <div class="item-foot">
-        <span class="item-tier">${item.tier==="special"?"★ Special":TIER[item.tier].name}</span>
+        <span class="item-tier">${item.tier==="special"?"★ Special":item.tier==="relic"?"✦ Relikt":TIER[item.tier].name}</span>
         <span class="item-price">🪙 ${fmtShort(item.value)}</span>
       </div>
     </div>
-    <div class="sell-hint">SPRZEDAJ<b>🪙 ${fmt(itemSell(item))}</b></div>
+    <div class="sell-hint">SPRZEDAJ<b title="🪙 ${fmt(itemSell(item))}">🪙 ${fmtShort(itemSell(item))}</b></div>
   </div>`;
 }
 
@@ -4454,6 +6052,8 @@ function renderInv(){
   const inv = state.inv;
   $("#invCount").textContent = inv.length;
   $("#invTotal").textContent = inv.length;
+  /* Gdy ekwipunek jest schowany, nie budujemy setek kart w tle. */
+  if(currentView !== "inv") return;
   $("#invValue").textContent = "🪙 " + fmtShort(inv.reduce((s,i)=>s+i.value,0));
 
   let list = inv.slice();
@@ -4485,7 +6085,14 @@ function sellItem(uid){
 }
 $("#invGrid").addEventListener("click", e=>{
   const card = e.target.closest("[data-uid]");
-  if(card) sellItem(card.dataset.uid);
+  if(!card) return;
+  const it = state.inv.find(i=>i.uid===card.dataset.uid);
+  if(!it) return;
+  if(it.value >= 50000){
+    const prefix = it.tier==="special" ? "★ " : it.tier==="relic" ? "❖ " : "";
+    if(!confirm("Sprzedać "+prefix+it.n+" ("+it.w+") za "+fmt(itemSell(it))+" monet?")) return;
+  }
+  sellItem(card.dataset.uid);
 });
 $("#invFilter").addEventListener("change", renderInv);
 $("#invSort").addEventListener("change", renderInv);
@@ -4513,7 +6120,7 @@ $("#sellCheap").addEventListener("click", ()=>{
   state.coins += gain; state.stats.earned += gain; state.stats.sold += toSell.length;
   missionTrack("sell", toSell.length);
   missionTrack("sellvalue", gain);
-  sfxCoin(); renderBalance(); renderInv(); renderShop(); save();
+  sfxCoin(); renderBalance(); renderInv(); renderShop(); save(); checkAchievements();
   toast("Sprzedano "+toSell.length+" szt. za 🪙 "+fmt(gain),"good");
 });
 
@@ -4521,38 +6128,80 @@ $("#sellCheap").addEventListener("click", ()=>{
    11. WYNIK
    ======================================================================= */
 function showResult(items, single){
+  /* 🤡 Troll nie ma przedmiotów — monety są już na koncie, więc wynik
+     pokazujemy jako karty z kwotą, bez przycisków sprzedaży. */
+  if(items.length && items.every(i=>i.trollCoins)){
+    const total = items.reduce((s,i)=>s+i.trollCoins,0);
+    const jackpots = items.filter(i=>i.trollJackpot).length;
+    const caseId = items[0].caseId;
+    $("#resTitle").textContent = single ? "Skrzynka Troll" : "Skrzynka Troll ×"+items.length;
+    $("#resBody").innerHTML = `
+      <div class="${single?"":"troll-grid"}">${items.map(i=>`
+        <div class="troll-result ${i.trollJackpot?"jackpot":""}">
+          <div class="troll-coin">🪙</div>
+          <div class="troll-amount">+${fmt(i.trollCoins)}</div>
+          <div class="troll-label">${i.trollJackpot?"TROLL JACKPOT!":"TROLL — 1 MONETA"}</div>
+        </div>`).join("")}</div>
+      ${items.length>1?`<div class="result-meta muted">Łącznie: <b style="color:var(--acc)">🪙 ${fmt(total)}</b> · jackpoty: <b>${jackpots}</b></div>`:""}
+      <div class="result-actions">
+        <button class="btn gold" data-keep="1">Odbierz</button>
+        <button class="btn primary" data-again="${caseId}" title="🪙 ${fmt(casePrice(caseId))}">Otwórz ponownie (🪙 ${fmtShort(casePrice(caseId))})</button>
+      </div>`;
+    $("#resultOverlay").classList.add("show");
+    if(jackpots){
+      sfxWin("special", null);
+      confetti(["#fbbf24","#fff7d6","#a855f7","#ffffff"]);
+      setTimeout(confetti, 280);
+      setTimeout(confetti, 520);
+      shakeScreen();
+    } else {
+      sfxWin("mil", null);
+    }
+    return;
+  }
   const best = items.slice().sort((a,b)=>TIERS.indexOf(b.tier)-TIERS.indexOf(a.tier)||b.value-a.value)[0];
   const hasKnife = items.some(i=>i.tier==="special");
+  const hasRelic = items.some(i=>i.tier==="relic");
   const ids = items.map(i=>i.uid);
   $("#resTitle").textContent = single ? "Zdobyty przedmiot" : "Wynik otwarcia ×"+items.length;
 
   if(single){
     const it = items[0];
-    const big = it.tier==="special"||it.tier==="covert"||it.tier==="classified";
+    const big = it.tier==="special"||it.tier==="covert"||it.tier==="classified"||it.tier==="relic";
     const f = fxOf(it);
+    const cdef = CASES.find(c=>c.id===it.caseId);
+    const codeDrop = it.codeDrop || null;
     $("#resBody").innerHTML = `
-      <div class="rare-banner ${hasKnife?"show":""}">★ RZADKI SPECJALNY DROP ★</div>
+      <div class="rare-banner ${(hasKnife||hasRelic)?"show":""}">${hasRelic?"✦ RELIKT ZNALEZIONY ✦":"★ RZADKI SPECJALNY DROP ★"}</div>
       <div class="result-stage" style="--c:${TIER[it.tier].color}">
         ${(big||f)?'<div class="rays"></div><div class="glowdisc"></div><div class="shockwave"></div>':''}
         <div class="result-glow">${itemCardHTML(it)}</div>
       </div>
       ${f?`<div class="result-fx${f.mult>=FX_BIG?" big":""}" style="--fx:${f.color}">${f.icon} ${f.name} efekt — ${fxBoostTxt(f)}</div>`:""}
-      <div class="result-meta muted">Wartość: <b style="color:var(--acc);font-size:15px">🪙 ${fmt(it.value)}</b></div>
+      <div class="result-meta muted">Wartość: <b style="color:var(--acc);font-size:15px" title="🪙 ${fmt(it.value)}">🪙 ${fmtShort(it.value)}</b></div>
+      ${codeDrop?`<div class="result-code">🔑 <b>DODATKOWY KOD!</b> ${codeDrop.icon} ${esc(codeDrop.name)} — nagroda 🪙 ${fmt(codeDrop.reward)}
+        <span class="rc-code">${esc(codeDrop.code)}</span>
+        <button class="btn" data-go-codes="1">Przejdź do kodów</button></div>`:""}
       <div class="result-actions">
-        <button class="btn gold" data-sell-one="${it.uid}">Sprzedaj za 🪙 ${fmt(itemSell(it))}</button>
+        <button class="btn gold" data-sell-one="${it.uid}" title="🪙 ${fmt(itemSell(it))}">Sprzedaj za 🪙 ${fmtShort(itemSell(it))}</button>
         <button class="btn" data-keep="1">Zatrzymaj</button>
-        <button class="btn primary" data-again="${it.caseId}">Otwórz ponownie (🪙 ${fmt(casePrice(it.caseId))})</button>
+        ${cdef && cdef.botOnly
+          ? `<span class="muted" style="font-size:12px;align-self:center">Tylko z bazaru botów — bez ponownego otwarcia za monety</span>`
+          : `<button class="btn primary" data-again="${it.caseId}" title="🪙 ${fmt(casePrice(it.caseId))}">Otwórz ponownie (🪙 ${fmtShort(casePrice(it.caseId))})</button>`}
       </div>`;
   } else {
     const totalVal = items.reduce((s,i)=>s+i.value,0);
     const totalSell = items.reduce((s,i)=>s+itemSell(i),0);
     const fxs = items.filter(i=>i.fx);
+    const codeDrops = items.map(i=>i.codeDrop).filter(Boolean);
     $("#resBody").innerHTML = `
       <div class="multi-grid">${items.map(i=>itemCardHTML(i)).join("")}</div>
-      <div class="result-meta muted">Suma wartości: <b style="color:var(--acc)">🪙 ${fmt(totalVal)}</b>
-        &nbsp;·&nbsp; sprzedaż: <b style="color:var(--ok)">🪙 ${fmt(totalSell)}</b>${fxs.length?" &nbsp;·&nbsp; ✨ "+fxs.map(i=>FX_BY_ID[i.fx].icon).join(" "):""}</div>
+      <div class="result-meta muted">Suma wartości: <b style="color:var(--acc)" title="🪙 ${fmt(totalVal)}">🪙 ${fmtShort(totalVal)}</b>
+        &nbsp;·&nbsp; sprzedaż: <b style="color:var(--ok)" title="🪙 ${fmt(totalSell)}">🪙 ${fmtShort(totalSell)}</b>${fxs.length?" &nbsp;·&nbsp; ✨ "+fxs.map(i=>{const f=FX_BY_ID[i.fx]||EVENT_FX_BY_ID[i.fx];return f?f.icon:"";}).join(" "):""}</div>
+      ${codeDrops.length?`<div class="result-code">🔑 <b>DODATKOWE KODY!</b> ${codeDrops.map(c=>c.icon+" "+esc(c.name)+" ("+esc(c.code)+")").join(" · ")}
+        <button class="btn" data-go-codes="1">Przejdź do kodów</button></div>`:""}
       <div class="result-actions">
-        <button class="btn gold" data-sell-many="${ids.join(",")}">Sprzedaj wszystko (🪙 ${fmt(totalSell)})</button>
+        <button class="btn gold" data-sell-many="${ids.join(",")}" title="🪙 ${fmt(totalSell)}">Sprzedaj wszystko (🪙 ${fmtShort(totalSell)})</button>
         <button class="btn" data-keep="1">Zatrzymaj</button>
       </div>`;
   }
@@ -4560,7 +6209,8 @@ function showResult(items, single){
   const bf = fxOf(best);
   sfxWin(best.tier, bf ? bf.id : null);
 
-  if(best.tier==="special"){ confetti(["#ffd700","#fff3b0","#ffb02e","#ffffff"]); setTimeout(confetti,320); shakeScreen(); }
+  if(best.tier==="relic"){ confetti(["#fff7d6","#ffe9a8","#ffb02e","#ffffff"]); setTimeout(confetti,260); setTimeout(confetti,520); shakeScreen(); }
+  else if(best.tier==="special"){ confetti(["#ffd700","#fff3b0","#ffb02e","#ffffff"]); setTimeout(confetti,320); shakeScreen(); }
   else if(best.tier==="covert"){ confetti(["#eb4b4b","#ff9a9a","#ffd700","#ffffff"]); shakeScreen(); }
   else if(best.tier==="classified"){ confetti([TIER.classified.color,"#ffffff","#c77dff"]); }
   else if(best.tier==="restricted" && single){ burst(window.innerWidth/2, window.innerHeight*0.42, TIER.restricted.color); }
@@ -4568,6 +6218,10 @@ function showResult(items, single){
   if(bf){                                    // ✨ rzadki efekt — własna feta
     setTimeout(()=>confetti([bf.color,"#ffffff",bf.color]), 120);
     if(bf.mult >= FX_BIG){ setTimeout(confetti, 380); setTimeout(confetti, 640); shakeScreen(); }
+  }
+  if(items.some(i=>i.codeDrop)){             // 🔑 kod to dodatkowa, bardzo rzadka feta
+    setTimeout(()=>confetti(["#a855f7","#ffd76a","#ffffff"]), 180);
+    setTimeout(()=>confetti(["#22d3ee","#a855f7","#f43f5e"]), 430);
   }
 }
 
@@ -4581,6 +6235,8 @@ $("#resBody").addEventListener("click", e=>{
   const many = e.target.closest("[data-sell-many]");
   const keep = e.target.closest("[data-keep]");
   const again = e.target.closest("[data-again]");
+  const goCodes = e.target.closest("[data-go-codes]");
+  if(goCodes){ $("#resultOverlay").classList.remove("show"); switchView("codes"); return; }
   if(one){ sellItem(one.dataset.sellOne); $("#resultOverlay").classList.remove("show"); renderShop(); renderInv(); }
   if(many){
     const ids = many.dataset.sellMany.split(",");
@@ -4646,43 +6302,50 @@ function battleCost(c){
   return { n, unit, disc, total: unit * n };
 }
 
+let lastBattlePickSig = "";
 function renderBattle(){
   const pick = $("#battlePick");
   if(!pick) return;
   const st = state.stats, nb = st.battles|0, nw = st.battleWins|0;
-  $("#battleHint").innerHTML = nb
+  const bl = upLvl("battle");
+  $("#battleHint").innerHTML = (nb
     ? `wygrane: <b>${nw} / ${nb}</b> (${Math.round(nw/nb*100)}%)`
-    : "kto lepszy zestaw dropów, ten bierze wszystko";
+    : "kto lepszy zestaw dropów, ten bierze wszystko") +
+    (bl ? ` &nbsp;·&nbsp; ⚔️ Wojownik: +${Math.round(BATTLE_STEP*bl*100)}% wartości wygranych` : "");
   const badge = $("#battleCount");
   if(badge){ badge.textContent = nb ? String(nb) : ""; badge.style.display = nb ? "" : "none"; }
 
-  const battleCases = CASES.filter(c=>!c.botOnly);
+  const battleCases = CASES.filter(c=>!c.botOnly && !c.noBattle);
   const sel = battleCases.find(x=>x.id===state.battleCase) || battleCases[0];
-  pick.innerHTML = battleCases.map(c=>`
-    <button class="bch ${c.id===sel.id?"active":""} tier-${caseTier(c)}" data-skin="${c.id}" data-bcase="${c.id}" style="--cc:${c.color}">
-      <span class="pat"></span>
-      <span class="bch-ico">${c.icon}</span>
-      <span class="bch-nm">${esc(c.name)}</span>
-      <span class="bch-pr">🪙 ${fmtShort(c.price)}</span>
-    </button>`).join("");
-
   const n = battleSize();
-  $("#battleSize").innerHTML = BATTLE_SIZES.map(k=>
-    `<button class="bs-opt ${k===n?"active":""}" data-bsize="${k}" title="Bitwa ${k} na ${k} — po ${k} skrzynek na stronę">${k}×</button>`).join("");
+  const pickSig = battleCases.map(c=>c.id).join("|") + "|" + sel.id + "|" + n;
+  if(pickSig !== lastBattlePickSig){
+    lastBattlePickSig = pickSig;
+    pick.innerHTML = battleCases.map(c=>`
+      <button class="bch ${c.id===sel.id?"active":""} tier-${caseTier(c)}" data-skin="${c.id}" data-bcase="${c.id}" style="--cc:${c.color}">
+        <span class="pat"></span>
+        <span class="bch-ico">${c.icon}</span>
+        <span class="bch-nm">${esc(c.name)}</span>
+        <span class="bch-pr">🪙 ${fmtShort(c.price)}</span>
+      </button>`).join("");
+
+    $("#battleSize").innerHTML = BATTLE_SIZES.map(k=>
+      `<button class="bs-opt ${k===n?"active":""}" data-bsize="${k}" title="Bitwa ${k} na ${k} — po ${k} skrzynek na stronę">${k}×</button>`).join("");
+  }
 
   const { unit, disc, total } = battleCost(sel);
   $("#battleSizeNote").innerHTML = n > 1
-    ? `<b>${n} ${plural(n,"skrzynka","skrzynki","skrzynek")}</b> na stronę po 🪙 ${fmtShort(unit)} → razem <b>🪙 ${fmt(total)}</b>` +
+    ? `<b>${n} ${plural(n,"skrzynka","skrzynki","skrzynek")}</b> na stronę po 🪙 ${fmtShort(unit)} → razem <b title="🪙 ${fmt(total)}">🪙 ${fmtShort(total)}</b>` +
       (disc ? ` &nbsp;·&nbsp; 📦 rabat −${Math.round(disc*100)}%` : "")
     : "";
 
   const can = state.coins >= total;
   $("#fightBtn").disabled = !can;
   $("#battleCost").innerHTML = can
-    ? `Wchodzisz: <b>${n}× ${esc(sel.name)}</b> za 🪙 <b>${fmt(total)}</b>` +
+    ? `Wchodzisz: <b>${n}× ${esc(sel.name)}</b> za 🪙 <b title="🪙 ${fmt(total)}">${fmtShort(total)}</b>` +
       (n>1 ? ` <span class="muted">(🪙 ${fmtShort(unit)} / szt.)</span>` : "") +
       `<br><span class="muted">Wygrywasz → bierzesz wszystkie ${2*n} ${plural(2*n,"drop","dropy","dropów")}. Przegrywasz lub remisujesz → tracisz wkład.</span>`
-    : `<span style="color:#ff6b6b">Brakuje 🪙 ${fmt(total - state.coins)}, żeby wejść do bitwy o ${esc(sel.name)} ×${n}.</span>`;
+    : `<span style="color:#ff6b6b">Brakuje 🪙 ${fmtShort(total - state.coins)}, żeby wejść do bitwy o ${esc(sel.name)} ×${n}.</span>`;
 
   // 🔁 auto-walka nie może działać, jeśli nie stać Cię na kolejne wejście
   if(autoBattle && !can){
@@ -4737,9 +6400,8 @@ function fight(caseId){
     my.push(makeItem(c, pickTier(c)));         // gracz — z ulepszeniami
     ai.push(makeItem(c, aiPickTier(c)));       // AI — na bazowych szansach
   }
-  const bl = upLvl("battle");                  // ⚔️ Wojownik — mocniejsze dropy gracza
-  if(bl) my.forEach(it=>{ it.value = Math.round(it.value * (1 + BATTLE_STEP*bl)); });
-  const res = battleCompare(my, ai);
+  const bl = upLvl("battle");                  // ⚔️ Wojownik — cenniejsze WYGRANE, nie łatwiejsza wygrana
+  const res = battleCompare(my, ai);            // porównanie na bazowych wartościach
 
   state.coins -= total;
   state.stats.spent += total;
@@ -4753,6 +6415,7 @@ function fight(caseId){
     missionTrack("win",1);
     if(n === 5) missionTrack("winbig",1);
     if(autoBattle) missionTrack("autowin",1);
+    if(bl) my.forEach(it=>{ it.value = Math.round(it.value * (1 + BATTLE_STEP*bl)); });
     my.forEach(addToInv); ai.forEach(addToInv);
     gain = sumVal(my) + sumVal(ai);
     missionTrack("battleearn", gain);
@@ -4800,6 +6463,7 @@ function battleStep(k){
   battleStage = k;
   const { my, ai, res, c, n } = battleCtx;
   const multi = n > 1;
+  const bl = upLvl("battle");
 
   const paint = (slotSel, valSel, arr, who) => {
     const host = $(slotSel);
@@ -4808,13 +6472,13 @@ function battleStep(k){
       $$(slotSel+" .item-card").forEach((el,i)=>{ el.style.animationDelay = (i*120)+"ms"; });
       const bs = bestOf(arr);
       $(valSel).innerHTML =
-        `<b>🪙 ${fmt(sumVal(arr))}</b><span>${n} ${plural(n,"skrzynka","skrzynki","skrzynek")} · najlepsze:
+        `<b style="color:var(--acc)" title="🪙 ${fmt(sumVal(arr))}">🪙 ${fmtShort(sumVal(arr))}</b><span>${n} ${plural(n,"skrzynka","skrzynki","skrzynek")} · najlepsze:
           <b style="color:${TIER[bs.tier].color};display:inline">${bs.tier==="special"?"★ ":""}${esc(bs.w)} · ${esc(bs.n)}</b></span>`;
     } else {
       const it = arr[0];
       host.innerHTML = itemCardHTML(it);
       $(valSel).innerHTML =
-        `<span style="color:${TIER[it.tier].color}">${it.tier==="special"?"★ ":""}${esc(it.w)} · ${esc(it.n)}</span><b>🪙 ${fmt(it.value)}</b>`;
+        `<span style="color:${TIER[it.tier].color}">${it.tier==="special"?"★ ":""}${esc(it.w)} · ${esc(it.n)}</span><b style="color:var(--acc)" title="🪙 ${fmt(it.value)}">🪙 ${fmtShort(it.value)}</b>`;
     }
     $("#fighter"+who).classList.add("revealed");
     sfxWin(bestOf(arr).tier);
@@ -4829,7 +6493,8 @@ function battleStep(k){
     $("#fighterMe").classList.add("win");
     $("#fighterAi").classList.add("lose");
     ban.className = "battle-banner win";
-    ban.innerHTML = `🏆 WYGRYWASZ! Bierzesz wszystko (${2*n} ${plural(2*n,"przedmiot","przedmioty","przedmiotów")})`;
+    ban.innerHTML = `🏆 WYGRYWASZ! Bierzesz wszystko (${2*n} ${plural(2*n,"przedmiot","przedmioty","przedmiotów")})` +
+      (bl ? `<span style="display:block;font-size:11px;font-weight:800;opacity:.85;margin-top:5px">⚔️ Wojownik: +${Math.round(BATTLE_STEP*bl*100)}% wartości Twoich wygranych</span>` : "");
     confetti(); sfxCoin();
   } else if(res < 0){
     $("#fighterAi").classList.add("win");
@@ -4843,7 +6508,7 @@ function battleStep(k){
     sfxErr();
   }
   $("#battleActions").innerHTML =
-    `<button class="btn primary" id="fightAgain">⚔️ Walcz ponownie (🪙 ${fmt(c.price*(n>=5?(1-bulkRate()):1)*n)})</button>
+    `<button class="btn primary" id="fightAgain">⚔️ Walcz ponownie (🪙 ${fmtShort(c.price*(n>=5?(1-bulkRate()):1)*n)})</button>
      <button class="btn" id="battleKeep">Zamknij</button>`;
   $("#fightAgain").addEventListener("click", ()=>{
     $("#battleOverlay").classList.remove("show");
@@ -4912,7 +6577,8 @@ function setAuto(on, silent){
 /* jedna bitwa kończy się → po chwili ruszamy następną */
 function autoNext(){
   if(!autoBattle) return;
-  const c = CASES.find(x=>x.id===state.battleCase) || CASES[0];
+  const battleCases = CASES.filter(x=>!x.botOnly && !x.noBattle);
+  const c = battleCases.find(x=>x.id===state.battleCase) || battleCases[0];
   const { total, n } = battleCost(c);
   if(state.coins < total){
     setAuto(false, true);
@@ -4937,7 +6603,8 @@ $("#bossBtn").addEventListener("click", ()=>{ const b=BOSSES[Math.floor(Math.ran
   $("#cosGrid").addEventListener("click", e=>{ const b=e.target.closest("[data-cos]"); if(b) buyCosmetic(b.dataset.cos); });
   $("#autoBtn").addEventListener("click", ()=>{
   if(autoBattle){ setAuto(false); return; }
-  const c = CASES.find(x=>x.id===state.battleCase) || CASES[0];
+  const battleCases = CASES.filter(x=>!x.botOnly && !x.noBattle);
+  const c = battleCases.find(x=>x.id===state.battleCase) || battleCases[0];
   const { total, n } = battleCost(c);
   if(state.coins < total){
     sfxErr();
@@ -4955,6 +6622,9 @@ $("#bossBtn").addEventListener("click", ()=>{ const b=BOSSES[Math.floor(Math.ran
    12. STATYSTYKI
    ======================================================================= */
 function renderStats(){
+  /* Statystyki są ciężkie (album, osiągnięcia, ostatnie dropy) — rysujemy
+     je tylko wtedy, gdy zakładka jest naprawdę otwarta. */
+  if(currentView !== "stats") return;
   const s = state.stats;
   const net = s.earned - s.spent;
   const invVal = state.inv.reduce((a,i)=>a+i.value,0);
@@ -4965,6 +6635,7 @@ function renderStats(){
     ["Zysk ze sprzedaży", "🪙 "+fmtShort(s.earned), "", true],
     ["Bilans netto", (net>=0?"+":"")+"🪙 "+fmtShort(net), net>=0?"pos":"neg", false],
     ["Zdobyte noże ★", fmt(s.knives), s.knives>0?"pos":"", false],
+    ["✦ Zdobyte relikty", fmt(numFrom(s.relics)), "najrzadsze przedmioty w grze", numFrom(s.relics)>0?"pos":"", false],
     ["Ekwipunek", fmt(state.inv.length)+" szt.", "wartość 🪙 "+fmtShort(invVal), false],
     ["Najlepszy drop", best?esc(best.n):"—",
       best?("🪙 "+fmtShort(best.value)+" · "+TIER[best.tier].name+
@@ -4990,6 +6661,21 @@ function renderStats(){
   if((s.botBuys|0) > 0)
     boxes.push(["🤖 Bazar botów", fmt(numFrom(s.botBuys))+" zakupów",
       "wydano 🪙 "+fmtShort(numFrom(s.botSpent))+" · najlepsza okazja −"+fmt(numFrom(s.bestDeal))+"%", false]);
+  if((s.shopBuys|0) > 0)
+    boxes.push(["🛒 Sklep", fmt(numFrom(s.shopBuys))+" zakupów",
+      "wydano 🪙 "+fmtShort(numFrom(s.shopSpent))+" · skrzynek: "+fmt(numFrom(s.shopCases)), false]);
+  if((s.packBuys|0) > 0)
+    boxes.push(["🎁 Pakiety", fmt(numFrom(s.packBuys))+" otwarć",
+      "wydano 🪙 "+fmtShort(numFrom(s.packSpent))+" · starter: "+(state.packClaims && state.packClaims.starter ? "odebrany" : "czeka"), false]);
+  const fxEvStat = fxEventPool().filter(f=>fxEventActive(f.id));
+  boxes.push(["🎰 Eventy efektów", fxEvStat.length ? fxEvStat.length+" aktywne" : "brak",
+    fxEvStat.length
+      ? fxEvStat.map(f=>f.icon+" "+mmss(Math.max(0,numFrom(state.fxEvents[f.id])-Date.now()))).join(" · ")+" · +"+Math.round(FX_EVENT_LUCK*fxEvStat.length*100)+"% luck"
+      : "kup w Sklepie · każdy aktywny daje +"+Math.round(FX_EVENT_LUCK*100)+"% luck",
+    fxEvStat.length ? "pos" : ""]);
+  if((s.codeDrops|0) > 0 || (s.codeRedeems|0) > 0 || codeOwnedTotal() > 0)
+    boxes.push(["🔑 Kody", fmt(numFrom(s.codeDrops))+" znalezionych · "+fmt(numFrom(s.codeRedeems))+" odebranych",
+      "w kolekcji: "+codeUniqueRedeemed()+" / "+CODES.length+" · do odebrania: "+codeOwnedTotal(), (s.codeDrops|0)>0?"pos":""]);
   const wkl = (state.weekly && state.weekly.list) || [];
   boxes.push(["📅 Misje tygodniowe", fmt(wkl.filter(m=>m.claimed).length)+" / "+fmt(wkl.length),
     wkl.length ? "nowe misje za "+wUntilNew() : "brak", false]);
@@ -5016,7 +6702,7 @@ function renderStats(){
             <div class="item-weapon">${esc(r.w)}</div>
             <div class="item-skin">${esc(r.n)}</div>
             <div class="item-foot">
-              <span class="item-tier">${r.tier==="special"?"★ Special":t.name}</span>
+              <span class="item-tier">${r.tier==="special"?"★ Special":r.tier==="relic"?"✦ Relikt":t.name}</span>
               <span class="item-price">🪙 ${fmtShort(r.value)}</span>
             </div>
           </div></div>`;
@@ -5153,7 +6839,7 @@ setInterval(grantRescue, 500);
    ======================================================================= */
 const CLOVER_CHANCE = 0.004;   // 0,4% szansy na koniczynę przy każdym zdobytym przedmiocie (rzadki bonus)
 const CLOVER_DUR    = 80000;   // czas działania: 80 sekund
-const CLOVER_BOOST  = {mil:0, restricted:0.12, classified:0.28, covert:0.35, special:0.40};
+const CLOVER_BOOST  = {mil:0, restricted:0.12, classified:0.28, covert:0.35, special:0.40, relic:0.05};
 
 /* 🍀 ulepszenie "Długi kwiat" wydłuża działanie koniczyny */
 const cloverDur = () => CLOVER_DUR + CLOVER_STEP*upLvl("clover");
@@ -5165,6 +6851,7 @@ function cloverOdds(){ return cloverActive() ? CLOVER_BOOST : null; }
 /* opis efektu do UI — mnożniki względne, zanim szanse zostaną znormalizowane */
 function cloverDesc(){
   return "★ "   + Math.round(CLOVER_BOOST.special   *100) + "%  "
+       + "✦ "   + Math.round(CLOVER_BOOST.relic     *100) + "%  "
        + "Covert "  + Math.round(CLOVER_BOOST.covert     *100) + "%  "
        + "Classified " + Math.round(CLOVER_BOOST.classified *100) + "%  "
        + "Restricted " + Math.round(CLOVER_BOOST.restricted *100) + "%";
@@ -5237,12 +6924,18 @@ $("#resetBtn").addEventListener("click", ()=>{
   localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SAVE_BAK);
   LEGACY_KEYS.forEach(k=>localStorage.removeItem(k));
   state.coins = START_COINS; state.inv = []; state.recent = [];
-  state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,fx:{},fxTotal:0,best:null,cases:{}};
+  state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,fx:{},fxTotal:0,best:null,cases:{},
+    codeDrops:0,codeRedeems:0,codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0};
   state.up = UP_ZERO();
   state.bonusAt = 0; state.rescueAt = 0; state.cloverUntil = 0;
   state.battles = []; state.battleCase = "start"; state.battleSize = 1;
   state.album = {}; state.albumClaimed = {}; albumCase = null;
+  state.codes = {}; state.codeRedeemed = {}; state.codeBought = {};
   state.botUnlocked = {};
+  state.shopSalt = 0; state.shopBought = {}; state.shopRefreshAt = 0;
+  state.packClaims = {}; const packRes = $("#packResult"); if(packRes) packRes.innerHTML = "";
+  state.fxEvents = {}; FX_EVENT_SIG = "";
+  SHOP_CACHE.tag = ""; SHOP_CACHE.list = [];
   state.idleKnifeClaimed = false; state.idleSec = 0; idleTimer = 0;
   rollMissions();
   rollWeekly();                           // 📅 świeży zestaw misji tygodniowych
@@ -5251,7 +6944,7 @@ $("#resetBtn").addEventListener("click", ()=>{
   lastBalance = null;
   save();
   renderBalance(true); renderShop(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
-  renderAlbum(); renderDaily();
+  renderAlbum(); renderDaily(); renderMarket();
   toast("Gra zresetowana","bad");
 });
 
@@ -5284,6 +6977,8 @@ const CASE_KEYS = (()=>{
   CASES.forEach(c=>{ o[c.id] = TIERS.reduce((a,t)=>a.concat((c.items[t]||[]).map(it=>it[0]+"|"+it[1])), []); });
   return o;
 })();
+/* Skrzynki bez własnych skinów (np. Troll) nie zaśmiecają albumu. */
+const ALBUM_CASES = CASES.filter(c=>!c.noAlbum);
 const ALBUM_CLOVER = 5*60000;                 // nagroda za komplet: 5 min koniczyny
 
 let currentView = "shop";                     // widoczna zakładka (do renderowania na żywo)
@@ -5348,7 +7043,7 @@ function albumLoad(d){
 
 function renderAlbumBadge(){
   const b = $("#albumCount");
-  if(b) b.textContent = String(CASES.filter(c=>albumDone(c.id)).length);
+  if(b) b.textContent = String(ALBUM_CASES.filter(c=>albumDone(c.id)).length);
 }
 
 function albumCardHTML(p, c, t){
@@ -5359,14 +7054,14 @@ function albumCardHTML(p, c, t){
       <div class="item-weapon">${esc(p.w)}</div>
       <div class="item-skin">${esc(p.n)}</div>
       <div class="item-foot">
-        <span class="item-tier">${t==="special"?"★ Special":TIER[t].name}</span>
+        <span class="item-tier">${t==="special"?"★ Special":t==="relic"?"✦ Relikt":TIER[t].name}</span>
         <span class="item-price">${cnt ? "🪙 "+fmtShort(itemValue(c, t, p.key)) : "— nieznane —"}</span>
       </div></div>`;
   if(!cnt) return `<div class="item-card tier-${p.tier} locked" style="--c:${TIER[p.tier].color}">
     ${head}<div class="lockmark">?</div>${body}</div>`;
   return `<div class="item-card tier-${p.tier}" style="--c:${TIER[p.tier].color}">
     ${cnt>1?`<span class="alb-count">×${fmt(cnt)}</span>`:""}
-    ${t==="special"?'<span class="star">★</span>':""}
+    ${t==="special"?'<span class="star">★</span>':t==="relic"?'<span class="star relic-star">✦</span>':""}
     ${head}${body}</div>`;
 }
 
@@ -5374,9 +7069,9 @@ function renderAlbum(){
   const sum = $("#albSum"), pick = $("#albPick"), body = $("#albBody");
   if(!sum || !pick || !body) return;
   const have = albumHave(), total = ALBUM_TOTAL, pct = total ? 100*have/total : 0;
-  const knifeAll = CASES.reduce((a,c)=>a+(c.items.special||[]).length, 0);
-  const knifeGot = CASES.reduce((a,c)=>a+(c.items.special||[]).filter(it=>state.album[it[0]+"|"+it[1]]).length, 0);
-  const doneN = CASES.filter(c=>albumDone(c.id)).length;
+  const knifeAll = ALBUM_CASES.reduce((a,c)=>a+(c.items.special||[]).length, 0);
+  const knifeGot = ALBUM_CASES.reduce((a,c)=>a+(c.items.special||[]).filter(it=>state.album[it[0]+"|"+it[1]]).length, 0);
+  const doneN = ALBUM_CASES.filter(c=>albumDone(c.id)).length;
   sum.innerHTML = `
     <div class="alb-card"><label>Odkryte skiny</label><b>${fmt(have)} / ${fmt(total)}</b>
       <div class="sub">${pct.toFixed(1)}% całej kolekcji</div>
@@ -5384,18 +7079,18 @@ function renderAlbum(){
     <div class="alb-card"><label>★ Zdobyte noże</label><b>${fmt(knifeGot)} / ${fmt(knifeAll)}</b>
       <div class="sub">najrzadsze ostrza w grze</div>
       <div class="alb-bar"><i style="width:${knifeAll?100*knifeGot/knifeAll:0}%"></i></div></div>
-    <div class="alb-card"><label>Skompletowane skrzynki</label><b>${fmt(doneN)} / ${CASES.length}</b>
+    <div class="alb-card"><label>Skompletowane skrzynki</label><b>${fmt(doneN)} / ${ALBUM_CASES.length}</b>
       <div class="sub">za komplet: 🪙 + 🍀 5 min</div>
-      <div class="alb-bar"><i style="width:${100*doneN/CASES.length}%"></i></div></div>`;
+      <div class="alb-bar"><i style="width:${ALBUM_CASES.length?100*doneN/ALBUM_CASES.length:0}%"></i></div></div>`;
   const hint = $("#albumHint");
   if(hint) hint.textContent = have
     ? "znaleziska zapisują się na stałe — nawet po sprzedaży przedmiotu"
     : "otwieraj skrzynki, żeby zapełnić album";
 
-  if(!albumCase || !CASES.some(c=>c.id===albumCase))
-    albumCase = (CASES.find(c=>!albumDone(c.id)) || CASES[CASES.length-1]).id;
+  if(!albumCase || !ALBUM_CASES.some(c=>c.id===albumCase))
+    albumCase = (ALBUM_CASES.find(c=>!albumDone(c.id)) || ALBUM_CASES[ALBUM_CASES.length-1]).id;
 
-  pick.innerHTML = CASES.map(c=>{
+  pick.innerHTML = ALBUM_CASES.map(c=>{
     const keys = albumCaseKeys(c.id), f = keys.filter(k=>state.album[k]).length;
     const d = keys.length>0 && f===keys.length;
     return `<button class="alb-pill tier-${caseTier(c)} ${c.id===albumCase?"active":""} ${d?"done":""}"
@@ -5406,7 +7101,7 @@ function renderAlbum(){
       <div class="alb-bar"><i style="width:${keys.length?100*f/keys.length:0}%"></i></div></button>`;
   }).join("");
 
-  const sel = CASES.find(c=>c.id===albumCase);
+  const sel = ALBUM_CASES.find(c=>c.id===albumCase) || ALBUM_CASES[0];
   const keys = albumCaseKeys(sel.id), f = keys.filter(k=>state.album[k]).length;
   const rew = albumReward(sel), got = !!state.albumClaimed[sel.id];
   body.innerHTML = `
@@ -5421,7 +7116,7 @@ function renderAlbum(){
       if(!pool.length) return "";
       const gf = pool.filter(p=>state.album[p.key]).length;
       return `<div class="loot-sec" style="--c:${TIER[t].color}">
-        <div class="loot-sec-h"><i></i>${t==="special"?"★ Noże":TIER[t].name}<span>${gf} / ${pool.length} odkryte</span></div>
+        <div class="loot-sec-h"><i></i>${t==="special"?"★ Noże":t==="relic"?"✦ Relikty":TIER[t].name}<span>${gf} / ${pool.length} odkryte</span></div>
         <div class="loot-grid">${pool.map(p=>albumCardHTML(p, sel, t)).join("")}</div></div>`;
     }).join("");
   renderAlbumBadge();
@@ -6043,7 +7738,36 @@ $("#weeklyGrid").addEventListener("click", e=>{
 /* =======================================================================
    14d. ACHIEVEMENTS + COSMETICS + BOSS + KING OF THE HILL
    ======================================================================= */
+/* ✦ relikty — bardzo rzadkie przedmioty; album pamięta je na stałe, także po sprzedaży */
+const RELIC_KEYS = [
+  ["Kosa Żniwiarza","Ostrze Otchłani"],
+  ["Nóż Widmo","Ostatni Cień"],
+  ["Naklejka: Ostatni Znak","Żniwiarz"],
+  ["Ozdoba: Klepsydra","Ostatnia Godzina"],
+  ["Naklejka: Oko Burzy","Kolekcja Legend"],
+  ["Naklejka: Czaszka Króla","Złota Seria"],
+  ["Ozdoba: Kryształ Otchłani","Bursztyn"],
+  ["Nóż Kolekcjonera","Ostatni Egzemplarz"]
+];
+const relicFound = (w,n) => !!(state.album && state.album[w+"|"+n]);
+const relicCount = () => RELIC_KEYS.filter(([w,n])=>relicFound(w,n)).length;
+
 const ACHIEVEMENTS = [
+  /* ✦ RELIKTY — bardzo rzadkie przedmioty z bazaru botów */
+  {id:"relic_scythe", icon:"🌾", name:"Kosa Żniwiarza", desc:"Zdobądź Kosę Żniwiarza (✦ Relikt) ze Skrzynki Żniwiarza.", target:1, prog:()=>relicFound("Kosa Żniwiarza","Ostrze Otchłani")?1:0, done:()=>relicFound("Kosa Żniwiarza","Ostrze Otchłani"), reward:{coins:75000000}},
+  {id:"relic_ghost",  icon:"🔪", name:"Nóż Widmo",      desc:"Zdobądź Nóż Widmo (✦ Relikt) ze Skrzynki Żniwiarza.", target:1, prog:()=>relicFound("Nóż Widmo","Ostatni Cień")?1:0, done:()=>relicFound("Nóż Widmo","Ostatni Cień"), reward:{coins:75000000}},
+  {id:"relic_mark",   icon:"🏷️", name:"Ostatni Znak",  desc:"Zdobądź Naklejkę: Ostatni Znak (✦ Relikt) ze Skrzynki Żniwiarza.", target:1, prog:()=>relicFound("Naklejka: Ostatni Znak","Żniwiarz")?1:0, done:()=>relicFound("Naklejka: Ostatni Znak","Żniwiarz"), reward:{coins:25000000}},
+  {id:"relic_hour",   icon:"⏳", name:"Klepsydra",      desc:"Zdobądź Ozdobę: Klepsydra (✦ Relikt) ze Skrzynki Żniwiarza.", target:1, prog:()=>relicFound("Ozdoba: Klepsydra","Ostatnia Godzina")?1:0, done:()=>relicFound("Ozdoba: Klepsydra","Ostatnia Godzina"), reward:{coins:25000000}},
+  {id:"relic_storm",  icon:"🌀", name:"Oko Burzy",      desc:"Zdobądź Naklejkę: Oko Burzy (✦ Relikt) ze Skrzynki Naklejek.", target:1, prog:()=>relicFound("Naklejka: Oko Burzy","Kolekcja Legend")?1:0, done:()=>relicFound("Naklejka: Oko Burzy","Kolekcja Legend"), reward:{coins:25000000}},
+  {id:"relic_skull",  icon:"💀", name:"Czaszka Króla",  desc:"Zdobądź Naklejkę: Czaszka Króla (✦ Relikt) ze Skrzynki Naklejek.", target:1, prog:()=>relicFound("Naklejka: Czaszka Króla","Złota Seria")?1:0, done:()=>relicFound("Naklejka: Czaszka Króla","Złota Seria"), reward:{coins:25000000}},
+  {id:"relic_crystal",icon:"🔮", name:"Kryształ Otchłani", desc:"Zdobądź Ozdobę: Kryształ Otchłani (✦ Relikt) ze Skrzynki Naklejek.", target:1, prog:()=>relicFound("Ozdoba: Kryształ Otchłani","Bursztyn")?1:0, done:()=>relicFound("Ozdoba: Kryształ Otchłani","Bursztyn"), reward:{coins:25000000}},
+  {id:"relic_blade",  icon:"🗡️", name:"Ostrze Kolekcjonera", desc:"Zdobądź Nóż Kolekcjonera (✦ Relikt) ze Skrzynki Naklejek.", target:1, prog:()=>relicFound("Nóż Kolekcjonera","Ostatni Egzemplarz")?1:0, done:()=>relicFound("Nóż Kolekcjonera","Ostatni Egzemplarz"), reward:{coins:75000000}},
+  {id:"relic_all",    icon:"✦",  name:"Kustosz relikwii", desc:"Zdobądź wszystkie 8 reliktów z bazaru botów.", target:8, prog:()=>relicCount(), done:()=>relicCount()>=8, reward:{coins:500000000}},
+  /* 🔑 KODY — bardzo rzadkie bonusy ze skrzynek i bazaru */
+  {id:"code_1",     icon:"🔑", name:"Pierwszy kod",      desc:"Odbierz pierwszy kod.",                    target:1,           prog:()=>codeUniqueRedeemed(), done:()=>codeUniqueRedeemed()>=1, reward:{coins:100000}},
+  {id:"code_5",     icon:"🗝️", name:"Kolekcjoner kodów", desc:"Odbierz 5 różnych kodów.",                 target:5,           prog:()=>codeUniqueRedeemed(), done:()=>codeUniqueRedeemed()>=5, reward:{coins:2000000}},
+  {id:"code_all",   icon:"🔐", name:"Władca kodów",      desc:"Odbierz wszystkie "+CODES.length+" kodów.", target:CODES.length, prog:()=>codeUniqueRedeemed(), done:()=>codeUniqueRedeemed()>=CODES.length, reward:{coins:25000000}},
+  {id:"code_very",  icon:"🌌", name:"Kod Otchłani",      desc:"Odbierz bardzo rzadki Kod Otchłani.",       target:1,           prog:()=>numFrom((state.codeRedeemed||{})["otchlan"]), done:()=>numFrom((state.codeRedeemed||{})["otchlan"])>=1, reward:{coins:10000000}},
   /* 🌱 Dla początkujących (łatwe) */
   {id:"open_1",    icon:"📦", name:"Pierwszy krok",      desc:"Otwórz pierwszą skrzynkę.",           target:1,     prog:()=>state.stats.opened,    done:()=>state.stats.opened>=1,     reward:{coins:500}},
   {id:"open_10",   icon:"📦", name:"Początek drogi",     desc:"Otwórz 10 skrzynek.",                 target:10,    prog:()=>state.stats.opened,    done:()=>state.stats.opened>=10,    reward:{coins:2000}},
@@ -6087,6 +7811,7 @@ const ACHIEVEMENTS = [
   {id:"rich_100b", icon:"💵", name:"Władca miliardów",   desc:"Zgromadź 100 000 000 000 monet.",      target:100000000000, prog:()=>state.coins, done:()=>state.coins>=100000000000, reward:{coins:100000000}},
   {id:"rich_900b", icon:"💵", name:"Dziewięćset miliardów", desc:"Zgromadź 900 000 000 000 monet.",   target:900000000000, prog:()=>state.coins, done:()=>state.coins>=900000000000, reward:{coins:400000000}},
   {id:"elite_1",   icon:"🌠", name:"Elitarny łowca",     desc:"Otwórz skrzynkę elity (Aurory, Mgławicy, Wiru, Tytana lub Zaćmienia).", target:1, prog:()=>CASES.filter(c=>c.elite).reduce((a,c)=>a+numFrom((state.stats.cases||{})[c.id]||0),0), done:()=>CASES.filter(c=>c.elite).some(c=>numFrom((state.stats.cases||{})[c.id]||0)>0), reward:{coins:25000000}},
+  {id:"ultra_1",   icon:"💠", name:"Poza skalą",         desc:"Otwórz dowolną skrzynkę ULTRA (Kwadra, Kwinta, Seksta, Septa, Okta lub Nona).", target:1, prog:()=>CASES.filter(c=>c.ultra).reduce((a,c)=>a+numFrom((state.stats.cases||{})[c.id]||0),0), done:()=>CASES.filter(c=>c.ultra).some(c=>numFrom((state.stats.cases||{})[c.id]||0)>0), reward:{coins:1000000000}},
   {id:"cos_all",   icon:"👑", name:"Pełna kolekcja",    desc:"Kup wszystkie 6 kosmetyków.",           target:6,     prog:()=>Object.keys(state.cosmetics||{}).length, done:()=>Object.keys(state.cosmetics||{}).length>=6, reward:{coins:20000000}},
   /* 🤖 BAZAR BOTÓW — nowe wyzwania */
   {id:"bot_1",      icon:"🤖", name:"Pierwszy interes", desc:"Kup cokolwiek od bota na bazarze.",       target:1,  prog:()=>numFrom(state.stats.botBuys||0), done:()=>numFrom(state.stats.botBuys||0)>=1,  reward:{coins:15000}},
@@ -6157,9 +7882,9 @@ const COSMETICS = [
   {id:"pat_star",  icon:"⭐", name:"Gwiazda",      desc:"Kawalek kosmicznego pylu.",        cost:5000000,   mult:1.10, color:"#fde047"},
   {id:"pat_flame", icon:"🔥", name:"Plomien",      desc:"Wiecy z daleka.",                  cost:15000000,  mult:1.15, color:"#f97316"},
   {id:"pat_ice",   icon:"❄️", name:"Lod",          desc:"Wieczna zima na broni.",           cost:30000000,  mult:1.20, color:"#38bdf8"},
-  {id:"pat_volt",  icon:"⚡", name:"Blyskawica",   desc:"Elektryczne wyladowanie.",         cost:75000000,  mult:1.25, color:"#a855f7"},
-  {id:"pat_skull", icon:"💀", name:"Czaszka",      desc:"Ostatni spojrzenie.",              cost:200000000, mult:1.35, color:"#eb4b4b"},
-  {id:"pat_crown", icon:"👑", name:"Korona",       desc:"Krolewski znak.",                 cost:500000000, mult:1.50, color:"#ffd700"}
+  {id:"pat_volt",  icon:"⚡", name:"Błyskawica",   desc:"Elektryczne wyładowanie.",         cost:75000000,  mult:1.25, color:"#a855f7"},
+  {id:"pat_skull", icon:"💀", name:"Czaszka",      desc:"Ostatnie spojrzenie.",              cost:200000000, mult:1.35, color:"#eb4b4b"},
+  {id:"pat_crown", icon:"👑", name:"Korona",       desc:"Królewski znak.",                 cost:500000000, mult:1.50, color:"#ffd700"}
 ];
 const COSMETIC_BY_ID = {};
 COSMETICS.forEach(c=>COSMETIC_BY_ID[c.id]=c);
@@ -6176,7 +7901,7 @@ function buyCosmetic(id){
   state.cosmetics[id] = true;
   sfxCoin(); burst(rnd(120,innerWidth-120), rnd(140,360), c.color);
   save(); renderStats();
-  toast(c.icon+" <b>"+c.name+"</b> zakupiony! Twoje bronie dostana +" + Math.round((c.mult-1)*100) + "% wartosci.","good");
+  toast(c.icon+" <b>"+c.name+"</b> zakupiony! Twoje bronie dostaną +" + Math.round((c.mult-1)*100) + "% wartości.","good");
 }
 function cosmeticMult(){
   let m = 1;
@@ -6193,10 +7918,10 @@ function renderCosmetics(){
       <div class="cos-body">
         <div class="cos-name">${esc(c.name)}</div>
         <div class="cos-desc">${esc(c.desc)}</div>
-        <div class="cos-rew">Bonus: +${Math.round((c.mult-1)*100)}% wartosci</div>
+        <div class="cos-rew">Bonus: +${Math.round((c.mult-1)*100)}% wartości</div>
         ${owned
           ? `<button class="btn tb-btn cos-btn" disabled>✔ Posiadasz</button>`
-          : `<button class="btn primary cos-btn" data-cos="${c.id}">Kup za 🪙 ${fmt(cosmeticCost(c))}</button>`}
+          : `<button class="btn primary cos-btn" data-cos="${c.id}" title="🪙 ${fmt(cosmeticCost(c))}">Kup za 🪙 ${fmtShort(cosmeticCost(c))}</button>`}
       </div></div>`;
   }).join("");
 }
@@ -6217,23 +7942,23 @@ setInterval(()=>{
 window.addEventListener("beforeunload", ()=>{ if(dirty) save(); });
 window.addEventListener("pagehide", ()=>{ if(dirty) save(); });
 
-/* 👹 BOSS FIGHT — gra o ogromna stawke z szansa na unikalna bron */
+/* 👹 BOSS FIGHT — gra o ogromną stawkę z szansą na unikalną broń */
 const BOSSES = [
   {id:"boss_golem",  name:"Golem Cieni",     hp:1000000,  stake:5000000,   reward:25000000,   icon:"🗿", color:"#7c3aed"},
-  {id:"boss_dragon", name:"Smok Otchlani",    hp:5000000,  stake:25000000,  reward:150000000,  icon:"🐉", color:"#ef4444"},
-  {id:"boss_reaper", name:"Zniwiarz",        hp:15000000, stake:100000000, reward:800000000,  icon:"💀", color:"#d32ce6"}
+  {id:"boss_dragon", name:"Smok Otchłani",    hp:5000000,  stake:25000000,  reward:150000000,  icon:"🐉", color:"#ef4444"},
+  {id:"boss_reaper", name:"Żniwiarz",        hp:15000000, stake:100000000, reward:800000000,  icon:"💀", color:"#d32ce6"}
 ];
 function fightBoss(bossId){
   if(battleBusy || battleStage) return;
   const b = BOSSES.find(x=>x.id===bossId);
   if(!b) return;
-  if(state.coins < b.stake){ sfxErr(); toast("Za malo monet na walke z "+b.icon+" "+b.name+" (🪙 "+fmt(b.stake)+")","bad"); return; }
+  if(state.coins < b.stake){ sfxErr(); toast("Za mało monet na walkę z "+b.icon+" "+b.name+" (🪙 "+fmt(b.stake)+")","bad"); return; }
   battleBusy = true;
   state.coins -= b.stake;
   state.stats.spent += b.stake;
   state.stats.battles++;
   missionTrack("battle",1); missionTrack("spend",b.stake);
-  const playerPower = Math.max(100, Math.floor(sumVal(state.inv.slice(0,5))) + state.coins*0.001);
+  const playerPower = Math.max(100, Math.floor(sumVal(state.inv.slice().sort((a,b)=>b.value-a.value).slice(0,5))) + state.coins*0.001);
   const win = playerPower > b.hp * (0.8 + Math.random()*0.4);
   state.battles.unshift({
     win, draw:false, cn:"Boss: "+b.name, n:1, cost:b.stake, gain: win?b.reward:0, ts:Date.now(),
@@ -6248,22 +7973,23 @@ function fightBoss(bossId){
     state.coins += b.reward;
     state.stats.earned += b.reward;
     missionTrack("win",1); missionTrack("battleearn",b.reward);
-    toast("👹 <b>Pokonales "+b.name+"!</b> Nagroda: 🪙 "+fmt(b.reward),"good");
+    toast("👹 <b>Pokonałeś "+b.name+"!</b> Nagroda: 🪙 "+fmt(b.reward),"good");
     confetti(["#ffd700","#ef4444","#a855f7","#38e08a"]);
   } else {
     sfxErr();
-    toast("👹 <b>"+b.name+" Cie pokonal!</b> Straciles 🪙 "+fmt(b.stake),"bad");
+    toast("👹 <b>"+b.name+" Cię pokonał!</b> Straciłeś 🪙 "+fmt(b.stake),"bad");
   }
   markDirty(); save(); renderBalance(); renderStats();
   battleBusy = false;
   checkAchievements();
 }
 
-/* 🎰 KROLOWA GORY — maszyna losujaca z rosnacym ryzykiem */
+/* 🎰 KRÓLOWA GÓRY — maszyna losująca z rosnącym ryzykiem */
 let kohPrize = 100000;
 function playKoh(){
   if(battleBusy || battleStage) return;
-  if(state.coins < kohPrize){ sfxErr(); toast("Za malo monet na Krolowa gory (🪙 "+fmt(kohPrize)+")","bad"); return; }
+  const kohPrize = getKohPrize();
+  if(state.coins < kohPrize){ sfxErr(); toast("Za mało monet na Królową Góry (🪙 "+fmt(kohPrize)+")","bad"); return; }
   battleBusy = true;
   state.coins -= kohPrize;
   state.stats.spent += kohPrize;
@@ -6272,7 +7998,7 @@ function playKoh(){
   if(roll < 0.02){ result="JACKPOT"; mult=50; }
   else if(roll < 0.10){ result="Wielki wygrany"; mult=10; }
   else if(roll < 0.30){ result="Wygrana"; mult=3; }
-  else if(roll < 0.60){ result="Mala wygrana"; mult=1.5; }
+  else if(roll < 0.60){ result="Mała wygrana"; mult=1.5; }
   else { result="Przegrana"; mult=0; }
   const gain = Math.round(kohPrize * mult);
   if(gain > 0){
@@ -6285,7 +8011,7 @@ function playKoh(){
   }
   const won = gain > 0;
   state.battles.unshift({
-    win:won, draw:false, cn:"🎰 Krolowa gory", n:1, cost:kohPrize, gain, ts:Date.now(),
+    win:won, draw:false, cn:"🎰 Królowa Góry", n:1, cost:kohPrize, gain, ts:Date.now(),
     mt: won?"classified":"mil", mn:result+" ×"+mult, mval:gain, at:"mil", an:"", aval:0
   });
   state.battles = state.battles.slice(0,8);
@@ -6294,7 +8020,7 @@ function playKoh(){
   markDirty(); save(); renderBalance(); renderStats();
   battleBusy = false;
   if(won){ sfxCoin(); toast("🎰 <b>"+result+"!</b> Wygrywasz 🪙 "+fmt(gain)+" (×"+mult+")","good"); confetti(); }
-  else { sfxErr(); toast("🎰 <b>"+result+"</b> — przegrywasz 🪙 "+fmt(kohPrize),"bad"); }
+  else { sfxErr(); toast("🎰 <b>"+result+"</b> — przegrywasz 🪙 "+fmt(kohPrize/2),"bad"); }
   checkAchievements();
 }
 document.addEventListener("visibilitychange", ()=>{ if(document.hidden && dirty) save(); });
@@ -6319,7 +8045,8 @@ if(!state.weekly  || !Array.isArray(state.weekly.list)  || !state.weekly.list.le
 $("#soundBtn").textContent = state.sound ? "🔊" : "🔇";
 $("#fastBtn").classList.toggle("on", state.fast);
 renderBalance(true);
-renderShop(); renderBots(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
+renderShop(); renderBots(); renderCodes(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
+shopTick();
 renderAlbumBadge(); renderDailyBadge(); checkAchievements();
 save();   // od razu utrwalamy wczytany stan (migracja starych zapisów)
 if(state.stats.opened>0) toast("Witaj ponownie! Otwarte skrzynki: <b>"+state.stats.opened+"</b> · ekwipunek: <b>"+state.inv.length+"</b>","good");
