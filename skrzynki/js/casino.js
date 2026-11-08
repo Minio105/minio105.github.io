@@ -1,4 +1,4 @@
-"use strict";
+﻿"use strict";
 
 /* =======================================================================
    RANKS (RANGI CS2) & EXP SYSTEM
@@ -56,7 +56,7 @@ function addExp(amount, sourceLabel){
     state.caseStock = state.caseStock || {};
     state.caseStock[boxId] = (state.caseStock[boxId] || 0) + 1;
     const boxDef = CASES.find(c => c.id === boxId);
-    
+
     sfxWin("special");
     confetti(["#ffd700", "#45e6ff", "#ffffff", "#38e08a"]);
     toast("🎖️ <b>AWANS NA RANGĘ: " + newRank.icon + " " + newRank.name + "!</b><br>Otrzymujesz skrzynię awansu: <b>" + (boxDef ? boxDef.name : boxId) + "</b> (czeka w zapasie)!", "good");
@@ -69,40 +69,82 @@ function renderRankBadge(){
   const exp = state.exp || 0;
   const curRank = getPlayerRank(exp);
   const nxt = getNextRank(curRank);
-  
+
   const el = $("#rankPill");
   if(el){
     const pct = nxt ? Math.min(100, Math.floor(((exp - curRank.minExp) / (nxt.minExp - curRank.minExp)) * 100)) : 100;
-    el.innerHTML = `<span class="rp-ico">${curRank.icon}</span><span class="rp-info"><b>${curRank.name}</b><small>${exp} EXP ${nxt ? '('+pct+'%)' : '(MAX)'}</small></span><span class="rp-bar"><i style="width:${pct}%"></i></span>`;
-    el.title = `Ranga CS2: ${curRank.name}\nAktualne EXP: ${fmt(exp)}${nxt ? '\nDo kolejnej rangi ('+nxt.name+'): ' + fmt(nxt.minExp - exp) + ' EXP' : '\nMaksymalna ranga!'}`;
+    el.innerHTML = `<span class="rp-ico">${curRank.icon}</span><span class="rp-info"><b>${curRank.name}</b><small>${fmt(exp)} EXP ${nxt ? "· " + pct + "%" : "· MAX"}</small></span><span class="rp-bar"><i style="width:${pct}%"></i></span>`;
+    el.title = `Ranga CS2: ${curRank.name}\nAktualne EXP: ${fmt(exp)}${nxt ? "\nDo kolejnej rangi (" + nxt.name + "): " + fmt(nxt.minExp - exp) + " EXP" : "\nMaksymalna ranga!"}`;
   }
 }
 
 /* =======================================================================
-   COINFLIP & CRASH (KASYNO SKÓREK)
+   KASYNO — WSPÓLNE
+   ======================================================================= */
+function casinoSave(){
+  markDirty();
+  save({ kind:"casino" });
+}
+function casinoClamp(n, min, max){ return Math.max(min, Math.min(max, n)); }
+function casinoInputNum(v){
+  const n = typeof v === "number" ? v : parseFloat(v);
+  return Number.isFinite(n) ? Math.max(0, Math.floor(n)) : 0;
+}
+function casinoDec(v, digits = 2){ return (+v).toFixed(digits).replace(".", ","); }
+function casinoMult(v){ return casinoDec(v, 2) + "×"; }
+function casinoSetResult(id, html, cls){
+  const el = $(id);
+  if(!el) return;
+  el.className = "casino-result " + (cls || "");
+  el.innerHTML = html;
+}
+function casinoHistoryHTML(list, empty){
+  if(!list || !list.length) return `<span class="ch-empty">${empty}</span>`;
+  return list.slice(0, 6).map(h=>{
+    const cls = h.win ? "win" : "loss";
+    const title = h.title || (h.win ? "Wygrana" : "Przegrana");
+    return `<span class="ch-chip ${cls}" title="${esc(title)}">${h.win ? "✓" : "✕"} ${h.label || ""}</span>`;
+  }).join("");
+}
+
+/* =======================================================================
+   COINFLIP — RZUT MONETĄ SKINAMI
    ======================================================================= */
 let cfSelectedUids = new Set();
 let cfBusy = false;
+let cfHistory = [];
+let cfStreak = 0;
+let cfBestStreak = 0;
+const CF_FLIP_MS = 2800; // musi być zsynchronizowane z animacją coinFlipCT/coinFlipT
+let cfResultTimer = 0;
+const cfSideName = side => side === "ct" ? "Orzeł" : "Reszka";
 
 function renderCoinflip(){
   const wrap = $("#cfItems");
   if(!wrap) return;
   const inv = (state.inv || []).slice(0, 80); // pierwsze 80 dla płynności
-  
+  const valid = new Set(inv.map(i => i.uid));
+  [...cfSelectedUids].forEach(uid => { if(!valid.has(uid)) cfSelectedUids.delete(uid); });
+
   if(!inv.length){
-    wrap.innerHTML = `<div class="empty-mini">Brak przedmiotów w ekwipunku do obstawienia!</div>`;
+    wrap.innerHTML = `<div class="empty-mini cf-empty">Brak przedmiotów w ekwipunku do obstawienia!<br>
+      <button class="btn primary" data-go-shop>🎁 Przejdź do skrzynek</button></div>`;
   } else {
     wrap.innerHTML = inv.map(it => {
       const isSel = cfSelectedUids.has(it.uid);
       const t = TIER[it.tier] || TIER.mil;
-      return `<div class="cf-item ${isSel ? 'selected' : ''}" data-uid="${it.uid}" style="--c:${t.color}">
-        <span class="cf-badge">${it.tier==='special'?'★':it.tier==='relic'?'✦':t.name}</span>
-        <div class="cf-name">${esc(it.n)}</div>
+      const f = fxOf(it);
+      const tierName = it.tier === "special" ? "★ Special" : it.tier === "relic" ? "✦ Relikt" : t.name;
+      return `<div class="cf-item ${isSel ? "selected" : ""}" data-uid="${it.uid}" style="--c:${t.color}">
+        <span class="cf-check">${isSel ? "✓" : ""}</span>
+        <span class="cf-tier">${tierName}</span>
+        <div class="cf-name">${esc(it.w || it.n)}<small>${esc(it.n || "")}${f ? " · " + f.icon : ""}</small></div>
         <div class="cf-val">🪙 ${fmtShort(it.value)}</div>
       </div>`;
     }).join("");
   }
   updateCoinflipSummary();
+  renderCoinflipHistory();
 }
 
 function updateCoinflipSummary(){
@@ -110,8 +152,21 @@ function updateCoinflipSummary(){
   const sumVal = selList.reduce((s, i) => s + i.value, 0);
   const sumEl = $("#cfSumVal");
   if(sumEl) sumEl.textContent = "🪙 " + fmtShort(sumVal);
+  const count = $("#cfCount");
+  if(count) count.textContent = selList.length + " / 10";
+  const streak = $("#cfStreak");
+  if(streak) streak.textContent = cfStreak ? `🔥 passa ${cfStreak} · best ${cfBestStreak}` : "passa: —";
   const btn = $("#cfStartBtn");
   if(btn) btn.disabled = selList.length === 0 || cfBusy;
+  $("#cfPickCT")?.toggleAttribute("disabled", cfBusy || selList.length === 0);
+  $("#cfPickT")?.toggleAttribute("disabled", cfBusy || selList.length === 0);
+  $("#cfSelectBest")?.toggleAttribute("disabled", cfBusy || !state.inv.length);
+  $("#cfClear")?.toggleAttribute("disabled", cfBusy || !cfSelectedUids.size);
+}
+
+function renderCoinflipHistory(){
+  const h = $("#cfHistory");
+  if(h) h.innerHTML = casinoHistoryHTML(cfHistory, "Ostatnie rzuty monetą pojawią się tutaj.");
 }
 
 function runCoinflip(playerChoice){
@@ -123,75 +178,161 @@ function runCoinflip(playerChoice){
     return;
   }
   cfBusy = true;
+  const totalValue = selItems.reduce((s, i) => s + i.value, 0);
+  const winSide = Math.random() < 0.5 ? "ct" : "t";
+  const playerWon = playerChoice === winSide;
+
+  casinoSetResult("#cfResult", "<span>🪙 <b>Rzucam monetą…</b> Trzymaj kciuki!</span>", "rolling");
   updateCoinflipSummary();
 
-  const totalValue = selItems.reduce((s, i) => s + i.value, 0);
-  // Usuń wybrane przedmioty z eq na czas rzutu
-  state.inv = state.inv.filter(i => !cfSelectedUids.has(i.uid));
-  renderInv();
+  const stage = $("#cfStage");
+  if(stage){
+    clearTimeout(cfResultTimer);
+    stage.classList.remove("win", "loss", "flipping");
+    void stage.offsetWidth;
+    stage.classList.add("flipping");
+  }
 
   const coin = $("#cfCoin");
   if(coin){
     coin.classList.remove("flip-t", "flip-ct");
-    void coin.offsetWidth; // reflow
-  }
-
-  sfxWhoosh();
-  const winSide = Math.random() < 0.5 ? "ct" : "t"; // ct = Orzeł/Niebieski, t = Reszka/Pomarańczowy
-  const playerWon = playerChoice === winSide;
-
-  if(coin){
+    void coin.offsetWidth;
     coin.classList.add(winSide === "ct" ? "flip-ct" : "flip-t");
   }
+  sfxWhoosh();
 
   setTimeout(()=>{
+    if(stage){
+      stage.classList.remove("flipping");
+      stage.classList.add(playerWon ? "win" : "loss");
+      clearTimeout(cfResultTimer);
+      cfResultTimer = setTimeout(()=>stage.classList.remove("win", "loss"), 1600);
+    }
     if(playerWon){
-      // Gracz wygrywa: dostaje swoje przedmioty z powrotem + 1 losowy skin o zbliżonej wartości lub podwojenie wartości w monetach
-      selItems.forEach(it => addToInv(it));
-      // Nagroda bonusowa: równowartość w monetach
+      // Wygrana: przedmioty zostają w ekwipunku + bonus w monetach.
       state.coins += totalValue;
-      state.stats.earned = (state.stats.earned || 0) + totalValue;
+      state.stats.earned = numFrom(state.stats.earned) + totalValue;
+      cfStreak++;
+      cfBestStreak = Math.max(cfBestStreak, cfStreak);
       addExp(Math.max(25, Math.floor(totalValue / 1000)), "coinflip_win");
       sfxWin("covert");
       confetti(["#38bdf8", "#ffd700", "#ffffff"]);
-      toast(`🪙 <b>WYGRANA W COINFLIP!</b> Wygrałeś <b>🪙 ${fmt(totalValue)}</b> bonusu!`, "good");
+      casinoSetResult("#cfResult",
+        `<span>✅ <b>WYGRANA!</b> Wypadło: <b>${cfSideName(winSide)}</b>. Zostajesz ze skinami i dostajesz bonus <b>🪙 ${fmt(totalValue)}</b>.</span>`, "win");
+      toast(`🪙 <b>WYGRANA W COINFLIP!</b> Bonus: <b>🪙 ${fmt(totalValue)}</b> · passa ${cfStreak}`, "good");
     } else {
-      // Gracz przegrywa postawione skiny
-      state.stats.spent = (state.stats.spent || 0) + totalValue;
+      // Przegrana: dopiero teraz usuwamy obstawione skiny (bezpiecznie przy zamknięciu karty).
+      state.inv = state.inv.filter(i => !cfSelectedUids.has(i.uid));
+      state.stats.spent = numFrom(state.stats.spent) + totalValue;
+      cfStreak = 0;
       addExp(Math.max(10, Math.floor(totalValue / 3000)), "coinflip_loss");
       sfxErr();
-      toast(`💀 <b>PRZEGRANA W COINFLIP!</b> Straciłeś postawione przedmioty (${fmtShort(totalValue)}).`, "bad");
+      casinoSetResult("#cfResult",
+        `<span>💀 <b>PRZEGRANA.</b> Wypadło: <b>${cfSideName(winSide)}</b>. Straciłeś obstawione skiny o wartości <b>🪙 ${fmtShort(totalValue)}</b>.</span>`, "loss");
+      toast(`💀 <b>PRZEGRANA W COINFLIP!</b> Straciłeś obstawione przedmioty (${fmtShort(totalValue)}).`, "bad");
     }
+    cfHistory.unshift({
+      win: playerWon,
+      label: `🪙 ${fmtShort(totalValue)}`,
+      title: (playerWon ? "Wygrana" : "Przegrana") + " · " + cfSideName(playerChoice)
+    });
+    cfHistory = cfHistory.slice(0, 8);
     cfSelectedUids.clear();
     cfBusy = false;
+    renderInv();
     renderBalance();
     renderCoinflip();
     renderCasinoProfile();
-    save();
-  }, 2200);
+    casinoSave();
+  }, CF_FLIP_MS);
 }
 
 /* =======================================================================
-   CRASH (RAKIETA MNOŻNIKA)
+   CRASH — ULEPSZENIA (tylko Crash)
    ======================================================================= */
-let crashState = "idle"; // "idle", "running", "crashed"
+const CRASH_UPGRADES = [
+  { id:"engine", icon:"🔥", name:"Silnik", max:5,
+    costs:[1200, 5000, 20000, 80000, 300000],
+    desc:"Każdy poziom dodaje 2% do wypłaty z udanego lotu. Działa tylko w Crashu.",
+    fmt:l => l ? "+"+l*2+"% wypłaty" : "standardowa wypłata" },
+  { id:"stability", icon:"🛡️", name:"Stabilizator", max:5,
+    costs:[2000, 8000, 32000, 120000, 450000],
+    desc:"Zmniejsza szansę na natychmiastowy wybuch i lekko poprawia krzywą lotu.",
+    fmt:l => "instant crash: "+(4-l*0.4).toFixed(1).replace(".",",")+"%" },
+  { id:"shield", icon:"🧯", name:"Ubezpieczenie", max:5,
+    costs:[1500, 6500, 26000, 100000, 380000],
+    desc:"Po wybuchu rakiety odzyskujesz część postawionych monet.",
+    fmt:l => l ? l*5+"% stawki po crashu" : "brak zwrotu po crashu" }
+];
+const CRASH_UP_BY_ID = Object.fromEntries(CRASH_UPGRADES.map(u=>[u.id,u]));
+function crashUpLvl(id){
+  return Math.max(0, Math.min(5, (state.crashUp && state.crashUp[id]|0) || 0));
+}
+function crashUpCost(id, lvl){ return CRASH_UP_BY_ID[id].costs[lvl]; }
+function crashPayoutMult(mult){ return mult * (1 + 0.02*crashUpLvl("engine")); }
+function crashPayoutValue(bet, mult){ return Math.round(bet * crashPayoutMult(mult)); }
+
+/* =======================================================================
+   CRASH — RAKIETA MNOŻNIKA
+   ======================================================================= */
+let crashState = "idle"; // "idle" | "running" | "crashed"
 let crashMult = 1.00;
 let crashCrashPoint = 1.00;
 let crashBet = 500;
 let crashTimer = null;
 let crashStartTime = 0;
+let crashHistory = [];
 
 function generateCrashPoint(){
-  // Klasyczny algorytm Crash z house edge ~4%
+  // Klasyczny crash; Stabilizator zmniejsza szansę na instant crash i lekko poprawia krzywą.
+  const stab = crashUpLvl("stability");
+  const bustChance = Math.max(0.02, 0.04 - 0.004*stab);
+  const houseEdge = Math.max(0.025, 0.04 - 0.003*stab);
   const r = Math.random();
-  if(r < 0.04) return 1.00; // instant crash 4%
-  return Math.max(1.01, +(0.96 / (1 - r)).toFixed(2));
+  if(r < bustChance) return 1.00;
+  return Math.max(1.01, +((1 - houseEdge) / (1 - r)).toFixed(2));
+}
+
+function resetCrashChart(){
+  const line = $("#crashLine"), dot = $("#crashDot");
+  if(line){
+    line.setAttribute("points", "2,98 2,98");
+    line.classList.remove("crashed", "cashed");
+  }
+  if(dot){ dot.setAttribute("cx", 2); dot.setAttribute("cy", 98); dot.style.opacity = "0"; }
+}
+
+function updateCrashChart(mult){
+  const line = $("#crashLine"), dot = $("#crashDot");
+  const l = Math.log(Math.max(1, mult));
+  const x = 2 + Math.min(94, l * 24);
+  const y = 98 - Math.min(88, l * 32);
+  if(line) line.setAttribute("points", `2,98 ${x.toFixed(1)},${y.toFixed(1)}`);
+  if(dot){
+    dot.setAttribute("cx", x.toFixed(1));
+    dot.setAttribute("cy", y.toFixed(1));
+    dot.style.opacity = "1";
+  }
+  const rocket = $("#crashRocket");
+  if(rocket){
+    rocket.style.transform = `translate(${Math.min(165, l * 48)}px, -${Math.min(78, l * 26)}px) rotate(${Math.min(38, l * 14)}deg)`;
+  }
+}
+
+function renderCrashHistory(){
+  const h = $("#crashHistory");
+  if(h) h.innerHTML = casinoHistoryHTML(crashHistory, "Historia lotów pojawi się tutaj.");
+}
+
+function crashStatus(text){
+  const el = $("#crashStatus");
+  if(el) el.textContent = text;
 }
 
 function startCrash(){
   if(crashState === "running") return;
-  const betInput = $("#crashBetInput");
-  crashBet = Math.max(100, Math.floor(numFrom(betInput ? betInput.value : 500)));
+  const input = $("#crashBetInput");
+  crashBet = Math.max(100, casinoInputNum(input ? input.value : 500));
   if(state.coins < crashBet){
     sfxErr();
     toast("Za mało monet na ten zakład!", "bad");
@@ -199,56 +340,70 @@ function startCrash(){
   }
 
   state.coins -= crashBet;
-  state.stats.spent = (state.stats.spent || 0) + crashBet;
-  renderBalance();
+  state.stats.spent = numFrom(state.stats.spent) + crashBet;
   addExp(Math.max(5, Math.floor(crashBet / 2000)), "crash_bet");
+  // Stawka od razu zapisana: zamknięcie karty w trakcie lotu nie cofa zakładu.
+  casinoSave();
+  renderBalance();
+  renderCrashUpgrades();
 
   crashState = "running";
   crashMult = 1.00;
   crashCrashPoint = generateCrashPoint();
   crashStartTime = performance.now();
+  resetCrashChart();
 
   const multEl = $("#crashMultVal");
-  const rocketEl = $("#crashRocket");
   const cashBtn = $("#crashCashoutBtn");
   const startBtn = $("#crashStartBtn");
-  const statusEl = $("#crashStatus");
-
   if(startBtn) startBtn.disabled = true;
-  if(cashBtn){ cashBtn.disabled = false; cashBtn.classList.add("pulse"); }
-  if(statusEl) statusEl.textContent = "Rakieta leci...";
-  if(multEl){ multEl.classList.remove("crashed"); multEl.style.color = "var(--ok)"; }
-
+  if(cashBtn){ cashBtn.disabled = false; cashBtn.classList.add("pulse"); cashBtn.textContent = "Wypłać"; }
+  crashStatus("Rakieta leci…");
+  if(multEl){ multEl.textContent = "1,00×"; multEl.classList.remove("crashed"); multEl.style.color = "var(--ok)"; }
   sfxWhoosh();
 
   function tick(now){
     if(crashState !== "running") return;
     const elapsedSec = (now - crashStartTime) / 1000;
-    // Mnożnik rośnie wykładniczo: 1.00 * e^(0.06 * t)
-    crashMult = +(Math.pow(1.07, elapsedSec * 10)).toFixed(2);
+    // Wolniejsza, czytelniejsza krzywa niż wcześniej: ~2× po 2 s, ~5× po 5 s.
+    crashMult = +(Math.pow(1.07, elapsedSec * 5)).toFixed(2);
+    if(multEl) multEl.textContent = casinoMult(crashMult);
+    if(cashBtn) cashBtn.textContent = `Wypłać 🪙 ${fmtShort(crashPayoutValue(crashBet, crashMult))}`;
+    updateCrashChart(crashMult);
 
-    if(multEl) multEl.textContent = crashMult.toFixed(2) + "×";
-    if(cashBtn) cashBtn.textContent = `Wypłać 🪙 ${fmtShort(crashBet * crashMult)}`;
-    if(rocketEl){
-      const x = Math.min(85, elapsedSec * 14);
-      const y = Math.min(75, Math.pow(elapsedSec, 1.2) * 8);
-      rocketEl.style.transform = `translate(${x}px, -${y}px) rotate(${Math.min(45, elapsedSec * 8)}deg)`;
+    // Auto-wypłata — nie pozwala przegapić dobrego momentu.
+    const autoOn = !!$("#crashAutoOn")?.checked;
+    const autoVal = parseFloat($("#crashAutoInput")?.value) || 0;
+    if(autoOn && autoVal > 1.01 && crashMult >= autoVal && crashMult < crashCrashPoint){
+      cashoutCrash();
+      return;
     }
 
     if(crashMult >= crashCrashPoint){
-      // CRASH!
       crashState = "crashed";
       if(multEl){
-        multEl.textContent = crashCrashPoint.toFixed(2) + "× CRASH!";
+        multEl.textContent = casinoMult(crashCrashPoint) + " CRASH!";
         multEl.classList.add("crashed");
         multEl.style.color = "var(--cov)";
       }
-      if(statusEl) statusEl.textContent = `💥 Rakieta wybuchła przy ${crashCrashPoint.toFixed(2)}×!`;
+      const line = $("#crashLine");
+      if(line) line.classList.add("crashed");
+      const shieldLvl = crashUpLvl("shield");
+      const refund = shieldLvl ? Math.round(crashBet * 0.05 * shieldLvl) : 0;
+      if(refund){
+        state.coins += refund;
+        renderBalance();
+      }
+      crashStatus(`💥 Rakieta wybuchła przy ${casinoMult(crashCrashPoint)}!${refund ? ` · ubezpieczenie +🪙 ${fmt(refund)}` : ""}`);
       if(cashBtn){ cashBtn.disabled = true; cashBtn.classList.remove("pulse"); }
       if(startBtn) startBtn.disabled = false;
+      crashHistory.unshift({ win:false, label: casinoMult(crashCrashPoint) + (refund ? " · +"+fmtShort(refund) : ""), title: refund ? "Crash · ubezpieczenie" : "Crash" });
+      crashHistory = crashHistory.slice(0, 8);
+      renderCrashHistory();
       sfxErr();
-      toast(`💥 <b>CRASH przy ${crashCrashPoint.toFixed(2)}×!</b> Straciłeś 🪙 ${fmt(crashBet)}.`, "bad");
-      save();
+      toast(`💥 <b>CRASH przy ${casinoMult(crashCrashPoint)}!</b> Straciłeś 🪙 ${fmt(crashBet)}.${refund ? `<br>🧯 Ubezpieczenie zwróciło <b>🪙 ${fmt(refund)}</b>.` : ""}`, "bad");
+      casinoSave();
+      renderCrashUpgrades();
       return;
     }
 
@@ -260,33 +415,212 @@ function startCrash(){
 
 function cashoutCrash(){
   if(crashState !== "running") return;
+  if(crashMult >= crashCrashPoint){ return; } // ostatnia klatka mogła już wybuchnąć
   cancelAnimationFrame(crashTimer);
   crashState = "idle";
 
-  const winAmount = Math.round(crashBet * crashMult);
+  const winAmount = crashPayoutValue(crashBet, crashMult);
   state.coins += winAmount;
-  state.stats.earned = (state.stats.earned || 0) + winAmount;
-  renderBalance();
-
+  state.stats.earned = numFrom(state.stats.earned) + winAmount;
+  missionTrack("crash_cashout", 1, { mult: crashMult, win: winAmount });
+  missionTrack("casino_win", winAmount);
   addExp(Math.max(15, Math.floor(winAmount / 1500)), "crash_win");
+  renderBalance();
 
   const cashBtn = $("#crashCashoutBtn");
   const startBtn = $("#crashStartBtn");
-  const statusEl = $("#crashStatus");
   const multEl = $("#crashMultVal");
+  const line = $("#crashLine");
 
   if(cashBtn){ cashBtn.disabled = true; cashBtn.classList.remove("pulse"); }
   if(startBtn) startBtn.disabled = false;
-  if(statusEl) statusEl.textContent = `Wypłacono przy ${crashMult.toFixed(2)}×! (+🪙 ${fmt(winAmount)})`;
   if(multEl) multEl.style.color = "var(--acc)";
+  if(line) line.classList.add("cashed");
+  crashStatus(`Wypłacono przy ${casinoMult(crashMult)}! (+🪙 ${fmt(winAmount)})`);
+  crashHistory.unshift({ win:true, label: casinoMult(crashMult), title:"Wypłata" });
+  crashHistory = crashHistory.slice(0, 8);
+  renderCrashHistory();
 
   sfxWin("covert");
   confetti(["#38e08a", "#ffd700", "#ffffff"]);
-  toast(`🚀 <b>WYPŁACONO!</b> Zgarnąłeś 🪙 ${fmt(winAmount)} (${crashMult.toFixed(2)}×)!`, "good");
-  save();
+  toast(`🚀 <b>WYPŁACONO!</b> Zgarnąłeś 🪙 ${fmt(winAmount)} (${casinoMult(crashMult)})!`, "good");
+  casinoSave();
   renderCasinoProfile();
 }
 
+function renderCrashUpgrades(){
+  const grid = $("#crashUps");
+  if(!grid) return;
+  grid.innerHTML = CRASH_UPGRADES.map(u=>{
+    const lvl = crashUpLvl(u.id);
+    const maxed = lvl >= u.max;
+    const price = maxed ? 0 : crashUpCost(u.id, lvl);
+    const can = !maxed && state.coins >= price;
+    const pips = Array.from({length:u.max},(_,k)=>`<i class="${k<lvl?"on":""}"></i>`).join("");
+    const eff = maxed
+      ? `<span class="cu-cur">${u.fmt(lvl)}</span>`
+      : `<span class="cu-cur">${u.fmt(lvl)}</span><span class="cu-arrow">→</span><span class="cu-next">${u.fmt(lvl+1)}</span>`;
+    return `<div class="crash-up${maxed?" maxed":""}">
+      <div class="cu-head"><span class="cu-ico">${u.icon}</span><span class="cu-name">${u.name}</span></div>
+      <div class="cu-lvl">Poziom ${lvl} / ${u.max}</div>
+      <div class="cu-desc">${u.desc}</div>
+      <div class="cu-pips">${pips}</div>
+      <div class="cu-effect">${eff}</div>
+      <div class="cu-buy">${maxed
+        ? '<span class="cu-max">✔ MAX</span>'
+        : `<span class="cu-price${can?" ok":""}" title="🪙 ${fmt(price)}">🪙 ${fmtShort(price)}</span><button class="mini-btn cu-btn${can?" can":""}" data-crash-up="${u.id}">Ulepsz</button>`}</div>
+    </div>`;
+  }).join("");
+}
+
+function buyCrashUpgrade(id){
+  const u = CRASH_UP_BY_ID[id];
+  if(!u) return;
+  if(crashState === "running"){
+    sfxErr();
+    toast("Najpierw zakończ lot — ulepszenia zadziałają od następnej gry.","bad");
+    return;
+  }
+  const lvl = crashUpLvl(id);
+  if(lvl >= u.max){ sfxErr(); return; }
+  const price = crashUpCost(id, lvl);
+  if(state.coins < price){
+    sfxErr();
+    toast("Za mało monet na to ulepszenie!","bad");
+    return;
+  }
+  state.coins -= price;
+  state.crashUp = state.crashUp || {engine:0, stability:0, shield:0};
+  state.crashUp[id] = lvl + 1;
+  if(typeof missionTrack === "function") missionTrack("upgrade", 1);
+  sfxCoin();
+  renderBalance();
+  renderCrashUpgrades();
+  toast(`⚙️ <b>${u.name}</b> → poziom ${lvl+1} &nbsp;·&nbsp; ${u.fmt(lvl+1)}`,"good");
+  casinoSave();
+}
+
+/* =======================================================================
+   DICE — KOŚCI (0–100)
+   ======================================================================= */
+let diceMode = "over";
+let diceTarget = 50;
+let diceBusy = false;
+let diceHistory = [];
+const DICE_REACH = 50;          // maksymalny dystans od celu, który jeszcze płaci
+const DICE_MULT_MAX = 2.60;     // mnożnik za trafienie obok celu (dystans 1)
+const DICE_MULT_MIN = 1.05;     // mnożnik na skraju zasięgu (dystans 50)
+const DICE_MULT_STEP = 0.031;
+
+function diceWinCount(){
+  if(diceMode === "over")
+    return Math.max(0, Math.min(100, diceTarget + DICE_REACH) - diceTarget);
+  return Math.max(0, diceTarget - Math.max(1, diceTarget - DICE_REACH));
+}
+function diceChance(){ return diceWinCount() / 100; }
+function diceDistanceMult(distance){
+  return Math.max(DICE_MULT_MIN, +(DICE_MULT_MAX - distance*DICE_MULT_STEP).toFixed(2));
+}
+function renderDiceMeta(){
+  const targetEl = $("#diceTargetVal");
+  if(targetEl) targetEl.textContent = diceTarget;
+  const chanceEl = $("#diceChance");
+  if(chanceEl) chanceEl.textContent = casinoDec(diceChance() * 100, 1) + "%";
+  const multEl = $("#diceMult");
+  if(multEl) multEl.textContent = casinoDec(DICE_MULT_MIN, 2) + "× – " + casinoMult(DICE_MULT_MAX);
+  const exactEl = $("#diceExact");
+  if(exactEl) exactEl.innerHTML = `🎯 Dokładnie <b>${diceTarget}</b> (1%) = <b>4×</b>`;
+  const modeOver = $("#diceModeOver"), modeUnder = $("#diceModeUnder");
+  modeOver?.classList.toggle("active", diceMode === "over");
+  modeUnder?.classList.toggle("active", diceMode === "under");
+}
+function renderDiceHistory(){
+  const h = $("#diceHistory");
+  if(h) h.innerHTML = casinoHistoryHTML(diceHistory, "Historia rzutów pojawi się tutaj.");
+}
+function runDice(){
+  if(diceBusy) return;
+  const betInput = $("#diceBet");
+  const bet = Math.max(100, casinoInputNum(betInput ? betInput.value : 500));
+  if(state.coins < bet){
+    sfxErr();
+    toast("Za mało monet na ten rzut!", "bad");
+    return;
+  }
+  diceBusy = true;
+  const modeAtRoll = diceMode;
+  const targetAtRoll = diceTarget;
+  const roll = Math.floor(Math.random() * 100) + 1;   // 1–100, więc trafienie w cel jest możliwe
+  const exact = roll === targetAtRoll;
+  const distance = Math.abs(roll - targetAtRoll);
+  const onSide = modeAtRoll === "over" ? roll > targetAtRoll : roll < targetAtRoll;
+  const won = exact || (onSide && distance <= DICE_REACH);
+  const mult = exact ? 4 : (won ? diceDistanceMult(distance) : 0);
+  const payout = won ? Math.round(bet * mult) : 0;
+
+  state.coins -= bet;
+  state.stats.spent = numFrom(state.stats.spent) + bet;
+  casinoSave();
+  renderBalance();
+
+  const cube = $("#diceCube"), rollEl = $("#diceRoll");
+  const result = $("#diceResult");
+  const rollBtn = $("#diceRollBtn");
+  if(rollBtn) rollBtn.disabled = true;
+  if(cube) cube.classList.add("rolling");
+  if(result){ result.className = "casino-result rolling"; result.innerHTML = "🎲 Rzucam…"; }
+  if(rollEl) rollEl.textContent = "…";
+  sfxWhoosh();
+
+  let ticks = 0;
+  const anim = setInterval(()=>{
+    ticks++;
+    if(rollEl) rollEl.textContent = String(Math.floor(Math.random() * 100) + 1);
+    if(ticks < 8) return;
+    clearInterval(anim);
+    if(cube) cube.classList.remove("rolling");
+    if(rollEl) rollEl.textContent = String(roll);
+
+    if(won){
+      state.coins += payout;
+      state.stats.earned = numFrom(state.stats.earned) + payout;
+      addExp(Math.max(10, Math.floor(bet / 3000)), "dice_win");
+      sfxWin(exact ? "special" : "covert");
+      confetti(exact ? ["#ffd700", "#fff3b0", "#38e08a", "#ffffff"] : ["#38e08a", "#ffd700", "#ffffff"]);
+      if(result){
+        result.className = "casino-result win" + (exact ? " exact" : "");
+        result.innerHTML = exact
+          ? `🎯 <b>${roll}</b> — dokładne trafienie w <b>${targetAtRoll}</b>! Mnożnik <b>4×</b> → wygrywasz <b>🪙 ${fmt(payout)}</b>.`
+          : `✅ <b>${roll}</b> — ${modeAtRoll === "over" ? "powyżej" : "poniżej"} ${targetAtRoll}, dystans <b>${distance}</b>. Wygrywasz <b>🪙 ${fmt(payout)}</b> (${casinoMult(mult)}).`;
+      }
+      toast(exact
+        ? `🎯 <b>DOKŁADNE TRAFIENIE!</b> ${roll} · +🪙 ${fmt(payout)} (4×)`
+        : `🎲 <b>WYGRANA!</b> ${roll} · +🪙 ${fmt(payout)} · ${casinoMult(mult)}`, "good");
+    } else {
+      addExp(Math.max(5, Math.floor(bet / 5000)), "dice_loss");
+      sfxErr();
+      if(result){
+        result.className = "casino-result loss";
+        result.innerHTML = `💀 <b>${roll}</b> — ${onSide ? "za daleko od" : "po złej stronie"} <b>${targetAtRoll}</b>${onSide ? ` (dystans ${distance})` : ""}. Tracisz <b>🪙 ${fmt(bet)}</b>.`;
+      }
+      toast(`🎲 <b>PRZEGRANA.</b> ${roll} · −🪙 ${fmt(bet)}`, "bad");
+    }
+    const histTitle = exact ? "Dokładnie! 4×" : won ? "Dystans "+distance+" · "+casinoMult(mult) : "Przegrana · "+(onSide ? "za daleko" : "zła strona");
+    if(won){ missionTrack("dice_win", 1, { payout, mult }); missionTrack("casino_win", payout); }
+    diceHistory.unshift({ win:won, label: String(roll), title: histTitle });
+    diceHistory = diceHistory.slice(0, 8);
+    renderDiceHistory();
+    diceBusy = false;
+    if(rollBtn) rollBtn.disabled = false;
+    renderBalance();
+    renderCasinoProfile();
+    casinoSave();
+  }, 80);
+}
+
+/* =======================================================================
+   PROFIL RANGI W KASYnie
+   ======================================================================= */
 function renderCasinoProfile(){
   renderRankBadge();
   const curRank = getPlayerRank(state.exp || 0);
@@ -300,31 +634,56 @@ function renderCasinoProfile(){
       <div class="cr-badge">${curRank.icon}</div>
       <div class="cr-details">
         <div class="cr-name">${curRank.name} <span class="cr-lvl">Poziom ${curRank.id}</span></div>
-        <div class="cr-exp-txt">EXP: <b>${fmt(exp)}</b> ${nxt ? `/ ${fmt(nxt.minExp)}` : '(Maksymalny stopień)'}</div>
+        <div class="cr-exp-txt">EXP: <b>${fmt(exp)}</b> ${nxt ? `/ ${fmt(nxt.minExp)}` : "(Maksymalny stopień)"}</div>
         <div class="cr-bar"><i style="width:${pct}%"></i></div>
-        <small class="muted">${nxt ? `Do następnej rangi: <b>${fmt(nxt.minExp - exp)} EXP</b>. Za awans: darmowa skrzynia <b>${CASES.find(c=>c.id===nxt.rewardBox)?.name || nxt.rewardBox}</b>!` : 'Posiadasz najwyższą możliwą rangę CS2!'}</small>
-      </div>
-    `;
+        <small class="muted">${nxt ? `Do następnej rangi: <b>${fmt(nxt.minExp - exp)} EXP</b>. Za awans: darmowa skrzynia <b>${CASES.find(c=>c.id===nxt.rewardBox)?.name || nxt.rewardBox}</b>!` : "Posiadasz najwyższą możliwą rangę CS2!"}</small>
+      </div>`;
   }
+  renderDiceMeta();
+  renderCrashUpgrades();
 }
 
+/* =======================================================================
+   ZDARZENIA KASYNA
+   ======================================================================= */
+let casinoEventsBound = false;
 function initCasinoEvents(){
+  if(casinoEventsBound) return;
+  casinoEventsBound = true;
+
+  $("#rankPill")?.addEventListener("click", ()=>switchView("casino"));
+
   $("#cfItems")?.addEventListener("click", e => {
+    if(e.target.closest("[data-go-shop]")){ switchView("shop"); return; }
     const card = e.target.closest("[data-uid]");
     if(!card || cfBusy) return;
     const uid = card.dataset.uid;
     if(cfSelectedUids.has(uid)){
       cfSelectedUids.delete(uid);
-      card.classList.remove("selected");
     } else {
       if(cfSelectedUids.size >= 10){
         toast("Maksymalnie możesz obstawić 10 przedmiotów na raz!", "bad");
         return;
       }
       cfSelectedUids.add(uid);
-      card.classList.add("selected");
     }
+    card.classList.toggle("selected", cfSelectedUids.has(uid));
+    const check = card.querySelector(".cf-check");
+    if(check) check.textContent = cfSelectedUids.has(uid) ? "✓" : "";
     updateCoinflipSummary();
+  });
+
+  $("#cfSelectBest")?.addEventListener("click", ()=>{
+    if(cfBusy) return;
+    const top = (state.inv || []).slice().sort((a,b)=>b.value - a.value).slice(0, 10);
+    if(!top.length){ toast("Brak przedmiotów w ekwipunku.","bad"); return; }
+    cfSelectedUids = new Set(top.map(i=>i.uid));
+    renderCoinflip();
+  });
+  $("#cfClear")?.addEventListener("click", ()=>{
+    if(cfBusy) return;
+    cfSelectedUids.clear();
+    renderCoinflip();
   });
 
   $("#cfPickCT")?.addEventListener("click", () => runCoinflip("ct"));
@@ -332,17 +691,49 @@ function initCasinoEvents(){
 
   $("#crashStartBtn")?.addEventListener("click", startCrash);
   $("#crashCashoutBtn")?.addEventListener("click", cashoutCrash);
-
-  $("#crash2x")?.addEventListener("click", () => {
+  $("#crashHalf")?.addEventListener("click", ()=>{
     const inp = $("#crashBetInput");
-    if(inp) inp.value = Math.max(100, Math.floor(numFrom(inp.value) * 2));
+    if(inp) inp.value = Math.max(100, Math.floor(casinoInputNum(inp.value) / 2));
   });
-  $("#crashHalf")?.addEventListener("click", () => {
+  $("#crash2x")?.addEventListener("click", ()=>{
     const inp = $("#crashBetInput");
-    if(inp) inp.value = Math.max(100, Math.floor(numFrom(inp.value) / 2));
+    if(inp) inp.value = Math.max(100, Math.floor(casinoInputNum(inp.value) * 2));
   });
-  $("#crashMax")?.addEventListener("click", () => {
+  $("#crashMax")?.addEventListener("click", ()=>{
     const inp = $("#crashBetInput");
     if(inp) inp.value = Math.max(100, Math.floor(state.coins));
   });
+  $("#view-casino")?.addEventListener("click", e=>{
+    const q = e.target.closest("[data-crashbet]");
+    if(!q) return;
+    const inp = $("#crashBetInput");
+    if(inp) inp.value = q.dataset.crashbet;
+  });
+  $("#crashUps")?.addEventListener("click", e=>{
+    const b = e.target.closest("[data-crash-up]");
+    if(b) buyCrashUpgrade(b.dataset.crashUp);
+  });
+
+  $("#diceTarget")?.addEventListener("input", e=>{
+    diceTarget = casinoClamp(casinoInputNum(e.target.value), 1, 100);
+    e.target.value = diceTarget;
+    renderDiceMeta();
+  });
+  $("#diceModeOver")?.addEventListener("click", ()=>{ diceMode = "over"; renderDiceMeta(); });
+  $("#diceModeUnder")?.addEventListener("click", ()=>{ diceMode = "under"; renderDiceMeta(); });
+  $("#diceRollBtn")?.addEventListener("click", runDice);
+  $("#diceHalf")?.addEventListener("click", ()=>{
+    const inp = $("#diceBet");
+    if(inp) inp.value = Math.max(100, Math.floor(casinoInputNum(inp.value) / 2));
+  });
+  $("#dice2x")?.addEventListener("click", ()=>{
+    const inp = $("#diceBet");
+    if(inp) inp.value = Math.max(100, Math.floor(casinoInputNum(inp.value) * 2));
+  });
+  $("#diceMax")?.addEventListener("click", ()=>{
+    const inp = $("#diceBet");
+    if(inp) inp.value = Math.max(100, Math.floor(state.coins));
+  });
 }
+
+initCasinoEvents();

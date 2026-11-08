@@ -84,7 +84,11 @@ function albumLoad(d){
 
 function renderAlbumBadge(){
   const b = $("#albumCount");
-  if(b) b.textContent = String(ALBUM_CASES.filter(c=>albumDone(c.id)).length);
+  if(b){
+    const n = ALBUM_CASES.filter(c=>albumDone(c.id)).length;
+    b.textContent = n ? String(n) : "";
+    b.style.display = n ? "" : "none";
+  }
 }
 
 function albumCardHTML(p, c, t){
@@ -187,7 +191,7 @@ const MISSION_KINDS = {
   open:     {g:"easy", icon:"📦", min:12, max:26, mult:1,   on:"open",
              txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}`},
   open10:   {g:"easy", icon:"🔟", min:1,  max:3,  mult:1.3, on:"open10",
-             txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem ×10`},
+             txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem (×10+)`},
   battle:   {g:"easy", icon:"⚔️", min:3,  max:7,  mult:1,   on:"battle",
              txt:n=>`Stocz <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
   win:      {g:"easy", icon:"🏆", min:2,  max:4,  mult:1.5, on:"win",
@@ -209,7 +213,7 @@ const MISSION_KINDS = {
   opencase: {g:"easy", icon:"🗃️", mult:1.3, on:m=>["opencase:"+(m.p && m.p.case)],
              /* cel dobierany do ceny skrzynki, żeby misja nie była „przepłacona” */
              mk:()=>{
-               const aff = CASES.filter(c=>c.price <= Math.max(1000, state.coins*0.06));
+               const aff = CASES.filter(c=>!c.troll && !c.botOnly && c.price <= Math.max(1000, state.coins*0.06));
                const c = pick(aff.length ? aff : [CASES[0]]);
                const target = Math.min(30000000, Math.max(2000, state.coins*0.06));
                return {goal:Math.max(3, Math.min(25, Math.round(target/Math.max(1,c.price)))), p:{case:c.id}};
@@ -220,6 +224,10 @@ const MISSION_KINDS = {
   cloveropen:{g:"easy", icon:"🍀", min:5, max:12, mult:1.4, on:"cloveropen",
              avail:()=>(state.stats.opened||0) >= CLOVER_MISSION_MIN,
              txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}, gdy działa <b>🍀 koniczyna</b>`},
+  dice:     {g:"easy", icon:"🎲", min:4,  max:8,  mult:1.2, on:"dice_roll",
+             txt:n=>`Rzuć kośćmi w kasynie <b>${n}</b> ${plural(n,"raz","razy","razy")}`},
+  casinoearn:{g:"easy", icon:"🪙", min:()=>mMoney(.015,4000,10000000), max:()=>mMoney(.03,8000,18000000), mult:1.3, on:"casino_win",
+             txt:n=>`Wygraj łącznie <b>🪙 ${fmt(n)}</b> w kasynie (Crash / Coinflip / Kości)`},
 
   /* ---------------- grupa „hard” (jedno wyzwanie dziennie) ---------------- */
   knife:    {g:"hard", icon:"★",  min:1, max:1, mult:2.5, on:"knife",
@@ -236,6 +244,27 @@ const MISSION_KINDS = {
   battleearn:{g:"hard", icon:"🏦", min:()=>mMoney(.02,4000,12000000), max:()=>mMoney(.035,6000,18000000), mult:2, on:"battleearn",
              txt:n=>`Zgarnij <b>🪙 ${fmt(n)}</b> z wygranych bitew`},
 
+  /* 💀 BARDZO TRUDNE WYZWANIA (wysokie ryzyko, elitarna nagroda) */
+  boss:     {g:"hard", vhard:true, icon:"👹", min:1, max:1, mult:3.8, on:"boss_win",
+             txt:()=>`Pokonaj <b>Bossa w Arenie Rajdowej</b> (Golem, Smok lub Żniwiarz)`},
+  crashhigh:{g:"hard", vhard:true, icon:"🚀", min:1, max:2, mult:3.2, on:"crash_cashout",
+             filter:(m,d)=>(d.mult||0)>=3.5,
+             txt:n=>`Wypłać w grze <b>Crash</b> przy mnożniku co najmniej <b>3,50×</b> (${n}×)`},
+  cfstreak: {g:"hard", vhard:true, icon:"🪙", min:1, max:1, mult:3.0, on:"coinflip_win",
+             filter:(m,d)=>(d.streak||0)>=2,
+             txt:()=>`Wygraj w Coinflipie <b>2 razy z rzędu</b> bez żadnej przegranej`},
+  relic:    {g:"hard", vhard:true, icon:"✦", min:1, max:1, mult:4.5, on:"relic",
+             txt:()=>`Zdobądź legendarny <b>✦ Relikt</b> (ze skrzynki lub jako łup z Bossa)`},
+  battlestreak:{g:"hard", vhard:true, icon:"⚔️", min:1, max:1, mult:3.2, on:"battlestreak",
+             filter:(m,d)=>(d.streak||0)>=3,
+             txt:()=>`Osiągnij passę <b>3 wygranych bitew pod rząd</b> w skrzynkach`},
+  highbattle:{g:"hard", vhard:true, icon:"🩸", min:1, max:2, mult:2.8, on:"highbattle",
+             txt:n=>`Wygraj <b>${n}</b> ${plural(n,"elitarną bitwę","elitarne bitwy","elitarnych bitew")} o skrzynkę wartą min. <b>🪙 50 000</b>`},
+  coverthunt:{g:"hard", vhard:true, icon:"🔥", min:3, max:4, mult:3.2, on:"covert",
+             txt:n=>`Upoluj <b>${n}</b> ${plural(n,"przedmioty","przedmioty","przedmiotów")} z tieru <b>Covert lub lepszego</b>`},
+  fxbigdrop:{g:"hard", vhard:true, icon:"💎", min:1, max:1, mult:3.2, on:"fxbig",
+             txt:()=>`Upoluj broń z prestiżowym efektem <b>💎 Diamentowym, 🌈 Pryzmatycznym lub 🌌 Kosmicznym</b>`},
+
   /* ---------------- grupa „week" (📅 misje tygodniowe) ----------------
      min/max to wartości dla poziomu ⭐ ŁATWA — poziom trudności mnoży cel
      (goalK) i nagrodę (rewK) w mkWeekMission(). Zwykła pula dzienna ich nie
@@ -243,7 +272,7 @@ const MISSION_KINDS = {
   wopen:      {g:"week", icon:"📦", min:60, max:110, mult:1,  on:"open",
                txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}`},
   wopen10:    {g:"week", icon:"🔟", min:4,  max:9,   mult:1.4, on:"open10",
-               txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem ×10`},
+               txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem (×10+)`},
   wspend:     {g:"week", icon:"🧾", min:()=>mMoney(.02,20000,8000000), max:()=>mMoney(.035,35000,14000000), mult:1.2, on:"spend",
                txt:n=>`Wydaj <b>🪙 ${fmt(n)}</b> na skrzynki i bitwy`},
   wsell:      {g:"week", icon:"💰", min:50, max:90, mult:1, on:"sell",
@@ -276,9 +305,27 @@ const MISSION_KINDS = {
                txt:n=>`Otwórz <b>${n}</b> ${plural(n,"skrzynkę","skrzynki","skrzynek")}, gdy działa <b>🍀 koniczyna</b>`},
   wupgrade:   {g:"week", icon:"🚀", min:1, max:3, mult:1.3, on:"upgrade",
                avail:()=>UPGRADES.some(u=>upLvl(u.id) < u.max),
-               txt:n=>`Kup <b>${n}</b> ${plural(n,"ulepszenie","ulepszenia","ulepszeń")} w zakładce 🚀`}
+               txt:n=>`Kup <b>${n}</b> ${plural(n,"ulepszenie","ulepszenia","ulepszeń")} w zakładce 🚀`},
+
+  /* --- Nowe epickie misje tygodniowe --- */
+  wboss:      {g:"week", icon:"👹", min:2, max:3, mult:3.8, on:"boss_win",
+               txt:n=>`Pokonaj <b>${n}</b> ${plural(n,"bossa","bossów","bossów")} w Arenie Rajdowej 👹`},
+  wcrashhigh: {g:"week", icon:"🚀", min:2, max:4, mult:3.2, on:"crash_cashout",
+               filter:(m,d)=>(d.mult||0)>=3.0,
+               txt:n=>`Wypłać w Crashu przy mnożniku min. <b>3,00×</b> (${n} ${plural(n,"raz","razy","razy")})`},
+  wcfwin:     {g:"week", icon:"🪙", min:3, max:6, mult:2.6, on:"coinflip_win",
+               txt:n=>`Wygraj <b>${n}</b> ${plural(n,"pojedynek","pojedynki","pojedynków")} w rzucie monetą (Coinflip)`},
+  wrelic:     {g:"week", icon:"✦", min:1, max:1, mult:5.0, on:"relic",
+               txt:n=>`Zdobądź <b>${n}</b> unikalny ${plural(n,"✦ Relikt","✦ Relikty","✦ Reliktów")} (ze skrzynki lub łup z Bossa)`},
+  whighbattle:{g:"week", icon:"🩸", min:3, max:7, mult:3.0, on:"highbattle",
+               txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")} o skrzynki o wartości min. <b>🪙 50 000</b>`},
+  wkohwin:    {g:"week", icon:"🎰", min:2, max:4, mult:2.6, on:"koh_win",
+               txt:n=>`Wygraj <b>${n}</b> ${plural(n,"raz","razy","razy")} na maszynie Królowej Góry 🎰`},
+  wcasinoearn:{g:"week", icon:"🏦", min:()=>mMoney(.02,30000,10000000), max:()=>mMoney(.04,60000,20000000), mult:2.2, on:"casino_win",
+               txt:n=>`Zgarnij łącznie <b>🪙 ${fmt(n)}</b> z wygranych w kasynie`},
 };
-const MISSION_EASY_N = 3;      // ile spokojnych misji dziennie
+const MISSION_EASY_N = 3;
+const MISSION_HARD_N = 2;
 const REROLL_MAX = 2;          // ile razy dziennie można wymienić misję
 
 
@@ -541,6 +588,223 @@ function mUntilMidnight(){
   const ms = mid - now, h = Math.floor(ms/3600000), m = Math.floor(ms%3600000/60000);
   return h>0 ? h+" godz. "+m+" min" : m+" min";
 }
+function mDayKeyOffset(delta){
+  const d = new Date();
+  d.setDate(d.getDate() + (delta|0));
+  return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+/* =======================================================================
+   14c-2. SKRZYNKA DNIA + PASSA LOGOWANIA
+   ======================================================================= */
+const DAILY_CASE_OFF = 0.6;   // 40% taniej
+const DAILY_LOGIN_DAYS = 7;
+
+function dailyCasePool(){
+  return CASES.filter(c=>!c.botOnly && !c.noItems && !c.troll && !c.secret && !c.mega && !c.elite && !c.ultra && c.price > 0);
+}
+function dailyCaseDef(){
+  const dc = state.dailyCase;
+  return (dc && dailyCasePool().find(c=>c.id===dc.id)) || null;
+}
+function dailyCasePrice(c){
+  return Math.max(1, Math.round(c.price * DAILY_CASE_OFF));
+}
+function rollDailyCase(){
+  const pool = dailyCasePool();
+  if(!pool.length){ state.dailyCase = null; return null; }
+  const budget = Math.max(2000, numFrom(state.coins) * 1.5);
+  let list = pool.filter(c=>c.price <= budget);
+  if(!list.length) list = pool.slice().sort((a,b)=>a.price-b.price).slice(0, Math.min(3, pool.length));
+  const c = list[hash("dailycase|"+mDayKey()) % list.length];
+  state.dailyCase = {date:mDayKey(), id:c.id, bought:false};
+  markDirty();
+  return state.dailyCase;
+}
+function dailyHubEnsure(){
+  let changed = false;
+  if(!state.dailyCase || state.dailyCase.date !== mDayKey() || !dailyCaseDef()){
+    rollDailyCase();
+    changed = true;
+  }
+  if(!state.login || typeof state.login !== "object" || Array.isArray(state.login)){
+    state.login = {last:"", streak:0};
+    changed = true;
+  }
+  return changed;
+}
+function dailyHubLoad(d){
+  const dc = d && d.dailyCase;
+  if(dc && dc.date === mDayKey() && dailyCasePool().some(c=>c.id===dc.id)){
+    state.dailyCase = {date:dc.date, id:dc.id, bought:dc.bought === true};
+  } else {
+    rollDailyCase();
+  }
+  const l = d && d.login;
+  if(l && typeof l === "object" && !Array.isArray(l)){
+    state.login = {
+      last: typeof l.last === "string" ? l.last : "",
+      streak: Math.max(0, Math.min(DAILY_LOGIN_DAYS, numFrom(l.streak)))
+    };
+  } else {
+    state.login = {last:"", streak:0};
+  }
+}
+
+function loginCoinReward(pct, min, max){
+  return Math.max(min, Math.min(max, Math.round(numFrom(state.coins) * pct / 1000) * 1000));
+}
+function loginReward(day){
+  switch(day){
+    case 1: return {t:"coins", amount:loginCoinReward(0.015, 2000, 100000)};
+    case 2: return {t:"coins", amount:loginCoinReward(0.02, 3000, 150000)};
+    case 3: return {t:"clover", ms:5*60000};
+    case 4: return {t:"coins", amount:loginCoinReward(0.03, 5000, 250000)};
+    case 5: return {t:"coins", amount:loginCoinReward(0.04, 8000, 400000)};
+    case 6: return {t:"clover", ms:15*60000};
+    case 7: {
+      const c = dailyCaseDef();
+      return c ? {t:"case", caseId:c.id} : {t:"coins", amount:loginCoinReward(0.05, 10000, 500000)};
+    }
+    default: return {t:"coins", amount:2000};
+  }
+}
+function loginRewardText(r){
+  if(!r) return "";
+  if(r.t === "coins") return "🪙 "+fmt(r.amount);
+  if(r.t === "clover") return "🍀 "+Math.round(r.ms/60000)+" min";
+  if(r.t === "case"){
+    const c = CASES.find(x=>x.id===r.caseId);
+    return "🎁 "+(c ? c.name : "skrzynka");
+  }
+  return "";
+}
+function loginInfo(){
+  const today = mDayKey();
+  const st = (state.login && typeof state.login === "object") ? state.login : {last:"", streak:0};
+  const last = typeof st.last === "string" ? st.last : "";
+  const claimedToday = last === today;
+  const yesterday = mDayKeyOffset(-1);
+  const continues = last === yesterday;
+  const streak = Math.max(0, Math.min(DAILY_LOGIN_DAYS, numFrom(st.streak)));
+  let next = 1;
+  if(claimedToday) next = Math.max(1, streak);
+  else if(continues) next = (streak % DAILY_LOGIN_DAYS) + 1;
+  const doneCount = claimedToday ? streak : (continues && streak < DAILY_LOGIN_DAYS ? streak : 0);
+  return {today, last, claimedToday, continues, streak, next, doneCount, can:!claimedToday};
+}
+
+function renderDailyHub(){
+  const hub = $("#dailyHub");
+  if(!hub) return;
+  dailyHubEnsure();
+  const c = dailyCaseDef();
+  if(!c) return;
+  const price = dailyCasePrice(c);
+  const bought = !!(state.dailyCase && state.dailyCase.bought);
+  const stock = caseStock(c.id);
+  const can = state.coins >= price;
+  const info = loginInfo();
+  const days = [];
+  for(let day=1; day<=DAILY_LOGIN_DAYS; day++){
+    const r = loginReward(day);
+    const done = day <= info.doneCount;
+    const active = !info.claimedToday && day === info.next;
+    days.push(`<div class="dh-day${done?" done":""}${active?" active":""}" title="Dzień ${day}: ${loginRewardText(r)}"><span class="dhd-n">${day}</span><span class="dhd-r">${r.t==="coins"?"🪙":r.t==="clover"?"🍀":"🎁"}</span></div>`);
+  }
+  const action = bought
+    ? `<button class="btn" disabled>Kupiona dzisiaj</button>${stock ? `<button class="btn gold" data-dailyopen="${c.id}">Otwórz teraz</button>` : ""}`
+    : `<button class="btn gold" data-dailybuy="${c.id}" ${can?"":"disabled"}>Kup za 🪙 ${fmt(price)}</button>`;
+  const note = bought
+    ? (stock ? "Skrzynka czeka w zapasie — możesz ją otworzyć od razu." : "Otworzona. Wróć jutro po nową ofertę.")
+    : (can ? "Po zakupie trafi do zapasu w zakładce Skrzynki." : `Brakuje 🪙 ${fmt(price - state.coins)}.`);
+  const streakNow = info.claimedToday ? info.streak : (info.continues && info.streak < DAILY_LOGIN_DAYS ? info.streak : 0);
+  const loginBtn = `<button class="btn ${info.can?"primary":""}" data-loginclaim ${info.can?"":"disabled"}>${info.claimedToday?"Odebrano dzisiaj":"Odbierz dzień "+info.next}</button>`;
+  hub.innerHTML = `<div class="daily-hub-grid">
+    <div class="dh-card dh-deal" style="--cc:${c.color}">
+      <div class="dh-head"><span class="dh-ico">🎁</span><div><b>Skrzynka dnia</b><small>jedna oferta dziennie · rotacja o północy</small></div><span class="dh-off">-40%</span></div>
+      <div class="dh-case"><div class="dh-art">${c.icon}</div><div class="dh-case-info"><b>${esc(c.name)}</b><span>wartość rynkowa 🪙 ${fmt(c.price)}</span></div></div>
+      <div class="dh-price"><s>🪙 ${fmt(c.price)}</s><b>🪙 ${fmt(price)}</b></div>
+      <div class="dh-actions">${action}</div>
+      <div class="dh-note">${note}</div>
+    </div>
+    <div class="dh-card dh-login">
+      <div class="dh-head"><span class="dh-ico">📅</span><div><b>Logowanie</b><small>passa: ${streakNow} / ${DAILY_LOGIN_DAYS}</small></div><span class="dh-streak">${info.claimedToday?"✓ dzisiaj":"🔥 "+info.next+"/"+DAILY_LOGIN_DAYS}</span></div>
+      <div class="dh-days">${days.join("")}</div>
+      <div class="dh-actions">${loginBtn}</div>
+      <div class="dh-note">${info.claimedToday?"Wróć jutro po kolejną nagrodę.":info.continues?"Kontynuujesz passę — nie przerywaj jej!":"Nowa passa startuje od dnia 1."}</div>
+    </div>
+  </div>`;
+}
+
+function buyDailyCase(caseId){
+  const c = dailyCaseDef();
+  if(!c || (caseId && c.id !== caseId)) return;
+  if(state.dailyCase && state.dailyCase.bought){ sfxErr(); toast("Skrzynka dnia została już kupiona — wróć jutro","bad"); return; }
+  const price = dailyCasePrice(c);
+  if(state.coins < price){ sfxErr(); toast("Za mało monet na Skrzynkę dnia","bad"); return; }
+  state.coins -= price;
+  state.stats.spent += price;
+  state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+  state.caseStock[c.id] = caseStock(c.id) + 1;
+  state.dailyCase.bought = true;
+  sfxCoin();
+  toast("🎁 Kupiono <b>"+esc(c.name)+"</b> — Skrzynka dnia czeka w zapasie w zakładce Skrzynki.","good");
+  markDirty(); save();
+  renderBalance(); renderShop(); renderBots(); renderDailyHub();
+}
+function openDailyCase(caseId){
+  const c = CASES.find(x=>x.id===caseId) || dailyCaseDef();
+  if(!c || caseStock(c.id) <= 0){ sfxErr(); return; }
+  openCase(c.id, null, true);
+  setTimeout(renderDailyHub, 0);
+}
+function claimLogin(){
+  const info = loginInfo();
+  if(!info.can){ sfxErr(); return; }
+  const day = info.next;
+  const reward = loginReward(day);
+  let msg = "";
+  if(reward.t === "coins"){
+    state.coins += reward.amount;
+    msg = "🪙 "+fmt(reward.amount);
+    sfxCoin(); renderBalance(); renderShop();
+  } else if(reward.t === "clover"){
+    state.cloverUntil = Math.max(Date.now(), state.cloverUntil||0) + reward.ms;
+    msg = "🍀 "+Math.round(reward.ms/60000)+" min";
+    sfxClover(); updateClover();
+  } else if(reward.t === "case"){
+    const c = CASES.find(x=>x.id===reward.caseId);
+    if(c){
+      state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+      state.caseStock[c.id] = caseStock(c.id) + 1;
+      msg = "🎁 "+esc(c.name)+" (w zapasie)";
+      sfxCoin(); renderShop(); renderBots();
+    } else {
+      const coins = loginCoinReward(0.05, 10000, 500000);
+      state.coins += coins;
+      msg = "🪙 "+fmt(coins);
+      sfxCoin(); renderBalance(); renderShop();
+    }
+  }
+  state.login = {last:info.today, streak:day};
+  markDirty(); save();
+  confetti(["#45d06a","#ffd166","#8ee7ff"]);
+  toast("📅 <b>Dzień "+day+"</b> odebrany: "+msg,"good");
+  renderDailyHub();
+  renderDailyBadge();
+}
+const dailyHubEl = $("#dailyHub");
+if(dailyHubEl){
+  dailyHubEl.addEventListener("click", e=>{
+    const buy = e.target.closest("[data-dailybuy]");
+    if(buy){ buyDailyCase(buy.dataset.dailybuy); return; }
+    const open = e.target.closest("[data-dailyopen]");
+    if(open){ openDailyCase(open.dataset.dailyopen); return; }
+    const login = e.target.closest("[data-loginclaim]");
+    if(login){ claimLogin(); }
+  });
+}
 /* kwota „skalowana” do stanu gracza (z podłogą i sufitem), zaokrąglona do 1000 */
 function mMoney(pct, lo, hi){
   const v = Math.min(hi, Math.max(lo, state.coins * pct));
@@ -585,9 +849,11 @@ function shuffle(a){
 }
 function rollMissions(){
   const easy = shuffle(missionGroup("easy"));
-  const hard = missionGroup("hard");
+  const regHard = shuffle(missionGroup("hard").filter(k => !MISSION_KINDS[k].vhard));
+  const vHard = shuffle(missionGroup("hard").filter(k => !!MISSION_KINDS[k].vhard));
   const list = easy.slice(0, MISSION_EASY_N).map(mkMission);
-  if(hard.length) list.push(mkMission(pick(hard)));
+  if(regHard.length) list.push(mkMission(regHard[0]));
+  if(vHard.length) list.push(mkMission(vHard[0]));
   state.missions = {date:mDayKey(), list:shuffle(list), rerolls:0};
   markDirty();
   return state.missions;
@@ -622,7 +888,7 @@ function missionsLoad(d){
     });
     // dobicie brakujących misji (gdy w zapisie jest ich mniej niż dzisiejsza norma,
     // np. po aktualizacji gry w środku dnia) — bez ruszania postępu już zrobionego
-    const want = MISSION_EASY_N + 1;
+    const want = MISSION_EASY_N + MISSION_HARD_N;
     if(list.length && list.length < want){
       const used = list.map(x=>x.kind);
       const extra = shuffle(missionGroup("easy").filter(k=>used.indexOf(k)<0))
@@ -681,11 +947,14 @@ function renderDailyBadge(){
   if(!b) return;
   const d = ((state.missions && state.missions.list) || []).filter(m=>!m.claimed && m.prog>=m.goal).length;
   const w = ((state.weekly && state.weekly.list) || []).filter(m=>!m.claimed && m.prog>=m.goal).length;
-  const n = d + w;
-  b.textContent = String(n);
+  const loginReady = loginInfo().claimedToday ? 0 : 1;
+  const n = d + w + loginReady;
+  b.textContent = n ? String(n) : "";
+  b.style.display = n ? "" : "none";
   b.classList.toggle("ready", n>0);
 }
 function renderDaily(){
+  renderDailyHub();
   const g = $("#missionGrid");
   if(!g) return;
   const list = (state.missions && state.missions.list) || [];
@@ -695,9 +964,11 @@ function renderDaily(){
     const d = MISSION_KINDS[m.kind] || MISSION_KINDS.open;
     const done = m.prog >= m.goal;
     const rew = m.reward.t==="coins" ? "🪙 "+fmt(m.reward.amount) : "🍀 "+Math.round(m.reward.ms/60000)+" min";
-    const hard = (d.g || "easy") === "hard";
-    return `<div class="mission ${hard?"hard":""} ${done&&!m.claimed?"done":""} ${m.claimed?"claimed":""}" style="animation-delay:${i*70}ms">
-      <div class="mission-top"><span class="mission-ico">${d.icon}</span><span class="mission-txt">${d.txt(m.goal, m.p)}${hard?' <span class="m-hard">WYZWANIE</span>':""}</span></div>
+    const vhard = !!d.vhard;
+    const hard = !vhard && (d.g || "easy") === "hard";
+    const badgeHtml = vhard ? ' <span class="m-vhard">💀 BARDZO TRUDNA</span>' : (hard ? ' <span class="m-hard">WYZWANIE</span>' : '');
+    return `<div class="mission ${vhard?"vhard":hard?"hard":""} ${done&&!m.claimed?"done":""} ${m.claimed?"claimed":""}" style="animation-delay:${i*70}ms">
+      <div class="mission-top"><span class="mission-ico">${d.icon}</span><span class="mission-txt">${d.txt(m.goal, m.p)}${badgeHtml}</span></div>
       <div class="mission-bar"><i style="width:${Math.min(100, 100*m.prog/Math.max(1,m.goal))}%"></i></div>
       <div class="mission-foot">
         <span class="mission-rew">Nagroda: <b>${rew}</b></span>
@@ -746,8 +1017,14 @@ function rerollMission(i){
   const left = REROLL_MAX - (state.missions.rerolls|0);
   if(left <= 0){ sfxErr(); toast("🔄 Wymiana misji — limit <b>"+REROLL_MAX+"</b> na dziś","bad"); return; }
   const used = list.map(x=>x.kind);
-  const pool = missionGroup("easy").concat(missionGroup("hard"));
+  const def = MISSION_KINDS[m.kind];
+  let pool;
+  if(def && def.vhard) pool = missionGroup("hard").filter(k=>!!MISSION_KINDS[k].vhard);
+  else if(def && def.g === "hard") pool = missionGroup("hard").filter(k=>!MISSION_KINDS[k].vhard);
+  else pool = missionGroup("easy");
+  if(!pool || !pool.length) pool = missionGroup("easy").concat(missionGroup("hard"));
   let kind = pick(pool), guard = 0;
+  while(used.indexOf(kind) >= 0 && guard++ < 60) kind = pick(pool);
   while(used.indexOf(kind) >= 0 && guard++ < 60) kind = pick(pool);
   state.missions.rerolls = (state.missions.rerolls|0) + 1;
   state.missions.list[i] = mkMission(kind);
@@ -756,10 +1033,17 @@ function rerollMission(i){
 }
 /* nowy dzień w trakcie gry — nowe misje */
 function checkDailyRoll(){
-  if(state.missions && state.missions.date === mDayKey()) return;
-  rollMissions();
-  renderDailyBadge();
-  if(currentView === "daily") renderDaily();
+  let missionsChanged = false;
+  if(!state.missions || state.missions.date !== mDayKey()){
+    rollMissions();
+    missionsChanged = true;
+  }
+  const hubChanged = dailyHubEnsure();
+  if(missionsChanged || hubChanged){
+    renderDailyBadge();
+    if(currentView === "daily") renderDaily();
+  }
+  if(missionsChanged)
   toast("🎯 <b>Nowe misje dzienne!</b> Sprawdź zakładkę 🎯 Misje","good");
 }
 $("#missionGrid").addEventListener("click", e=>{

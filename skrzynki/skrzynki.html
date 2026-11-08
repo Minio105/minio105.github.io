@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pl">
 <head>
 <meta charset="utf-8">
@@ -21,32 +21,38 @@
     <span>CASE OPENER<small>SYMULATOR SKRZYNEK</small></span>
   </div>
   <div class="tabs">
-    <button class="tab active" data-view="shop">🗝️ Skrzynki</button>
-    <button class="tab" data-view="bots">🤖 Bazar botów<span class="cnt" id="botCount">0</span></button>
-    <button class="tab" data-view="market">🛒 Sklep<span class="cnt" id="shopCount">0</span></button>
-    <button class="tab" data-view="codes">🔑 Kody<span class="cnt" id="codeCount">0</span></button>
-    <button class="tab" data-view="inv">🎒 Ekwipunek<span class="cnt" id="invCount">0</span></button>
-    <button class="tab" data-view="stats">📊 Statystyki</button>
-    <button class="tab" data-view="up">🚀 Ulepszenia<span class="cnt" id="upCount">0</span></button>
-    <button class="tab" data-view="battle">⚔️ Bitwy<span class="cnt" id="battleCount">0</span></button>
-    <button class="tab" data-view="album">📖 Album<span class="cnt" id="albumCount">0</span></button>
-    <button class="tab" data-view="daily">🎯 Misje<span class="cnt" id="dailyCount">0</span></button>
-    <button class="tab" data-view="casino">🎰 Kasyno</button>
+    <button class="tab active" data-view="shop"><span class="ti">🗝️</span><span class="tl">Skrzynki</span></button>
+    <button class="tab" data-view="bots"><span class="ti">🤖</span><span class="tl">Bazar botów</span><span class="cnt" id="botCount">0</span></button>
+    <button class="tab" data-view="market"><span class="ti">🛒</span><span class="tl">Sklep</span><span class="cnt" id="shopCount">0</span></button>
+    <button class="tab" data-view="codes"><span class="ti">🔑</span><span class="tl">Kody</span><span class="cnt" id="codeCount">0</span></button>
+    <button class="tab" data-view="inv"><span class="ti">🎒</span><span class="tl">Ekwipunek</span><span class="cnt" id="invCount" style="display:none">0</span></button>
+    <button class="tab" data-view="stats"><span class="ti">📊</span><span class="tl">Statystyki</span></button>
+    <button class="tab" data-view="up"><span class="ti">🚀</span><span class="tl">Ulepszenia</span><span class="cnt" id="upCount">0</span></button>
+    <button class="tab" data-view="battle"><span class="ti">⚔️</span><span class="tl">Bitwy</span><span class="cnt" id="battleCount">0</span></button>
+    <button class="tab" data-view="album"><span class="ti">📖</span><span class="tl">Album</span><span class="cnt" id="albumCount" style="display:none">0</span></button>
+    <button class="tab" data-view="daily"><span class="ti">🎯</span><span class="tl">Misje</span><span class="cnt" id="dailyCount" style="display:none">0</span></button>
+    <button class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Kasyno</span></button>
+    <button class="tab" data-view="events"><span class="ti">🎉</span><span class="tl">Eventy</span></button>
   </div>
   <div class="spacer"></div>
   <span id="saveFlag" class="save-flag">✓ zapisano</span>
   <div id="rankPill" class="rank-pill"></div>
   <button class="tb-btn" id="fastBtn" title="Pomiń animację otwierania">⚡ Szybkie</button>
+  <button class="tb-btn" id="eventBtn" title="Losowe eventy, mini eventy i admin abuse w święta">🎉 Eventy</button>
   <button class="tb-btn" id="bonusBtn" title="Darmowe monety co 20 sekund">🎁 Bonus <span class="cd"></span></button>
   <button class="tb-btn" id="soundBtn" title="Dźwięk">🔊</button>
   <button class="tb-btn" id="backupBtn" title="Kopia zapisu — wyeksportuj lub wczytaj kod">💾 Kopia</button>
+  <button class="tb-btn tb-icon" id="settingsBtn" title="Ustawienia" aria-label="Ustawienia"><span class="settings-gear">⚙</span></button>
   <div class="balance"><span class="coin">🪙</span><span id="balance">0</span></div>
   <button class="tb-btn" id="resetBtn" title="Zacznij od nowa">Reset</button>
 </header>
 
+<div id="eventBar" class="event-bar" hidden></div>
+
 <main>
   <section class="view active" id="view-shop">
     <h2 class="sec-title">Skrzynki <span class="line"></span><span class="muted" id="shopHint"></span></h2>
+    <div class="shop-filters" id="caseFilters" aria-label="Kategorie skrzynek"></div>
     <div class="case-grid" id="caseGrid"></div>
   </section>
 
@@ -61,6 +67,7 @@
         <b>Boty sprzedają ograniczoną liczbę broni i skrzynek.</b> Każda oferta ma swój zapas —
         gdy go wykupisz, znika do następnej rotacji. Ceny są <b>niższe albo wyższe</b> od normalnych,
         więc opłaca się porównywać: zielona plakietka to okazja, czerwona to przepłacanie.
+        Każdy bot ma też <b>reputację</b> — kupuj u niego, żeby zdobywać poziomy i rabaty do <b>10%</b>.
         Tylko tutaj kupisz <b>4 skrzynki niedostępne w zwykłym sklepie</b>: 🕶️ Przemytnika, 🎲 Hazardzisty,
         🌾 Żniwiarza i 🏷️ Naklejek. Kupione skrzynki lądują w <b>zapasie</b> w zakładce Skrzynki —
         ale są <b>jednorazowe</b>: po otwarciu znikają i <b>nie da się ich wznowić za monety</b>.
@@ -78,7 +85,8 @@
       <div>
         <b>Wszystkie kody z kolekcji są też w bazarze.</b> Każdy kod możesz kupić u botów
         <b>tylko raz na profil</b> — potem zostaje w Twojej kolekcji. Ceny są poniżej nagrody,
-        ale to jednorazowa okazja. Wśród nich jest <b>jeden bardzo rzadki kod</b> 🌌 — najdroższy
+        ale to jednorazowa okazja. <b>Kod odsłania się dopiero po zakupie</b> — wcześniej jest
+        ukryty. Wśród nich jest <b>jeden bardzo rzadki kod</b> 🌌 — najdroższy
         i najbardziej opłacalny, dostępny <b>tylko u botów</b>. Pozostałe kody wypadają też
         bardzo rzadko ze zwykłych skrzynek.
       </div>
@@ -244,6 +252,7 @@
   </section>
 
   <section class="view" id="view-daily">
+    <div class="daily-hub" id="dailyHub"></div>
     <h2 class="sec-title">🎯 Misje dzienne <span class="line"></span><span class="muted" id="dailyHint"></span></h2>
     <div class="mission-grid" id="missionGrid"></div>
     <div class="daily-note">
@@ -267,67 +276,232 @@
     </div>
   </section>
   <section class="view" id="view-casino">
-    <h2 class="sec-title">🎰 Kasyno skinów & Rangi CS2 <span class="line"></span></h2>
-    
+    <div class="casino-hero">
+      <div>
+        <h2 class="sec-title">🎰 Kasyno skinów <span class="line"></span></h2>
+        <p class="casino-sub">Trzy gry, jedna pula wirtualnych monet. Obstawiaj skiny, łap mnożniki i wspinaj się w rangach CS2.</p>
+      </div>
+      <div class="casino-chips">
+        <span>💠 Wirtualna waluta</span>
+        <span>🎮 3 gry</span>
+        <span>🎖️ Rangi CS2</span>
+      </div>
+    </div>
+
     <!-- Profil Rangi -->
     <div id="casinoRankBox" class="casino-rank-box"></div>
 
     <div class="casino-grid">
       <!-- COINFLIP -->
-      <div class="casino-card">
+      <div class="casino-card cf-card">
         <div class="cc-head">
-          <h3>🪙 Coinflip — Rzut monetą skinami</h3>
+          <div class="cc-title">
+            <span class="cc-kicker">GRA 01 · PvP</span>
+            <h3>🪙 Coinflip</h3>
+          </div>
           <span class="tag">50 / 50</span>
         </div>
-        <p class="muted">Zaznacz od 1 do 10 skinów z ekwipunku, wybierz stronę monety (CT lub T) i rzuć wyzwanie! Wygrana podwaja pulę w monetach, przegrana zabiera skiny.</p>
+        <p class="muted">Zaznacz od 1 do 10 skinów, wybierz stronę monety i rzuć wyzwanie. Wygrana zostawia skiny w ekwipunku i dodaje ich wartość w monetach — przegrana zabiera obstawione przedmioty.</p>
 
-        <div class="cf-stage">
-          <div class="cf-coin" id="cfCoin">
-            <div class="cf-side cf-ct">CT</div>
-            <div class="cf-side cf-t">T</div>
+        <div class="cf-stage" id="cfStage">
+          <div class="cf-aura"></div>
+          <div class="cf-rings" aria-hidden="true"><i></i><i></i><i></i></div>
+          <div class="cf-sparks" aria-hidden="true">
+            <span class="cf-spark" style="--a:0deg;--r:88px;--d:.02s;--sp:#ffd700"></span>
+            <span class="cf-spark" style="--a:45deg;--r:78px;--d:.06s;--sp:#45e6ff"></span>
+            <span class="cf-spark" style="--a:90deg;--r:92px;--d:.03s;--sp:#ffd700"></span>
+            <span class="cf-spark" style="--a:135deg;--r:74px;--d:.09s;--sp:#ff8a1e"></span>
+            <span class="cf-spark" style="--a:180deg;--r:86px;--d:.05s;--sp:#ffffff"></span>
+            <span class="cf-spark" style="--a:225deg;--r:80px;--d:.11s;--sp:#45e6ff"></span>
+            <span class="cf-spark" style="--a:270deg;--r:94px;--d:.04s;--sp:#ffd700"></span>
+            <span class="cf-spark" style="--a:315deg;--r:76px;--d:.08s;--sp:#ff8a1e"></span>
           </div>
+          <div class="cf-shadow" aria-hidden="true"></div>
+          <div class="cf-coin" id="cfCoin" role="img" aria-label="Moneta coinflip: Orzeł i Reszka">
+            <div class="cf-side cf-orzel">
+              <svg class="cf-svg" viewBox="0 0 128 128" aria-hidden="true" shape-rendering="geometricPrecision" text-rendering="geometricPrecision">
+                <circle cx="64" cy="64" r="64" fill="#0a1428"/>
+                <circle cx="64" cy="64" r="61" fill="none" stroke="#3b82f6" stroke-width="2.5"/>
+                <circle cx="64" cy="64" r="54" fill="#101f3d"/>
+                <circle cx="64" cy="64" r="53" fill="none" stroke="#60a5fa" stroke-width="1" opacity=".55"/>
+                <circle cx="64" cy="64" r="48" fill="none" stroke="#60a5fa" stroke-width="2.2" stroke-dasharray="2.6 10" opacity=".55"/>
+                <path d="M47 45 L49 29 L57 39 L64 27 L71 39 L79 29 L81 45 Z" fill="#dbeafe"/>
+                <text x="64" y="82" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="44" font-weight="900" fill="#f8fbff">O</text>
+                <text x="64" y="102" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" letter-spacing="2.2" fill="#bfdbfe">ORZEŁ</text>
+              </svg>
+            </div>
+            <div class="cf-side cf-reszka">
+              <svg class="cf-svg" viewBox="0 0 128 128" aria-hidden="true" shape-rendering="geometricPrecision" text-rendering="geometricPrecision">
+                <circle cx="64" cy="64" r="64" fill="#171006"/>
+                <circle cx="64" cy="64" r="61" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+                <circle cx="64" cy="64" r="54" fill="#2b1d09"/>
+                <circle cx="64" cy="64" r="53" fill="none" stroke="#fbbf24" stroke-width="1" opacity=".55"/>
+                <circle cx="64" cy="64" r="48" fill="none" stroke="#fbbf24" stroke-width="2.2" stroke-dasharray="2.6 10" opacity=".55"/>
+                <path d="M64 22 L67.2 32.8 L78 36 L67.2 39.2 L64 50 L60.8 39.2 L50 36 L60.8 32.8 Z" fill="#fde68a"/>
+                <text x="64" y="82" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="44" font-weight="900" fill="#fff7e6">R</text>
+                <text x="64" y="102" text-anchor="middle" font-family="Segoe UI,Arial,sans-serif" font-size="11" font-weight="800" letter-spacing="2.2" fill="#fde68a">RESZKA</text>
+              </svg>
+            </div>
+          </div>
+          <div class="cf-impact" aria-hidden="true"></div>
         </div>
+
+        <div class="casino-result" id="cfResult">Wybierz stronę monety, aby rozpocząć rzut.</div>
 
         <div class="cf-actions">
-          <button class="btn primary cf-btn ct" id="cfPickCT">Obstaw CT (Niebiescy)</button>
-          <button class="btn gold cf-btn t" id="cfPickT">Obstaw T (Terroryści)</button>
+          <button class="btn primary cf-btn ct" id="cfPickCT">🦅 Obstaw Orła</button>
+          <button class="btn gold cf-btn t" id="cfPickT">✦ Obstaw Reszkę</button>
         </div>
 
-        <div class="cf-summary">
-          <span>Wybrane skiny:</span>
-          <b id="cfSumVal">🪙 0</b>
+        <div class="cf-toolbar">
+          <div class="cf-summary">
+            <span>Pula:</span>
+            <b id="cfSumVal">🪙 0</b>
+            <span class="cf-count" id="cfCount">0 / 10</span>
+          </div>
+          <div class="cf-tools">
+            <button class="mini-btn" id="cfSelectBest">⭐ Top 10</button>
+            <button class="mini-btn" id="cfClear">✕ Wyczyść</button>
+          </div>
+        </div>
+        <div class="cf-subline">
+          <span id="cfStreak">passa: —</span>
+          <span>Kliknij skiny poniżej, aby je obstawić</span>
         </div>
         <div class="cf-items" id="cfItems"></div>
+        <div class="ch-list" id="cfHistory"></div>
       </div>
 
       <!-- CRASH -->
-      <div class="casino-card">
+      <div class="casino-card crash-card">
         <div class="cc-head">
-          <h3>🚀 Crash — Rakieta mnożnika</h3>
+          <div class="cc-title">
+            <span class="cc-kicker">GRA 02 · NA CZAS</span>
+            <h3>🚀 Crash</h3>
+          </div>
           <span class="tag">Ryzyko vs Zysk</span>
         </div>
-        <p class="muted">Obstaw monety i patrz jak rośnie mnożnik. Wypłać w idealnym momencie zanim rakieta eksploduje!</p>
+        <p class="muted">Rakieta rośnie razem z mnożnikiem. Wypłać, zanim eksploduje — im dłużej czekasz, tym większa nagroda i większe ryzyko.</p>
 
-        <div class="crash-arena">
+        <div class="crash-arena" id="crashArena">
           <div class="crash-grid-bg"></div>
+          <div class="crash-stars"></div>
+          <svg class="crash-chart" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="crashLineGrad" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0%" stop-color="#38e08a"/>
+                <stop offset="100%" stop-color="#ffd700"/>
+              </linearGradient>
+            </defs>
+            <polyline id="crashLine" points="2,98 2,98" fill="none" stroke="url(#crashLineGrad)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></polyline>
+            <circle id="crashDot" cx="2" cy="98" r="1.5" fill="#ffd700" style="opacity:0"></circle>
+          </svg>
           <div class="crash-rocket" id="crashRocket">🚀</div>
-          <div class="crash-mult" id="crashMultVal">1.00×</div>
+          <div class="crash-mult" id="crashMultVal">1,00×</div>
           <div class="crash-status" id="crashStatus">Gotowy do startu</div>
+        </div>
+
+        <div class="crash-quick">
+          <span>Szybka stawka:</span>
+          <button data-crashbet="100">100</button>
+          <button data-crashbet="1000">1 K</button>
+          <button data-crashbet="10000">10 K</button>
+          <button data-crashbet="100000">100 K</button>
         </div>
 
         <div class="crash-controls">
           <div class="crash-bet-row">
+            <label for="crashBetInput">Stawka</label>
             <input type="number" id="crashBetInput" value="500" min="100" step="100">
             <button class="tb-btn" id="crashHalf">½</button>
             <button class="tb-btn" id="crash2x">2×</button>
             <button class="tb-btn" id="crashMax">MAX</button>
+          </div>
+          <div class="crash-auto-row">
+            <label class="crash-check"><input type="checkbox" id="crashAutoOn"> Auto-wypłata</label>
+            <input type="number" id="crashAutoInput" value="2.00" min="1.01" step="0.1" aria-label="Mnożnik auto-wypłaty">
+            <span>×</span>
           </div>
           <div class="crash-btn-row">
             <button class="btn primary" id="crashStartBtn">🚀 Rozpocznij lot</button>
             <button class="btn gold" id="crashCashoutBtn" disabled>Wypłać</button>
           </div>
         </div>
+        <div class="crash-ups">
+          <div class="crash-ups-head"><b>⚙️ Ulepszenia Crash</b><span>tylko ta gra</span></div>
+          <div class="crash-ups-grid" id="crashUps"></div>
+        </div>
+        <div class="ch-list" id="crashHistory"></div>
       </div>
+
+      <!-- DICE -->
+      <div class="casino-card dice-card">
+        <div class="cc-head">
+          <div class="cc-title">
+            <span class="cc-kicker">GRA 03 · SZYBKA</span>
+            <h3>🎲 Kości</h3>
+          </div>
+          <span class="tag">BLISKOŚĆ · 4×</span>
+        </div>
+        <p class="muted">Wybierz swój numer i stronę. Im bliżej wylosowanej liczby trafisz, tym większa wypłata (maks. 50 pól od celu). Dokładne trafienie płaci <b>4×</b> stawki.</p>
+
+        <div class="dice-stage">
+          <div class="dice-cube" id="diceCube"><span>🎲</span></div>
+          <div class="dice-readout">
+            <div class="dice-roll" id="diceRoll">--</div>
+            <small>wynik rzutu</small>
+          </div>
+        </div>
+
+        <div class="casino-result" id="diceResult">Wybierz numer, stronę i rzuć kośćmi.</div>
+
+        <div class="dice-target">
+          <div class="dice-target-head"><span>Twój numer</span><b id="diceTargetVal">50</b></div>
+          <input type="range" id="diceTarget" min="1" max="100" value="50" aria-label="Twój numer w kościach">
+        </div>
+
+        <div class="dice-mode-row">
+          <button class="dice-mode active" id="diceModeOver">Powyżej ↑</button>
+          <button class="dice-mode" id="diceModeUnder">Poniżej ↓</button>
+        </div>
+
+        <div class="dice-meta">
+          <span>Szansa: <b id="diceChance">50,0%</b></span>
+          <span>Mnożnik: <b id="diceMult">1,05× – 2,60×</b></span>
+        </div>
+        <div class="dice-exact" id="diceExact">🎯 Dokładnie <b>50</b> (1%) = <b>4×</b></div>
+
+        <div class="dice-bet-row">
+          <input type="number" id="diceBet" value="500" min="100" step="100" aria-label="Stawka w kościach">
+          <button class="tb-btn" id="diceHalf">½</button>
+          <button class="tb-btn" id="dice2x">2×</button>
+          <button class="tb-btn" id="diceMax">MAX</button>
+        </div>
+        <button class="btn primary dice-roll-btn" id="diceRollBtn">🎲 Rzuć kośćmi</button>
+        <div class="ch-list" id="diceHistory"></div>
+      </div>
+    </div>
+
+    <div class="casino-note">
+      <b>💡 Wskazówka:</b> to tylko wirtualne monety i przedmioty w symulatorze. Graj dla zabawy — nie ma tu prawdziwych pieniędzy.
+    </div>
+  </section>
+
+  <section class="view" id="view-events">
+    <h2 class="sec-title">🎉 Eventy świata <span class="line"></span>
+      <span class="muted">Losowe bonusy i 👑 ADMIN ABUSE w święta</span>
+    </h2>
+    <div id="eventActivePanel"></div>
+    <div id="miniEventPanel"></div>
+    <div class="world-section-title">Możliwe eventy losowe</div>
+    <div class="world-grid" id="eventList"></div>
+    <div id="eventHolidayPanel"></div>
+    <div id="eventHistoryPanel"></div>
+    <div class="event-note">
+      <b>💡 Jak to działa?</b> Eventy losowe włączają się same co <b>18–42 min</b> i trwają od 20 do 35 minut.
+      Mini eventy wpadają częściej, co <b>3–8 min</b>, i dają drobiazgi: koniczynę, kilka monet, 2 EXP
+      albo uszkodzoną skrzynkę. W polskie święta między <b>16:00 a 19:00</b> uruchamia się <b>ADMIN ABUSE</b>:
+      dostajesz monety, darmowe skrzynki i wszystkie efekty eventowe. Eventy efektów kupisz też w Sklepie.
     </div>
   </section>
 </main>
@@ -405,6 +579,82 @@
   </div>
 </div>
 
+<!-- 👹 PANEL / ARENA BOSSA -->
+<div class="overlay" id="bossOverlay" aria-hidden="true">
+  <div class="panel boss-panel" role="dialog" aria-modal="true" aria-labelledby="bossModalTitle">
+    <div class="panel-head boss-panel-head">
+      <div class="boss-head-title">
+        <span class="boss-kicker">⚔️ RAJD NA BOSSA</span>
+        <h3 id="bossModalTitle">Wybierz Bossa</h3>
+      </div>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="bossClose" title="Zamknij" aria-label="Zamknij walkę z bossem">✕</button>
+    </div>
+    <div class="panel-body boss-panel-body" id="bossModalBody">
+      <!-- Dynamicznie generowane w JS -->
+    </div>
+  </div>
+</div>
+
+<!-- ⚙️ USTAWIENIA -->
+<div class="overlay settings-overlay" id="settingsOverlay" aria-hidden="true">
+  <div class="panel settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+    <div class="panel-head settings-head">
+      <div class="settings-title">
+        <span class="settings-kicker">CASE OPENER</span>
+        <h3 id="settingsTitle"><span class="settings-gear">⚙</span> Ustawienia</h3>
+      </div>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="settingsClose" title="Zamknij ustawienia" aria-label="Zamknij ustawienia">✕</button>
+    </div>
+    <div class="panel-body settings-body">
+      <section class="settings-sec">
+        <div class="settings-sec-head"><span>🔊 Dźwięk</span><small>efekty i fanfary</small></div>
+        <label class="set-row">
+          <span class="set-copy"><b>Dźwięki gry</b><small>Kliknięcia, wygrane i powiadomienia.</small></span>
+          <input type="checkbox" class="switch" id="setSound">
+        </label>
+        <label class="set-range">
+          <span>Głośność <b id="setVolVal">100%</b></span>
+          <input type="range" id="setVolume" min="0" max="100" step="5" value="100">
+        </label>
+      </section>
+
+      <section class="settings-sec">
+        <div class="settings-sec-head"><span>⚡ Wydajność</span><small>mniej lagów</small></div>
+        <label class="set-row set-feature">
+          <span class="set-copy"><b>Tryb wydajności</b><small>Wyłącza konfetti, wstrząsy, tło i animację otwierania skrzynek.</small></span>
+          <input type="checkbox" class="switch" id="setPerf">
+        </label>
+        <div class="settings-sub" id="settingsFxSub">
+          <label class="set-row">
+            <span class="set-copy"><b>Konfetti i cząsteczki</b><small>Efekty przy wygranych i rzadkich dropach.</small></span>
+            <input type="checkbox" class="switch" id="setParticles">
+          </label>
+          <label class="set-row">
+            <span class="set-copy"><b>Wstrząsy ekranu</b><small>Wstrząśnięcie przy bardzo dobrych wynikach.</small></span>
+            <input type="checkbox" class="switch" id="setShake">
+          </label>
+          <label class="set-row">
+            <span class="set-copy"><b>Animacje interfejsu</b><small>Przejścia widoków, karty i animacje dekoracyjne.</small></span>
+            <input type="checkbox" class="switch" id="setUiAnim">
+          </label>
+        </div>
+        <label class="set-row">
+          <span class="set-copy"><b>Szybkie otwieranie</b><small>Pomija animację skrzynek — wynik pojawia się od razu.</small></span>
+          <input type="checkbox" class="switch" id="setFast">
+        </label>
+      </section>
+
+      <div class="settings-note">💡 Tryb wydajności nadpisuje ustawienia efektów. Zmiany zapisują się automatycznie.</div>
+    </div>
+    <div class="settings-foot">
+      <span>Zmiany zapisują się od razu.</span>
+      <button class="btn primary" id="settingsDone">Gotowe</button>
+    </div>
+  </div>
+</div>
+
 <div id="cloverPill">
   <span class="cp-ico">🍀</span>
   <span class="cp-col">
@@ -454,6 +704,8 @@
 <script src="js/battle.js"></script>
 <script src="js/daily.js"></script>
 <script src="js/casino.js"></script>
+<script src="js/events.js"></script>
 <script src="js/app.js"></script>
+<script src="js/settings.js"></script>
 </body>
 </html>

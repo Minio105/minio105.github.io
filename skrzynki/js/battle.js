@@ -1,4 +1,5 @@
-﻿"use strict";
+﻿let battleStreak = 0;
+"use strict";
 
 /* =======================================================================
    11b. BITWY NA SKRZYNKI — 1 vs 1 z AI, zwycięzca bierze oba dropy
@@ -160,6 +161,9 @@ function fight(caseId){
     missionTrack("win",1);
     if(n === 5) missionTrack("winbig",1);
     if(autoBattle) missionTrack("autowin",1);
+    battleStreak = (battleStreak || 0) + 1;
+    if(total >= 50000 || c.price >= 50000) missionTrack("highbattle", 1, { cost: total });
+    missionTrack("battlestreak", 1, { streak: battleStreak });
     if(bl) my.forEach(it=>{ it.value = Math.round(it.value * (1 + BATTLE_STEP*bl)); });
     my.forEach(addToInv); ai.forEach(addToInv);
     gain = sumVal(my) + sumVal(ai);
@@ -168,6 +172,7 @@ function fight(caseId){
   // Remis i przegrana nie oddają stawki — inaczej bitwa byłaby opłacalniejsza
   // niż zwykłe otwieranie (darmowa pula przy identycznym zestawie dropów).
 
+  if(res <= 0) battleStreak = 0;
   const bm = bestOf(my), ba = bestOf(ai);
   state.battles.unshift({
     win: res>0, draw: res===0, cn: c.name, n, cost: total, gain, ts: Date.now(),
@@ -343,7 +348,7 @@ function autoSchedule(n){
   autoTimer = setTimeout(()=>{ autoTimer = null; autoNext(); }, AUTO_WAIT[n] || 1900);
 }
 
-$("#bossBtn").addEventListener("click", ()=>{ const b=BOSSES[Math.floor(Math.random()*BOSSES.length)]; fightBoss(b.id); });
+$("#bossBtn").addEventListener("click", ()=>openBossModal());
   $("#kohBtn").addEventListener("click", ()=>playKoh());
   $("#cosGrid").addEventListener("click", e=>{ const b=e.target.closest("[data-cos]"); if(b) buyCosmetic(b.dataset.cos); });
   $("#autoBtn").addEventListener("click", ()=>{
@@ -461,6 +466,7 @@ function renderStats(){
    13. CZĄSTECZKI
    ======================================================================= */
 function confetti(colors){
+  if(state.perfMode || state.fxParticles === false) return;
   const wrap = $("#particles");
   colors = colors || ["#ffd700","#4b69ff","#8847ff","#d32ce6","#eb4b4b","#38e08a","#ffffff"];
   for(let i=0;i<95;i++){
@@ -478,6 +484,7 @@ function confetti(colors){
   }
 }
 function burst(x,y,color){
+  if(state.perfMode || state.fxParticles === false) return;
   const wrap = $("#particles");
   for(let i=0;i<34;i++){
     const p = document.createElement("i");
@@ -578,7 +585,7 @@ setInterval(grantRescue, 500);
 
 /* =======================================================================
    14c. 🍀 CZTEROLISTNA KONICZYNA — bonus losowany przy otwieraniu skrzynek
-   Wypada niezależnie od zdobytego przedmiotu (także przy ×10). Na 80 s
+   Wypada niezależnie od zdobytego przedmiotu (także przy otwieraniu hurtowym). Na 80 s
    przesuwa szanse w stronę noży i dobrych skinów. Kolejne koniczyny
    wydłużają działanie, zamiast je nadpisywać.
    ======================================================================= */
@@ -668,10 +675,13 @@ $("#resetBtn").addEventListener("click", ()=>{
   if(!confirm("Na pewno? Zrobienie kopii zapisu (przycisk 💾 Kopia) jest jedynym sposobem, by to potem odzyskać.")) return;
   localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SAVE_BAK);
   LEGACY_KEYS.forEach(k=>localStorage.removeItem(k));
+  if(typeof worldEventReset === "function") worldEventReset();
+  else localStorage.removeItem("caseOpenerWorldEvents_v1");
   state.coins = START_COINS; state.inv = []; state.recent = [];
   state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,fx:{},fxTotal:0,best:null,cases:{},
     codeDrops:0,codeRedeems:0,codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0};
   state.up = UP_ZERO();
+  state.crashUp = {engine:0, stability:0, shield:0};
   state.bonusAt = 0; state.rescueAt = 0; state.cloverUntil = 0;
   state.battles = []; state.battleCase = "start"; state.battleSize = 1;
   state.album = {}; state.albumClaimed = {}; albumCase = null;
@@ -690,6 +700,7 @@ $("#resetBtn").addEventListener("click", ()=>{
   save();
   renderBalance(true); renderShop(); renderInv(); renderStats(); renderUp(); renderBattle(); updateBonus(); updateClover();
   renderAlbum(); renderDaily(); renderMarket();
+  if(typeof renderEvents === "function") renderEvents();
   toast("Gra zresetowana","bad");
 });
 

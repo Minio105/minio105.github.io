@@ -44,6 +44,85 @@ function caseTier(c){
 const DEKO = n => `<i></i>`.repeat(n);
 
 let lastShopSig = "";
+const SHOP_FILTERS = [
+  {id:"all",     label:"Wszystkie", icon:"🗃️"},
+  {id:"normal",  label:"Zwykłe",    icon:"📦"},
+  {id:"troll",   label:"Troll",     icon:"🤡"},
+  {id:"special", label:"Specjalne", icon:"✨"},
+  {id:"bot",     label:"Boty",      icon:"🤖"}
+];
+let shopFilter = "all";
+
+/* ⚡ Hurtowe otwieranie: ×10 / ×100 / ×1000 / ×10000 / MAX.
+   MAX liczy się z monet i zapasu, ale ma twardy limit 10 000 na jedno
+   kliknięcie — tyle przedmiotów da się bezpiecznie utrzymać w zapisie. */
+const BULK_HARD_CAP = 10000;
+const BULK_COUNTS = [10, 100, 1000, 10000, "max"];
+const BULK_RESULT_CARDS = 24;
+function bulkUnit(c){ return Math.max(1, Math.round(c.price * (1 - bulkRate()))); }
+function bulkCost(c, n){
+  if(c.botOnly) return 0;
+  const useStock = Math.min(caseStock(c.id), Math.max(0, n|0));
+  return bulkUnit(c) * Math.max(0, (n|0) - useStock);
+}
+function bulkMaxFor(c){
+  const stock = caseStock(c.id);
+  if(c.botOnly) return Math.min(BULK_HARD_CAP, stock);
+  return Math.min(BULK_HARD_CAP, stock + Math.floor(numFrom(state.coins) / bulkUnit(c)));
+}
+function bulkLabel(n){ return n === "max" ? "MAX" : "×"+n; }
+function bulkTitle(c, n){
+  const stock = caseStock(c.id);
+  if(n === "max"){
+    const maxN = bulkMaxFor(c);
+    if(maxN <= 0) return "Brak monet lub zapasu";
+    const cost = bulkCost(c, maxN);
+    return "Maksymalnie "+fmt(maxN)+" na raz (limit "+fmt(BULK_HARD_CAP)+")"+(cost ? " · 🪙 "+fmt(cost)+" łącznie" : " · z zapasu, bez opłat");
+  }
+  const actual = c.botOnly ? Math.min(n, stock) : n;
+  if(actual <= 0) return "Brak zapasu";
+  if(c.botOnly){
+    if(n > stock) return "Masz tylko "+stock+" w zapasie — użyj MAX";
+    return "Otwórz "+actual+" z zapasu — bez opłat";
+  }
+  if(stock >= n) return "Otwórz "+n+" z zapasu — bez opłat";
+  const cost = bulkCost(c, n);
+  return "Otwórz "+n+" skrzynek"+(cost ? " (🪙 "+fmt(cost)+" łącznie)" : " — bez opłat");
+}
+function bulkButtonsHTML(c){
+  const stock = caseStock(c.id);
+  return BULK_COUNTS.map(n=>{
+    const maxN = n === "max" ? bulkMaxFor(c) : n;
+    const actual = c.botOnly && n !== "max" ? Math.min(n, stock) : maxN;
+    const can = c.botOnly
+      ? actual > 0 && (n === "max" || n <= stock)
+      : actual > 0 && state.coins >= bulkCost(c, n === "max" ? maxN : n);
+    return `<button class="btn ghost bulk-btn${n==="max"?" max":""}" data-open-bulk="${c.id}" data-bulk="${n}" title="${esc(bulkTitle(c,n))}" ${can?"":"disabled"}>${bulkLabel(n)}</button>`;
+  }).join("");
+}
+
+function shopCategory(c){
+  if(c.troll) return "troll";
+  if(c.botOnly) return "bot";
+  if(c.mega || c.elite || c.ultra || c.secret) return "special";
+  return "normal";
+}
+function shopFilterCounts(shopCases){
+  const counts = {all:shopCases.length, normal:0, troll:0, special:0, bot:0};
+  shopCases.forEach(c=>{ counts[shopCategory(c)]++; });
+  return counts;
+}
+function renderShopFilters(shopCases){
+  const wrap = $("#caseFilters");
+  if(!wrap) return;
+  const counts = shopFilterCounts(shopCases);
+  wrap.innerHTML = SHOP_FILTERS.map(f=>{
+    const n = counts[f.id] || 0;
+    return `<button type="button" class="shop-filter${shopFilter===f.id?" active":""}${f.id==="troll"?" troll":""}" data-shop-filter="${f.id}" aria-pressed="${shopFilter===f.id}">
+      <span class="sf-ico">${f.icon}</span><span>${f.label}</span><span class="sf-count">${n}</span>
+    </button>`;
+  }).join("");
+}
 function shopHintHTML(){
   const cheapest = Math.min(...CASES.filter(c=>!c.botOnly).map(c=>c.price));
   const lk = upLvl("luck");
@@ -84,26 +163,35 @@ function syncShopButtons(){
     }
     const o1 = card.querySelector("[data-open]");
     if(o1) o1.disabled = state.coins < c.price;
-    const o10 = card.querySelector("[data-open10]");
-    if(o10) o10.disabled = state.coins < Math.round(c.price * (1 - bulkRate())) * 10;
+    card.querySelectorAll("[data-open-bulk]").forEach(b=>{
+      const raw = b.dataset.bulk;
+      const stockNow = caseStock(c.id);
+      const n = raw === "max" ? bulkMaxFor(c) : +raw;
+      const actual = c.botOnly && raw !== "max" ? Math.min(n, stockNow) : n;
+      b.disabled = c.botOnly
+        ? !(actual > 0 && (raw === "max" || +raw <= stockNow))
+        : !(actual > 0 && state.coins >= bulkCost(c, raw === "max" ? n : +raw));
+      b.title = bulkTitle(c, raw);
+    });
   });
 }
 function shopSignature(shopCases){
   return shopCases.map(c=>c.id+":"+(caseStock(c.id)>0?1:0)).join("|")
     + "|" + UPGRADES.map(u=>upLvl(u.id)).join(",")
     + "|" + (cloverActive() ? 1 : 0)
-    + "|" + (autoOpen ? autoOpen.id : "");
+    + "|" + (autoOpen ? autoOpen.id : "")
+    + "|" + shopFilter;
 }
 function renderShop(force){
   /* skrzynki tylko z bazaru botów pokazujemy dopiero, gdy masz je w zapasie —
      inaczej nie byłoby jak ich otworzyć (nie ma ich w zwykłej sprzedaży) */
   const grid = $("#caseGrid");
   if(!grid) return;
-  const shopCases = CASES.filter(c=>!c.botOnly || caseStock(c.id)>0);
-  const sig = shopSignature(shopCases);
+  const allShopCases = CASES.filter(c=>!c.botOnly || caseStock(c.id)>0);
+  const sig = shopSignature(allShopCases);
   $("#shopHint").innerHTML = shopHintHTML();
 
-  /* Najważniejsza optymalizacja: zmiana samych monet nie przerysowuje 44 kart.
+  /* Najważniejsza optymalizacja: zmiana samych monet nie przerysowuje wszystkich kart.
      Dzięki temu po otwarciu skrzynki nie odtwarza się animacja wejścia. */
   if(!force && lastShopSig === sig && grid.children.length){
     syncShopButtons();
@@ -111,10 +199,27 @@ function renderShop(force){
     return;
   }
   lastShopSig = sig;
+  renderShopFilters(allShopCases);
+
+  const shopCases = shopFilter === "all"
+    ? allShopCases
+    : allShopCases.filter(c=>shopCategory(c) === shopFilter);
+
+  if(!shopCases.length){
+    grid.innerHTML = `<div class="shop-empty">
+      <b>Brak skrzynek w tej kategorii.</b>
+      <span>${shopFilter === "bot"
+        ? "Skrzynki botów pojawiają się tutaj tylko wtedy, gdy masz je w zapasie — kup je w Bazarze botów."
+        : "Zmień kategorię, żeby zobaczyć inne skrzynki."}</span>
+    </div>`;
+    grid.classList.add("ready");
+    syncShopButtons();
+    if(currentView === "battle") renderBattle();
+    return;
+  }
 
   grid.innerHTML = shopCases.map((c,i)=>{
-    const ten = Math.round(c.price * (1 - bulkRate())) * 10;
-    const can = state.coins>=c.price, can10 = state.coins>=ten;
+    const can = state.coins>=c.price;
     const tier = caseTier(c);
     const st = caseStock(c.id);
     const aOn = !!autoOpen && autoOpen.id===c.id, aUnl = autoUnlocked();
@@ -145,8 +250,8 @@ function renderShop(force){
       </div>
       <div class="btn-row">
         ${st?`<button class="btn gold open-btn" style="flex:1 1 100%" data-stockopen="${c.id}">📦 Otwórz z zapasu (${st})</button>`:""}
-        ${c.botOnly ? "" : `<button class="btn primary open-btn" data-open="${c.id}" ${can?"":"disabled"}>${c.troll?"🤡 Zaryzykuj":"Otwórz"}</button>
-        <button class="btn ghost" data-open10="${c.id}" title="Otwórz 10 skrzynek (🪙 ${fmt(ten)} łącznie)" ${can10?"":"disabled"}>×10</button>`}
+        ${c.botOnly ? "" : `<button class="btn primary open-btn" data-open="${c.id}" ${can?"":"disabled"}>${c.troll?"🤡 Zaryzykuj":"Otwórz"}</button>`}
+        <div class="bulk-row">${bulkButtonsHTML(c)}</div>
         <button class="btn ghost loot-btn" data-loot="${c.id}" title="Zobacz wszystkie bronie w tej skrzynce">📋 Zawartość</button>
         ${c.botOnly ? "" : `<button class="btn ghost auto-btn${aOn?" on":""}${aUnl?"":" locked"}" data-auto="${c.id}"
           title="${aUnl
@@ -166,13 +271,24 @@ $("#caseGrid").addEventListener("click", e=>{
   if(lo){ showLoot(lo.dataset.loot); return; }
   const so = e.target.closest("[data-stockopen]");
   const o1 = e.target.closest("[data-open]");
-  const o10 = e.target.closest("[data-open10]");
+  const ob = e.target.closest("[data-open-bulk]");
   const au = e.target.closest("[data-auto]");
   if(so) openCase(so.dataset.stockopen, so.closest(".case-card"), true);
   if(o1) openCase(o1.dataset.open, o1.closest(".case-card"));
-  if(o10) openMany(o10.dataset.open10, 10);
+  if(ob) openMany(ob.dataset.openBulk, ob.dataset.bulk === "max" ? "max" : +ob.dataset.bulk);
   if(au) switchAuto(au.dataset.auto);
 });
+const caseFiltersEl = $("#caseFilters");
+if(caseFiltersEl){
+  caseFiltersEl.addEventListener("click", e=>{
+    const btn = e.target.closest("[data-shop-filter]");
+    if(!btn) return;
+    const next = btn.dataset.shopFilter;
+    if(next === shopFilter || !SHOP_FILTERS.some(f=>f.id===next)) return;
+    shopFilter = next;
+    renderShop(true);
+  });
+}
 
 /* =======================================================================
    8c. PODGLĄD ZAWARTOŚCI SKRZYNKI — wszystkie bronie z danej skrzynki
@@ -201,7 +317,7 @@ function showLoot(caseId){
   $("#lootBody").innerHTML =
     `<div class="loot-bonus"><i class="lb-ico">🍀</i><span class="lb-txt">
       <b>Czterolistna koniczyna — szansa ${(CLOVER_CHANCE*100).toFixed(1)}%</b>
-      Wypada <em>dodatkowo</em> przy otwarciu skrzynki (także przy ×10) i na ${Math.round(cloverDur()/1000)} s
+      Wypada <em>dodatkowo</em> przy otwarciu skrzynki (także hurtowo) i na ${Math.round(cloverDur()/1000)} s
       daje większe szanse na noże i dobre bronie: ${cloverDesc()}.
     </span></div>` +
     `<div class="loot-bonus lb-fx"><i class="lb-ico">✨</i><span class="lb-txt">
@@ -261,6 +377,40 @@ const BOT_FACTOR = {   // [min, max] mnożnik ceny względem normalnej wartości
   lena: [0.58, 1.58]
 };
 const BOT_CACHE = {tag:"", list:[]};
+/* Reputacja u każdego bota rośnie za zakupy. Kolejne poziomy dają rabat. */
+const BOT_REP_TIERS = [
+  {need:0,  name:"Nowy",         pct:0},
+  {need:2,  name:"Znajomy",      pct:2},
+  {need:5,  name:"Stały klient", pct:4},
+  {need:9,  name:"Zaufany",      pct:6},
+  {need:14, name:"Partner",      pct:8},
+  {need:20, name:"Legenda",      pct:10}
+];
+function botRepPoints(seller){
+  return numFrom(state.botRep && state.botRep[seller]);
+}
+function botRepInfo(seller){
+  const points = botRepPoints(seller);
+  let level = 0;
+  BOT_REP_TIERS.forEach((t,i)=>{ if(points >= t.need) level = i; });
+  const tier = BOT_REP_TIERS[level];
+  const next = BOT_REP_TIERS[level+1] || null;
+  const progress = next
+    ? Math.max(0, Math.min(1, (points - tier.need) / Math.max(1, next.need - tier.need)))
+    : 1;
+  return {points, level, name:tier.name, pct:tier.pct, next, progress, max:!next};
+}
+function botRepPrice(o){
+  const pct = botRepInfo(o && o.seller).pct;
+  return Math.max(1, Math.round(o.price * (100 - pct) / 100));
+}
+function botAddRep(seller, n){
+  if(!seller) return null;
+  const before = botRepInfo(seller);
+  state.botRep = (state.botRep && typeof state.botRep === "object" && !Array.isArray(state.botRep)) ? state.botRep : {};
+  state.botRep[seller] = Math.max(0, numFrom(state.botRep[seller]) + Math.max(0, n|0));
+  return {before, after:botRepInfo(seller)};
+}
 
 /* =======================================================================
    🔑 KODY — bardzo rzadkie bonusy ze skrzynek i jednorazowe oferty botów
@@ -282,6 +432,21 @@ const CODE_RARITY = {
   rare:     {name:"Rzadki",       color:"#60a5fa"},
   veryRare: {name:"Bardzo rzadki",color:"#a855f7"}
 };
+let codeBuyFx = "";
+let codeBuyFxTimer = 0;
+function markCodeBuyFx(id){
+  codeBuyFx = id;
+  clearTimeout(codeBuyFxTimer);
+  codeBuyFxTimer = setTimeout(()=>{
+    codeBuyFx = "";
+    const card = document.querySelector('#codeShop .code-card[data-code-id="'+id+'"]');
+    if(card){
+      card.classList.remove("buying");
+      const flash = card.querySelector(".code-buy-flash");
+      if(flash) flash.remove();
+    }
+  }, 1100);
+}
 
 function codeCount(id){ return numFrom(state.codes && state.codes[id]); }
 function codeUniqueRedeemed(){
@@ -310,12 +475,14 @@ function grantCode(id, source){
   renderCodeBadge();
   return def;
 }
-function rollCodeDrop(){
+function rollCodeDrop(defer){
   if(Math.random() >= CODE_DROP_CHANCE) return null;
   // Ze skrzynek wypadają kody rzadkie. Kod Otchłani jest dodatkową, bardzo rzadką
   // ofertą wyłącznie u botów — dlatego nie ma go w tej puli.
   const pool = CODES.filter(c => c.rarity === "rare");
-  return grantCode(pool[(Math.random()*pool.length)|0].id, "drop");
+  const def = pool[(Math.random()*pool.length)|0];
+  // Przy hurtowym otwieraniu zbieramy kody i dodajemy je jednym zapisem.
+  return defer ? def : grantCode(def.id, "drop");
 }
 function codeCardHTML(def, mode){
   const r = CODE_RARITY[def.rarity] || CODE_RARITY.rare;
@@ -323,6 +490,8 @@ function codeCardHTML(def, mode){
   const redeemed = numFrom((state.codeRedeemed||{})[def.id]);
   const bought = !!(state.codeBought && state.codeBought[def.id]);
   const sold = mode === "shop" && bought;
+  const buying = mode === "shop" && codeBuyFx === def.id;
+  const hiddenCode = mode === "shop" && !bought;
   let action = "";
   if(mode === "owned"){
     action = `<button class="btn primary" data-coderedeem="${def.id}">Odbierz +🪙 ${fmtShort(def.reward)}</button>`;
@@ -335,8 +504,10 @@ function codeCardHTML(def, mode){
     ? `<span class="cc-qty">masz ×${owned}</span>`
     : redeemed
       ? `<span class="cc-qty">odebrano ${redeemed}×</span>`
-      : `<span class="cc-qty">jednorazowa oferta</span>`;
-  return `<div class="code-card ${def.rarity}${sold?" bought":""}" style="--cc:${r.color}">
+      : sold
+        ? `<span class="cc-qty">kod odblokowany</span>`
+        : `<span class="cc-qty">jednorazowa oferta</span>`;
+  return `<div class="code-card ${def.rarity}${sold?" bought":""}${buying?" buying":""}" data-code-id="${def.id}" style="--cc:${r.color}">
     <div class="cc-top">
       <div class="code-ico">${def.icon}</div>
       <div style="min-width:0">
@@ -344,9 +515,10 @@ function codeCardHTML(def, mode){
         <span class="code-rarity" style="color:${r.color};border-color:color-mix(in srgb,${r.color} 45%,transparent);background:color-mix(in srgb,${r.color} 13%,transparent)">${r.name}</span>
       </div>
     </div>
-    <div class="code-string">${esc(def.code)}</div>
+    <div class="code-string${hiddenCode?" locked":""}"${hiddenCode?' title="Kod odblokujesz po zakupie"':''}>${hiddenCode?"🔒 KOD UKRYTY":esc(def.code)}</div>
     <div class="code-reward"><span>Nagroda: <b>🪙 ${fmt(def.reward)}</b></span>${qty}</div>
     <div class="code-actions">${action}</div>
+    ${buying?`<span class="code-buy-flash" aria-hidden="true">✓ KUPIONO</span>`:""}
   </div>`;
 }
 function renderCodeShop(){
@@ -399,8 +571,9 @@ function buyCodeOffer(id){
   state.codeBought = (state.codeBought && typeof state.codeBought === "object") ? state.codeBought : {};
   state.codeBought[id] = true;
   addCode(id, 1);
-  sfxCoin();
-  toast("🔑 Kupiono <b>"+esc(def.name)+"</b> — kod czeka w zakładce Kody","good");
+  markCodeBuyFx(id);
+  sfxCode();
+  toast("🔑 Kupiono <b>"+esc(def.name)+"</b> — kod <b>"+esc(def.code)+"</b> odblokowany i czeka w zakładce Kody","good");
   markDirty(); save(); renderBalance(); renderCodeShop(); renderCodes(); checkAchievements();
 }
 function redeemCodeById(id){
@@ -495,8 +668,12 @@ function botOffers(){
 function botOfferHTML(o){
   const left = botLeft(o);
   const sold = left <= 0;
-  const diff = Math.round((o.price/o.base - 1)*100);
+  const rep = botRepInfo(o.seller);
+  const price = botRepPrice(o);
+  const diff = Math.round((price/o.base - 1)*100);
   const deal = diff <= 0 ? `<span class="bo-deal">${diff}%</span>` : `<span class="bo-deal bad">+${diff}%</span>`;
+  const repTag = rep.pct ? `<span class="bo-rep" title="Rabat za reputację u tego bota">🤝 -${rep.pct}%</span>` : "";
+  const priceTitle = `Cena bazowa: 🪙 ${fmt(o.price)}${rep.pct ? " · reputacja -"+rep.pct+"%" : ""}`;
   const stockTxt = sold ? "wykupione" : "zostało "+left+" z "+o.max;
   const stockCls = "bo-stock"+(left>0 && left<=1 ? " low" : "");
   if(o.kind === "case"){
@@ -507,8 +684,8 @@ function botOfferHTML(o){
       <div class="bo-main">
         <div class="bo-w">${c.botOnly ? "tylko u botów" : "skrzynka"}</div>
         <div class="bo-n">${esc(c.name)}</div>
-        <div class="bo-meta"><span class="bo-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
-          <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}
+        <div class="bo-meta"><span class="bo-price" title="${priceTitle}">🪙 ${fmtShort(price)}</span>
+          <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}${repTag}
           <span class="${stockCls}">${stockTxt}</span></div>
       </div>
       <button class="bo-buy" data-botbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
@@ -520,8 +697,8 @@ function botOfferHTML(o){
     <div class="bo-main">
       <div class="bo-w">${esc(o.w)}</div>
       <div class="bo-n">${esc(o.n)}</div>
-      <div class="bo-meta"><span class="bo-price" title="🪙 ${fmt(o.price)}">🪙 ${fmtShort(o.price)}</span>
-        <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}
+      <div class="bo-meta"><span class="bo-price" title="${priceTitle}">🪙 ${fmtShort(price)}</span>
+        <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}${repTag}
         <span class="${stockCls}">${stockTxt}</span></div>
     </div>
     <button class="bo-buy" data-botbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
@@ -561,6 +738,8 @@ function renderBots(force){
   g.innerHTML = BOT_SELLERS.map((s,i)=>{
     const mine = offers.filter(o=>o.seller===s.id);
     const any = mine.some(o=>botLeft(o)>0);
+    const rep = botRepInfo(s.id);
+    const repTitle = `Reputacja: ${rep.points} pkt · ${rep.name}${rep.pct ? " · rabat -"+rep.pct+"%" : ""}`;
     return `<div class="bot-card" style="animation-delay:${i*70}ms">
       <div class="bot-head">
         <div class="bot-ava">${s.icon}</div>
@@ -568,6 +747,11 @@ function renderBots(force){
         <div class="bot-live${any?"":" off"}">● ${any?"ONLINE":"WYKUPIONY"}</div>
       </div>
       <div class="bot-line">${s.line}</div>
+      <div class="bot-rep${rep.max?" max":""}" title="${repTitle}">
+        <span class="br-name">🤝 ${rep.name}</span>
+        <span class="br-bar"><i style="width:${Math.round(rep.progress*100)}%"></i></span>
+        <span class="br-pct">${rep.pct?"-"+rep.pct+"%":"0%"}</span>
+      </div>
       <div class="bot-offers">${mine.map(botOfferHTML).join("")}</div>
     </div>`;
   }).join("");
@@ -579,12 +763,14 @@ function buyBotOffer(id){
   const off = botOffers().find(o=>o.id===id);
   if(!off) return;
   if(botLeft(off) <= 0){ sfxErr(); toast("Ten bot już wszystko sprzedał","bad"); return; }
-  if(state.coins < off.price){ sfxErr(); toast("Za mało monet!","bad"); return; }
+  const price = botRepPrice(off);
+  if(state.coins < price){ sfxErr(); toast("Za mało monet!","bad"); return; }
 
-  state.coins -= off.price;
-  state.stats.spent += off.price;
+  const repChange = botAddRep(off.seller, 1);
+  state.coins -= price;
+  state.stats.spent += price;
   state.stats.botBuys  = numFrom(state.stats.botBuys) + 1;
-  state.stats.botSpent = numFrom(state.stats.botSpent) + off.price;
+  state.stats.botSpent = numFrom(state.stats.botSpent) + price;
   botStockMap()[off.id] = numFrom(botStockMap()[off.id]) + 1;
 
   if(off.kind === "case"){
@@ -593,20 +779,24 @@ function buyBotOffer(id){
     state.stats.botCases = numFrom(state.stats.botCases) + 1;
     const c = CASES.find(x=>x.id===off.caseId);
     sfxCoin();
-    toast("📦 Kupiono <b>"+esc(c ? c.name : "skrzynkę")+"</b> — czeka w zapasie w zakładce Skrzynki. To skrzynka jednorazowa: po otwarciu zniknie, a kolejną kupisz tylko u bota.","good");
+    toast("📦 Kupiono <b>"+esc(c ? c.name : "skrzynkę")+"</b> — czeka w zapasie w zakładce Skrzynki. To skrzynka jednorazowa: po otwarciu zniknie, a kolejną kupisz tylko u bota. · 🤝 reputacja +1","good");
   } else {
     const item = { uid:"b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
       w:off.w, n:off.n, art:off.art, tier:off.tier, caseId:off.caseId, fx:null,
       value:Math.round(off.base), ts:Date.now() };
     addToInv(item);
-    const diff = Math.round((off.price/off.base - 1)*100);
+    const diff = Math.round((price/off.base - 1)*100);
     if(diff < 0) state.stats.bestDeal = Math.min(100, Math.max(numFrom(state.stats.bestDeal), -diff));
     sfxCoin();
     toast((diff<=0 ? "🏷️ <b>Okazja!</b> " : "🛒 Kupiono ")+"<b>"+esc(item.n)+"</b> ("+esc(item.w)+") za 🪙 "+
-      fmt(off.price)+(diff<0 ? " · "+(-diff)+"% taniej" : diff>0 ? " · +"+diff+"% drożej" : " · cena rynkowa"),"good");
+      fmt(price)+(diff<0 ? " · "+(-diff)+"% taniej" : diff>0 ? " · +"+diff+"% drożej" : " · cena rynkowa")+" · 🤝 reputacja +1","good");
   }
   markDirty(); save();
   renderBalance(); renderBots(); renderShop(); renderInv(); renderStats();
+  if(repChange && repChange.after.level > repChange.before.level){
+    const seller = BOT_SELLERS.find(s=>s.id===off.seller);
+    setTimeout(()=>toast("🤝 <b>"+esc(seller ? seller.name : "Bot")+"</b> — nowy poziom reputacji: <b>"+repChange.after.name+"</b> (rabat -"+repChange.after.pct+"%)","good"), 350);
+  }
   checkAchievements();
 }
 function refreshBotOffers(){
@@ -1359,7 +1549,7 @@ function openCase(caseId, cardEl, fromStock){
 
   /* Troll nie ma puli broni, więc nie budujemy roulette’a z przedmiotów —
      wynik (monety) pokazujemy od razu. */
-  if (c.troll || state.fast){ spinning = false; showResult([win], true); return; }
+  if (c.troll || state.fast || state.perfMode){ spinning = false; showResult([win], true); return; }
 
   // animacja "wstrząsu" skrzynki przed losowaniem
   if(cardEl){
@@ -1445,11 +1635,62 @@ function finishSpin(){ endSpin(true); }
 $("#skipBtn").addEventListener("click", ()=>endSpin(true));
 $("#spinClose").addEventListener("click", ()=>endSpin(false));
 
-function openMany(caseId, count){
+/* Hurtowe otwarcie zwykłej skrzynki — jedno zbiorcze dodanie do ekwipunku,
+   jeden zapis i jedna feta za koniczyny/kody. Dzięki temu ×10 000 nie robi
+   dziesięciu tysięcy pełnych zapisów localStorage. */
+function bulkItemDrops(c, count){
+  const wins = [];
+  let cloverHits = 0;
+  const codeDrops = [];
+  for(let i=0;i<count;i++){
+    const win = makeItem(c, pickTier(c));
+    if(rollClover()) cloverHits++;
+    const code = rollCodeDrop(true);
+    if(code){ win.codeDrop = code; codeDrops.push(code); }
+    wins.push(win);
+  }
+  // Najnowsze na początku, jak przy pojedynczym addToInv().
+  state.inv = wins.slice().reverse().concat(state.inv);
+  wins.forEach(win=>{ noteDrop(win); albumRegister(win); });
+  if(cloverHits){
+    missionTrack("clover", cloverHits);
+    sfxClover();
+    confetti(["#4ade80","#a8f0c0","#22c55e","#ffd700"]);
+    toast("🍀 <b>Koniczyna ×"+cloverHits+"!</b> Wypadła przy hurtowym otwieraniu — sprawdź czas działania pod licznikiem.","good");
+    updateClover();
+  }
+  if(codeDrops.length){
+    codeDrops.forEach(d=>addCode(d.id, 1));
+    state.stats.codeDrops = numFrom(state.stats.codeDrops) + codeDrops.length;
+    renderCodeBadge();
+    sfxCode();
+    const uniq = [...new Set(codeDrops.map(d=>d.id))].map(id=>CODE_BY_ID[id]).filter(Boolean);
+    toast("🔑 <b>KODY ×"+codeDrops.length+"!</b> "+uniq.map(d=>d.icon+" "+esc(d.name)).join(" · ")+" — odbierzesz je w zakładce <b>Kody</b>.","good");
+  }
+  markDirty();
+  save({kind: codeDrops.length ? "code" : "drop"});
+  checkAchievements();
+  return {wins, cloverHits, codeDrops};
+}
+
+function openMany(caseId, requested){
   if(spinning) return;
   const c = CASES.find(x=>x.id===caseId);
   if(!c) return;
   const stock = caseStock(c.id);
+  let count;
+  if(requested === "max"){
+    count = bulkMaxFor(c);
+    if(count <= 0){
+      sfxErr();
+      toast("Brak monet lub zapasu na hurtowe otwarcie.","bad");
+      return;
+    }
+  } else {
+    count = Math.max(0, Math.floor(Number(requested) || 0));
+    if(count <= 0) return;
+    count = Math.min(count, BULK_HARD_CAP);
+  }
   if(c.botOnly){
     if(stock <= 0){
       sfxErr();
@@ -1463,7 +1704,7 @@ function openMany(caseId, count){
   // kupony mogą pokryć część płatnych otwarć
   let freeN = 0;
   for(let i=0;i<rest;i++) if(Math.random() < couponChance()) freeN++;
-  const unit = Math.round(c.price * (1 - bulkRate()));     // rabat z ulepszenia "Hurt"
+  const unit = bulkUnit(c);                                // rabat z ulepszenia "Hurt"
   const cost = unit*(rest-freeN);
   if(state.coins < cost){ sfxErr(); toast("Za mało monet na "+count+"× otwarcie!","bad"); return; }
   if(useStock){
@@ -1480,8 +1721,18 @@ function openMany(caseId, count){
   missionTrack("open10", 1);
   missionTrack("spend", cost);
   if(cloverActive()) missionTrack("cloveropen", count);
-  const wins = [];
-  for(let i=0;i<count;i++) wins.push(c.troll ? trollDrop(c) : obtainDrop(c, pickTier(c)));
+
+  let wins;
+  if(c.troll){
+    wins = [];
+    for(let i=0;i<count;i++) wins.push(trollDrop(c, true));
+    markDirty();
+    save({kind:"drop"});
+    checkAchievements();
+  } else {
+    wins = bulkItemDrops(c, count).wins;
+  }
+
   if(useStock) toast("📦 <b>"+useStock+"×</b> z zapasu — bez opłat","good");
   if(freeN) toast("🎟️ <b>Kupony!</b> " + freeN + " z " + rest + " płatnych otwarć darmowych","good");
   renderBalance(); renderShop(); renderBots();
@@ -1671,7 +1922,7 @@ function noteDrop(item){
   state.recent.unshift({w:item.w,n:item.n,tier:item.tier,value:item.value,uid:item.uid,ts:item.ts,fx:item.fx||null});
   state.recent = state.recent.slice(0,24);
   if(item.tier==="special"){ state.stats.knives++; missionTrack("knife",1); }
-  if(item.tier==="relic"){ state.stats.relics = numFrom(state.stats.relics) + 1; }
+  if(item.tier==="relic"){ state.stats.relics = numFrom(state.stats.relics) + 1; missionTrack("relic",1); }
   if(item.tier==="covert" || item.tier==="special") missionTrack("covert",1);
   if(item.fx){                                  // ✨ rzadki efekt — liczymy do statystyk
     const st = state.stats;
@@ -1687,7 +1938,7 @@ function noteDrop(item){
 }
 
 /* 🤡 Skrzynka Troll — monety zamiast przedmiotu. Jackpot trafia od razu na konto. */
-function trollDrop(c){
+function trollDrop(c, defer){
   const chance  = typeof c.trollChance === "number" ? c.trollChance : TROLL_CHANCE;
   const jackpot = Math.random() < chance;
   const reward  = jackpot
@@ -1709,9 +1960,11 @@ function trollDrop(c){
     caseId:c.id, value:reward, ts:Date.now(),
     trollCoins:reward, trollJackpot:jackpot
   };
-  markDirty();
-  save({kind:"drop"});       // jackpot / 1 moneta zapisane od razu
-  checkAchievements();
+  if(!defer){
+    markDirty();
+    save({kind:"drop"});     // jackpot / 1 moneta zapisane od razu
+    checkAchievements();
+  }
   return win;
 }
 
@@ -1777,9 +2030,16 @@ function invCardHTML(item, i){
   </div>`;
 }
 
+const INV_RENDER_STEP = 300;
+let invRenderLimit = INV_RENDER_STEP;
+
 function renderInv(){
   const inv = state.inv;
-  $("#invCount").textContent = inv.length;
+  const invBadge = $("#invCount");
+  if(invBadge){
+    invBadge.textContent = inv.length ? String(inv.length) : "";
+    invBadge.style.display = inv.length ? "" : "none";
+  }
   $("#invTotal").textContent = inv.length;
   /* Gdy ekwipunek jest schowany, nie budujemy setek kart w tle. */
   if(currentView !== "inv") return;
@@ -1798,7 +2058,11 @@ function renderInv(){
       ${inv.length ? "Brak przedmiotów w tym filtrze." : "Ekwipunek jest pusty.<br>Otwórz skrzynkę, żeby coś zdobyć!"}</div>`;
     return;
   }
-  $("#invGrid").innerHTML = list.map(invCardHTML).join("");
+  const shown = list.slice(0, invRenderLimit);
+  $("#invGrid").innerHTML = shown.map(invCardHTML).join("") +
+    (list.length > shown.length
+      ? `<div class="inv-more"><button class="btn primary" data-inv-more="1">Pokaż więcej (${fmt(shown.length)} / ${fmt(list.length)})</button></div>`
+      : "");
 }
 
 function sellItem(uid){
@@ -1813,6 +2077,8 @@ function sellItem(uid){
   toast("Sprzedano <b>"+esc(it.n)+"</b> za 🪙 "+fmt(price),"good");
 }
 $("#invGrid").addEventListener("click", e=>{
+  const more = e.target.closest("[data-inv-more]");
+  if(more){ invRenderLimit += INV_RENDER_STEP; renderInv(); return; }
   const card = e.target.closest("[data-uid]");
   if(!card) return;
   const it = state.inv.find(i=>i.uid===card.dataset.uid);
@@ -1823,8 +2089,8 @@ $("#invGrid").addEventListener("click", e=>{
   }
   sellItem(card.dataset.uid);
 });
-$("#invFilter").addEventListener("change", renderInv);
-$("#invSort").addEventListener("change", renderInv);
+$("#invFilter").addEventListener("change", ()=>{ invRenderLimit = INV_RENDER_STEP; renderInv(); });
+$("#invSort").addEventListener("change", ()=>{ invRenderLimit = INV_RENDER_STEP; renderInv(); });
 $("#sellAll").addEventListener("click", ()=>{
   if(!state.inv.length){ toast("Ekwipunek jest pusty","bad"); return; }
   const gain = state.inv.reduce((s,i)=>s+itemSell(i),0);
@@ -1856,7 +2122,102 @@ $("#sellCheap").addEventListener("click", ()=>{
 /* =======================================================================
    11. WYNIK
    ======================================================================= */
+let bulkSellBatch = null;
+
+function bulkSummaryChips(items){
+  const counts = {};
+  items.forEach(i=>{ counts[i.tier] = (counts[i.tier]||0)+1; });
+  return TIERS.filter(t=>counts[t]).map(t=>{
+    const name = t==="special" ? "★ Noże" : t==="relic" ? "✦ Relikty" : TIER[t].name;
+    return `<span class="bulk-tier" style="--c:${TIER[t].color}">${name} <b>${fmt(counts[t])}</b></span>`;
+  }).join("");
+}
+
+function bulkResultCelebrate(best, codeDrops){
+  if(!best) return;
+  const bf = fxOf(best);
+  sfxWin(best.tier, bf ? bf.id : null);
+  if(best.tier==="relic"){ confetti(["#fff7d6","#ffe9a8","#ffb02e","#ffffff"]); setTimeout(confetti,260); setTimeout(confetti,520); shakeScreen(); }
+  else if(best.tier==="special"){ confetti(["#ffd700","#fff3b0","#ffb02e","#ffffff"]); setTimeout(confetti,320); shakeScreen(); }
+  else if(best.tier==="covert"){ confetti(["#eb4b4b","#ff9a9a","#ffd700","#ffffff"]); shakeScreen(); }
+  else if(best.tier==="classified"){ confetti([TIER.classified.color,"#ffffff","#c77dff"]); }
+  if(bf){
+    setTimeout(()=>confetti([bf.color,"#ffffff",bf.color]), 120);
+    if(bf.mult >= FX_BIG){ setTimeout(confetti, 380); setTimeout(confetti, 640); shakeScreen(); }
+  }
+  if(codeDrops && codeDrops.length){
+    setTimeout(()=>confetti(["#a855f7","#ffd76a","#ffffff"]), 180);
+    setTimeout(()=>confetti(["#22d3ee","#a855f7","#f43f5e"]), 430);
+  }
+}
+
+/* Podsumowanie dużego otwarcia — nie wrzucamy tysięcy kart do DOM. */
+function showBulkResult(items){
+  const trollMode = items.length && items.every(i=>i.trollCoins);
+  const sorted = items.slice().sort((a,b)=>TIERS.indexOf(b.tier)-TIERS.indexOf(a.tier)||b.value-a.value);
+  const best = sorted[0];
+
+  if(trollMode){
+    bulkSellBatch = null;
+    const total = items.reduce((s,i)=>s+(i.trollCoins||0),0);
+    const jackpots = items.filter(i=>i.trollJackpot).length;
+    const caseId = items[0].caseId;
+    $("#resTitle").textContent = "Skrzynka Troll ×"+items.length;
+    $("#resBody").innerHTML = `
+      <div class="bulk-summary troll">
+        <div class="bulk-hero">🪙 ${fmt(total)}</div>
+        <div class="bulk-sub">Łączny łup z <b>${fmt(items.length)}</b> otwarć · jackpoty: <b>${fmt(jackpots)}</b></div>
+        <div class="bulk-chips">
+          <span class="bulk-tier" style="--c:#fbbf24">JACKPOT <b>${fmt(jackpots)}</b></span>
+          <span class="bulk-tier" style="--c:#94a3b8">1 MONETA <b>${fmt(items.length-jackpots)}</b></span>
+        </div>
+      </div>
+      <div class="result-actions">
+        <button class="btn gold" data-keep="1">Odbierz</button>
+        <button class="btn primary" data-again="${caseId}" title="🪙 ${fmt(casePrice(caseId))}">Otwórz ponownie (🪙 ${fmtShort(casePrice(caseId))})</button>
+      </div>`;
+    $("#resultOverlay").classList.add("show");
+    if(jackpots){
+      sfxWin("special", null);
+      confetti(["#fbbf24","#fff7d6","#a855f7","#ffffff"]);
+      setTimeout(confetti, 280);
+      setTimeout(confetti, 520);
+      shakeScreen();
+    } else {
+      sfxWin("mil", null);
+    }
+    return;
+  }
+
+  bulkSellBatch = items.map(i=>i.uid);
+  const totalVal = items.reduce((s,i)=>s+i.value,0);
+  const totalSell = items.reduce((s,i)=>s+itemSell(i),0);
+  const fxs = items.filter(i=>i.fx).length;
+  const codeDrops = items.map(i=>i.codeDrop).filter(Boolean);
+  const codeUnique = [...new Map(codeDrops.map(d=>[d.id,d])).values()];
+  const top = sorted.slice(0,12);
+  $("#resTitle").textContent = "Wynik hurtowy ×"+items.length;
+  $("#resBody").innerHTML = `
+    <div class="bulk-summary">
+      <div class="bulk-hero">🪙 ${fmtShort(totalVal)}</div>
+      <div class="bulk-sub">Łączna wartość <b>${fmt(items.length)}</b> przedmiotów · sprzedaż: <b style="color:var(--ok)">🪙 ${fmtShort(totalSell)}</b>${fxs?` · ✨ ${fmt(fxs)} efektów`:""}</div>
+      <div class="bulk-chips">${bulkSummaryChips(items)}</div>
+    </div>
+    <div class="bulk-note">Pokazano <b>${top.length}</b> najlepszych z <b>${fmt(items.length)}</b> dropów. Wszystkie są już w ekwipunku.</div>
+    <div class="multi-grid bulk-top">${top.map(i=>itemCardHTML(i)).join("")}</div>
+    ${codeDrops.length?`<div class="result-code">🔑 <b>DODATKOWE KODY ×${codeDrops.length}!</b> ${codeUnique.map(c=>c.icon+" "+esc(c.name)+" ("+esc(c.code)+")").join(" · ")}
+      <button class="btn" data-go-codes="1">Przejdź do kodów</button></div>`:""}
+    <div class="result-actions">
+      <button class="btn gold" data-sell-bulk="1" title="🪙 ${fmt(totalSell)}">Sprzedaj wszystko (🪙 ${fmtShort(totalSell)})</button>
+      <button class="btn" data-keep="1">Zatrzymaj</button>
+    </div>`;
+  $("#resultOverlay").classList.add("show");
+  bulkResultCelebrate(best, codeDrops);
+}
+
 function showResult(items, single){
+  if(items.length > BULK_RESULT_CARDS){ showBulkResult(items); return; }
+  bulkSellBatch = null;
   /* 🤡 Troll nie ma przedmiotów — monety są już na koncie, więc wynik
      pokazujemy jako karty z kwotą, bez przycisków sprzedaży. */
   if(items.length && items.every(i=>i.trollCoins)){
@@ -1955,6 +2316,7 @@ function showResult(items, single){
 }
 
 function shakeScreen(){
+  if(state.perfMode || state.screenShake === false) return;
   const p = $("#resultPanel");
   p.classList.remove("shake"); void p.offsetWidth; p.classList.add("shake");
 }
@@ -1962,11 +2324,26 @@ function shakeScreen(){
 $("#resBody").addEventListener("click", e=>{
   const one = e.target.closest("[data-sell-one]");
   const many = e.target.closest("[data-sell-many]");
+  const bulk = e.target.closest("[data-sell-bulk]");
   const keep = e.target.closest("[data-keep]");
   const again = e.target.closest("[data-again]");
   const goCodes = e.target.closest("[data-go-codes]");
-  if(goCodes){ $("#resultOverlay").classList.remove("show"); switchView("codes"); return; }
-  if(one){ sellItem(one.dataset.sellOne); $("#resultOverlay").classList.remove("show"); renderShop(); renderInv(); }
+  if(goCodes){ bulkSellBatch = null; $("#resultOverlay").classList.remove("show"); switchView("codes"); return; }
+  if(bulk){
+    const ids = new Set(bulkSellBatch || []);
+    const sold = state.inv.filter(i=>ids.has(i.uid));
+    const gain = sold.reduce((s,i)=>s+itemSell(i),0);
+    state.inv = state.inv.filter(i=>!ids.has(i.uid));
+    state.coins += gain; state.stats.earned += gain; state.stats.sold += sold.length;
+    missionTrack("sell", sold.length);
+    missionTrack("sellvalue", gain);
+    bulkSellBatch = null;
+    sfxCoin(); renderBalance(); renderShop(); renderInv(); save();
+    $("#resultOverlay").classList.remove("show");
+    toast("Sprzedano "+sold.length+" przedmiotów za 🪙 "+fmt(gain),"good");
+    return;
+  }
+  if(one){ bulkSellBatch = null; sellItem(one.dataset.sellOne); $("#resultOverlay").classList.remove("show"); renderShop(); renderInv(); }
   if(many){
     const ids = many.dataset.sellMany.split(",");
     let gain = 0, n = 0;
@@ -1975,11 +2352,12 @@ $("#resBody").addEventListener("click", e=>{
     state.coins += gain; state.stats.earned += gain; state.stats.sold += n;
     missionTrack("sell", n);
     missionTrack("sellvalue", gain);
+    bulkSellBatch = null;
     sfxCoin(); renderBalance(); renderShop(); renderInv(); save();
     $("#resultOverlay").classList.remove("show");
     toast("Sprzedano "+n+" przedmiotów za 🪙 "+fmt(gain),"good");
   }
-  if(keep){ $("#resultOverlay").classList.remove("show"); renderShop(); renderInv(); }
-  if(again){ $("#resultOverlay").classList.remove("show"); openCase(again.dataset.again); }
+  if(keep){ bulkSellBatch = null; $("#resultOverlay").classList.remove("show"); renderShop(); renderInv(); }
+  if(again){ bulkSellBatch = null; $("#resultOverlay").classList.remove("show"); openCase(again.dataset.again); }
 });
-$("#resClose").addEventListener("click", ()=>{ $("#resultOverlay").classList.remove("show"); renderShop(); renderInv(); });
+$("#resClose").addEventListener("click", ()=>{ bulkSellBatch = null; $("#resultOverlay").classList.remove("show"); renderShop(); renderInv(); });

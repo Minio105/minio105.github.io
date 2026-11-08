@@ -387,7 +387,8 @@ function rollFx(tier){
   const pool = fxEventPool();
   const baseTotal = pool.reduce((a,f)=>a + f.chance*boost, 0);
   const active = fxEventCount();
-  const totalChance = Math.min(0.95, baseTotal * (1 + FX_EVENT_LUCK*active));
+  const worldLuck = typeof worldEventLuck === "function" ? worldEventLuck() : 0;
+  const totalChance = Math.min(0.95, baseTotal * (1 + FX_EVENT_LUCK*active + worldLuck));
   const weights = pool.map(f=>f.chance*boost*(fxEventActive(f.id) ? FX_EVENT_BOOST : 1));
   const wsum = weights.reduce((a,b)=>a+b,0);
   if(wsum <= 0) return null;
@@ -448,11 +449,14 @@ let state = {
   stats:{opened:0, spent:0, earned:0, sold:0, knives:0, relics:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{},
     codeDrops:0, codeRedeems:0, codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0},
   up: UP_ZERO(),
+  crashUp:{engine:0, stability:0, shield:0},
   album:{}, albumClaimed:{}, missions:null, weekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false, idleSec:0,
-  caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{},
+  caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{}, botRep:{},
   shopSalt:0, shopBought:{}, shopRefreshAt:0, packClaims:{},
   codes:{}, codeRedeemed:{}, codeBought:{},
-  sound:true, fast:false, bonusAt:0, rescueAt:0, cloverUntil:0, fxEvents:{}, battleCase:"start", battleSize:1,
+  dailyCase:null, login:null,
+  sound:true, volume:1, fast:false, perfMode:false, fxParticles:true, screenShake:true, uiAnim:true,
+  bonusAt:0, rescueAt:0, cloverUntil:0, fxEvents:{}, battleCase:"start", battleSize:1,
   autoTurbo:false, autoLimit:0, exp:0, rank:1
 };
 
@@ -479,6 +483,14 @@ function markDirty(){ dirty = true; }
 /* Bezpieczna liczba z zapisu. Uwaga: |0 ucina wszystko powyżej 2^31 — a znaczniki
    czasu (ms) i duże statystyki już dawno ten limit przekraczają, więc parsujemy normalnie. */
 function numFrom(v){ return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.round(v)) : 0; }
+const CRASH_UP_KEYS = ["engine","stability","shield"];
+function normalizeCrashUp(src){
+  const out = {engine:0, stability:0, shield:0};
+  if(src && typeof src === "object" && !Array.isArray(src)){
+    CRASH_UP_KEYS.forEach(k=>{ out[k] = Math.max(0, Math.min(5, numFrom(src[k]))); });
+  }
+  return out;
+}
 function validInv(inv){
   return (Array.isArray(inv)?inv:[]).filter(i=>i && typeof i.value==="number" && i.tier && TIER[i.tier]);
 }
@@ -521,6 +533,10 @@ function mergeFrom(other){
   m.shopCases = Math.max(numFrom(m.shopCases), numFrom(s.shopCases));
   m.packBuys = Math.max(numFrom(m.packBuys), numFrom(s.packBuys));
   m.packSpent = Math.max(numFrom(m.packSpent), numFrom(s.packSpent));
+  /* ⚙️ ulepszenia Crash — przy dwóch kartach zostaje wyższy poziom */
+  const ocu = normalizeCrashUp(other.crashUp);
+  state.crashUp = normalizeCrashUp(state.crashUp);
+  CRASH_UP_KEYS.forEach(k=>{ state.crashUp[k] = Math.max(state.crashUp[k], ocu[k]); });
   const osb = (other.shopBought && typeof other.shopBought === "object" && !Array.isArray(other.shopBought)) ? other.shopBought : {};
   state.shopBought = (state.shopBought && typeof state.shopBought === "object" && !Array.isArray(state.shopBought)) ? state.shopBought : {};
   Object.keys(osb).forEach(k=>{ state.shopBought[k] = Math.max(numFrom(state.shopBought[k]), numFrom(osb[k])); });
@@ -583,6 +599,27 @@ function mergeFrom(other){
     state.codeBought = (state.codeBought && typeof state.codeBought === "object") ? state.codeBought : {};
     Object.keys(ob).forEach(k=>{ if(ob[k]) state.codeBought[k] = true; });
   }
+  const orb = other.botRep;
+  if(orb && typeof orb === "object" && !Array.isArray(orb)){
+    state.botRep = (state.botRep && typeof state.botRep === "object") ? state.botRep : {};
+    Object.keys(orb).forEach(k=>{ state.botRep[k] = Math.max(numFrom(state.botRep[k]), numFrom(orb[k])); });
+  }
+  const odc = other.dailyCase;
+  if(odc && odc.date === mDayKey() && odc.id){
+    if(!state.dailyCase || state.dailyCase.date !== mDayKey()){
+      state.dailyCase = {date:odc.date, id:odc.id, bought:!!odc.bought};
+    } else if(odc.bought){
+      state.dailyCase.bought = true;
+    }
+  }
+  const ol = other.login;
+  if(ol && typeof ol.last === "string"){
+    if(!state.login || !state.login.last || ol.last > state.login.last){
+      state.login = {last:ol.last, streak:Math.max(0,Math.min(7,numFrom(ol.streak)))};
+    } else if(ol.last === state.login.last){
+      state.login.streak = Math.max(numFrom(state.login.streak), Math.max(0,Math.min(7,numFrom(ol.streak))));
+    }
+  }
   return added;
 }
 
@@ -594,7 +631,7 @@ function flashSaved(kind){
   el.classList.toggle("rare", kind === "rare" || kind === "relic" || kind === "code");
   /* Przy auto-otwieraniu nie wymuszamy reflow co drop — plakietka i tak
      mruga kilka razy na sekundę. */
-  if(autoOpen || state.fast || document.hidden){
+  if(autoOpen || state.fast || state.perfMode || document.hidden){
     el.classList.add("show");
   } else {
     el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
@@ -607,8 +644,11 @@ function snapshot(){
   return { v:3, tab:TAB_ID, rev:saveRev, ts:Date.now(),
     coins:state.coins, inv:state.inv, recent:state.recent, stats:state.stats,
     battles:state.battles, battleCase:state.battleCase, battleSize:state.battleSize,
-    up:state.up,
-    sound:state.sound, fast:state.fast, bonusAt:state.bonusAt, rescueAt:state.rescueAt,
+    up:state.up, crashUp:normalizeCrashUp(state.crashUp),
+    sound:state.sound, volume:state.volume, fast:state.fast,
+    perfMode:state.perfMode, fxParticles:state.fxParticles,
+    screenShake:state.screenShake, uiAnim:state.uiAnim,
+    bonusAt:state.bonusAt, rescueAt:state.rescueAt,
     autoTurbo:state.autoTurbo === true, autoLimit:autoLimitSan(state.autoLimit),
     exp:numFrom(state.exp), rank:numFrom(state.rank)||1,
     cloverUntil:state.cloverUntil||0,
@@ -617,6 +657,8 @@ function snapshot(){
     idleKnifeClaimed:state.idleKnifeClaimed===true, idleSec:numFrom(state.idleSec),
     codes:state.codes, codeRedeemed:state.codeRedeemed, codeBought:state.codeBought,
     caseStock:state.caseStock, botSalt:state.botSalt, botBought:state.botBought, botRefreshAt:state.botRefreshAt, botUnlocked:state.botUnlocked,
+    botRep:state.botRep || {},
+    dailyCase:state.dailyCase || null, login:state.login || null,
     shopSalt:state.shopSalt, shopBought:state.shopBought, shopRefreshAt:state.shopRefreshAt,
     packClaims:state.packClaims || {} };
 }
@@ -636,6 +678,27 @@ function save(opts){
       }
       externalSaveDirty = false;
       lastExternalCheck = Date.now();
+    }
+
+    /* 🛡️ Zabezpieczenie przed wyzerowaniem postępu przez starą/świeżą kartę:
+       jeśli ta karta ma pusty, domyślny stan, a w pamięci jest bogatszy zapis
+       z innego okna, przyjmujemy tamten zapis zamiast go nadpisywać. */
+    if(stored && stored.tab && stored.tab !== TAB_ID && (stored.rev|0) > knownRev && !opts.force){
+      const storedOpened = numFrom(stored.stats && stored.stats.opened);
+      const storedCoins = numFrom(stored.coins);
+      const storedAlbum = (stored.album && typeof stored.album === "object") ? Object.keys(stored.album).length : 0;
+      const myOpened = numFrom(state.stats && state.stats.opened);
+      const myAlbum = Object.keys(state.album || {}).length;
+      const myFresh = state.inv.length === 0 && myOpened === 0 && myAlbum === 0 && numFrom(state.coins) <= START_COINS + 100000;
+      const storedRich = storedOpened > 0 || storedAlbum > 0 || storedCoins > numFrom(state.coins) + 100000;
+      if(myFresh && storedRich){
+        load();
+        renderBalance(true); renderShop(); renderInv(); renderStats(); renderUp();
+        renderBattle(); renderAlbum(); renderDaily(); renderMarket(); renderCodes(); renderBots();
+        if(typeof renderEvents === "function") renderEvents();
+        toast("🛡️ Wykryto bogatszy zapis z innej karty — przywróciłem go zamiast nadpisać.","good");
+        return false;
+      }
     }
 
     if(stored && stored.tab && stored.tab !== TAB_ID && (stored.rev|0) > knownRev){
@@ -708,7 +771,12 @@ function load(){
   state.stats  = Object.assign(state.stats, d.stats||{});
   if(!state.stats.cases || typeof state.stats.cases !== "object") state.stats.cases = {};
   state.sound  = d.sound !== false;
+  state.volume = (typeof d.volume === "number" && isFinite(d.volume)) ? Math.max(0, Math.min(1, d.volume)) : 1;
   state.fast   = d.fast === true;
+  state.perfMode     = d.perfMode === true;
+  state.fxParticles  = d.fxParticles !== false;
+  state.screenShake  = d.screenShake !== false;
+  state.uiAnim       = d.uiAnim !== false;
   state.bonusAt= d.bonusAt || 0;
   state.rescueAt = d.rescueAt || 0;
   state.cloverUntil = numFrom(d.cloverUntil);   // ⚠ bez |0 — inaczej koniczyna „ginęła” przy odświeżeniu
@@ -719,11 +787,13 @@ function load(){
   state.rank = numFrom(d.rank) || 1;
   albumLoad(d);                    // 📖 album kolekcji (migruje stare zapisy)
   missionsLoad(d);                 // 🎯 misje dzienne (nowe, gdy zmienił się dzień)
-  weeklyLoad(d);                   // 📅 misje tygodniowe (nowe co 7 dni)
+  weeklyLoad(d);
+  dailyHubLoad(d);                   // 📅 misje tygodniowe (nowe co 7 dni)
   state.up = Object.assign(UP_ZERO(), d.up||{});
   UPGRADES.forEach(u=>{ state.up[u.id] = Math.max(0, Math.min(u.max, state.up[u.id]|0)); });
   const known = new Set(UPGRADES.map(u=>u.id));
   Object.keys(state.up).forEach(k=>{ if(!known.has(k)) delete state.up[k]; });   // usuwa wycofane perki
+  state.crashUp = normalizeCrashUp(d.crashUp);   // ⚙️ tylko Crash
   if(typeof state.stats.rescues !== "number") state.stats.rescues = 0;
   if(typeof state.stats.clovers !== "number") state.stats.clovers = 0;
   if(typeof state.stats.battles !== "number") state.stats.battles = 0;
@@ -742,6 +812,13 @@ function load(){
   state.botSalt = numFrom(d.botSalt);
   state.botBought = (d.botBought && typeof d.botBought === "object" && !Array.isArray(d.botBought)) ? d.botBought : {};
   state.botRefreshAt = numFrom(d.botRefreshAt);
+  state.botRep = {};
+  if(d.botRep && typeof d.botRep === "object" && !Array.isArray(d.botRep)){
+    Object.keys(d.botRep).forEach(k=>{
+      const n = numFrom(d.botRep[k]);
+      if(n > 0) state.botRep[k] = n;
+    });
+  }
   /* 🛒 sklep — osobny zapas, żeby nie kolidował z bazarowym */
   state.shopSalt = numFrom(d.shopSalt);
   state.shopBought = (d.shopBought && typeof d.shopBought === "object" && !Array.isArray(d.shopBought)) ? d.shopBought : {};
@@ -800,7 +877,10 @@ function importSave(){
       v:3, tab:TAB_ID, rev:0, ts:Date.now(), coins:d.coins||0, inv,
       recent:Array.isArray(d.recent)?d.recent:[], stats:d.stats||state.stats,
       codes:d.codes||{}, codeRedeemed:d.codeRedeemed||{}, codeBought:d.codeBought||{},
-      sound:state.sound, fast:state.fast, bonusAt:0 }));
+      botRep:d.botRep||{}, dailyCase:d.dailyCase||null, login:d.login||null,
+      sound:state.sound, volume:state.volume, fast:state.fast,
+      perfMode:state.perfMode, fxParticles:state.fxParticles,
+      screenShake:state.screenShake, uiAnim:state.uiAnim, bonusAt:0 }));
     location.reload();
   }catch(e){ toast("❌ Nieprawidłowy kod zapisu","bad"); }
 }
@@ -816,13 +896,21 @@ function ac(){
   if(AC.state === "suspended") AC.resume();
   return AC;
 }
+function masterVolume(){
+  const v = +state.volume;
+  return (typeof state.volume === "number" && isFinite(v)) ? Math.max(0, Math.min(1, v)) : 1;
+}
 function beep(freq, dur, type, vol, when){
   const c = ac(); if(!c) return;
+  const master = masterVolume();
+  if(master <= 0) return;
+  const peak = (vol||0.05) * master;
+  if(peak <= 0.00001) return;
   const t0 = c.currentTime + (when||0);
   const o = c.createOscillator(), g = c.createGain();
   o.type = type||"square"; o.frequency.value = freq;
   g.gain.setValueAtTime(0.0001, t0);
-  g.gain.exponentialRampToValueAtTime(vol||0.05, t0+0.007);
+  g.gain.exponentialRampToValueAtTime(peak, t0+0.007);
   g.gain.exponentialRampToValueAtTime(0.0001, t0+(dur||0.06));
   o.connect(g); g.connect(c.destination);
   o.start(t0); o.stop(t0+(dur||0.06)+0.03);
@@ -852,11 +940,13 @@ function sfxCode(){ beep(880,0.08,"triangle",0.048); beep(1175,0.08,"triangle",0
 function sfxErr(){ beep(150,0.18,"sawtooth",0.045); }
 function sfxWhoosh(){
   const c = ac(); if(!c) return;
+  const master = masterVolume();
+  if(master <= 0) return;
   const o = c.createOscillator(), g = c.createGain();
   o.type="sawtooth";
   o.frequency.setValueAtTime(160, c.currentTime);
   o.frequency.exponentialRampToValueAtTime(90, c.currentTime+0.4);
-  g.gain.setValueAtTime(0.045, c.currentTime);
+  g.gain.setValueAtTime(0.045 * master, c.currentTime);
   g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+0.45);
   o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+0.5);
 }
@@ -888,7 +978,7 @@ function renderBalance(instant){
 
   /* Przy auto-otwieraniu licznik zmienia się kilka razy na sekundę.
      Animowanie go i wymuszanie reflow za każdym razem tylko szkodzi. */
-  if(autoOpen || state.fast || document.hidden){
+  if(autoOpen || state.fast || state.perfMode || document.hidden){
     lastBalance = to;
     balShown = to;
     el.textContent = fmtShort(to);
@@ -936,4 +1026,5 @@ function switchView(v){
   if(v==="market") renderMarket();
   if(v==="codes") renderCodes();
   if(v==="casino"){ renderCoinflip(); renderCasinoProfile(); }
+  if(v==="events" && typeof renderEvents === "function") renderEvents();
 }

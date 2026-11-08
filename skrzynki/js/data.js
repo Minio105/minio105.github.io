@@ -55,11 +55,18 @@ const EVENT_FX = [
 const EVENT_FX_BY_ID = {};
 EVENT_FX.forEach(f=>EVENT_FX_BY_ID[f.id]=f);
 function eventFxActive(){
-  const now = Date.now();
-  return now >= EVENT_FX_START && now < EVENT_FX_START + EVENT_FX_HOURS*3600*1000;
+  return eventFxList().length > 0;
 }
 function eventFxList(){
-  return eventFxActive() ? EVENT_FX : [];
+  /* 🌍 Eventy świata (js/events.js) decydują, które efekty eventowe są aktywne.
+     Gdy moduł eventów nie jest załadowany, zostaje awaryjny, stary event. */
+  if(typeof worldEventFxIds === "function"){
+    const ids = worldEventFxIds();
+    if(ids && ids.length) return EVENT_FX.filter(f=>ids.includes(f.id));
+    return [];
+  }
+  const now = Date.now();
+  return (now >= EVENT_FX_START && now < EVENT_FX_START + EVENT_FX_HOURS*3600*1000) ? EVENT_FX : [];
 }
 const FX_CHANCE = FX.reduce((a,f)=>a+f.chance,0);   // suma szans (na tierze ×1)
 const FX_TIER_BOOST = {mil:1, restricted:1, classified:1.3, covert:1.6, special:2.2, relic:3.0};
@@ -76,7 +83,8 @@ const FX_EVENT_PRICE = {
   xmas:22000, hallow:30000, ny:80000, easter:36000
 };
 
-/* 🤡 Skrzynka Troll — prawie zawsze 1 moneta, bardzo rzadki jackpot 1M. */
+/* 🤡 Skrzynki Troll — prawie zawsze 1 moneta, bardzo rzadki jackpot.
+   Jest ich kilka: im droższa, tym większy jackpot i mniejsza szansa. */
 const TROLL_PRICE       = 5000;
 const TROLL_CHANCE      = 0.001;      // 0,1% na jackpot
 const TROLL_JACKPOT     = 1000000;
@@ -197,7 +205,7 @@ const CASES = [
 
   { id:"royal", name:"Skrzynka Królewska", price:300000, color:"#fbbf24", icon:"👑",
     sub:"Bez śmieci — same dobre rzeczy. Najwyższa półka.",
-    odds:{mil:.030, restricted:.590, classified:.280, covert:.086, special:.014},
+    odds:{mil:.030, restricted:.590, classified:.280, covert:.0965, special:.0035},
     items:{
       mil:       [["P250","Posąg","pistol"],["MP9","Marmur","smg"],["Galil AR","Alabaster","rifle"],["Nova","Porcelana","shotgun"]],
       restricted:[["AK-47","Złota Harmonia","rifle"],["AWP","Królewska Wstęga","awp"],["M4A1-S","Srebrny Dwór","rifle"],
@@ -212,7 +220,44 @@ const CASES = [
     sub:"Albo 1 000 000 monet, albo 1 moneta. Naprawdę.",
     troll:true, noBattle:true, noAlbum:true, noItems:true,
     trollChance:TROLL_CHANCE, trollJackpot:TROLL_JACKPOT, trollConsolation:TROLL_CONSOLATION,
-    odds:{mil:1-TROLL_CHANCE, special:TROLL_CHANCE}, items:{} }
+    odds:{mil:1-TROLL_CHANCE, special:TROLL_CHANCE}, items:{} },
+
+  /* 🤡 Więcej skrzynek trollowych — śmieszne nazwy, śmiesznie małe szanse. */
+  { id:"troll_obiecuje", name:"Skrzynka Obiecuję", price:500, color:"#a855f7", icon:"🤞",
+    sub:"Obiecuję, że tym razem coś będzie. No, prawie coś.",
+    troll:true, noBattle:true, noAlbum:true, noItems:true,
+    trollChance:0.01, trollJackpot:10000, trollConsolation:1,
+    odds:{mil:0.99, special:0.01}, items:{} },
+
+  { id:"troll_babcia", name:"Skrzynka Babcia Mówiła", price:1000, color:"#38e08a", icon:"👵",
+    sub:"Babcia mówiła, żeby nie otwierać. Otworzyłeś.",
+    troll:true, noBattle:true, noAlbum:true, noItems:true,
+    trollChance:0.005, trollJackpot:100000, trollConsolation:1,
+    odds:{mil:0.995, special:0.005}, items:{} },
+
+  { id:"troll_zaufaj", name:"Skrzynka Zaufaj Mi", price:2000, color:"#ec4899", icon:"🙏",
+    sub:"Zaufaj mi. Serio. No dawaj, otwieraj.",
+    troll:true, noBattle:true, noAlbum:true, noItems:true,
+    trollChance:0.002, trollJackpot:500000, trollConsolation:1,
+    odds:{mil:0.998, special:0.002}, items:{} },
+
+  { id:"troll_ostatnia", name:"Skrzynka Ostatnia Moneta", price:10000, color:"#38bdf8", icon:"🪙",
+    sub:"Ostatnia moneta. Naprawdę ostatnia. Chyba.",
+    troll:true, noBattle:true, noAlbum:true, noItems:true,
+    trollChance:0.0002, trollJackpot:10000000, trollConsolation:1,
+    odds:{mil:0.9998, special:0.0002}, items:{} },
+
+  { id:"troll_prawie", name:"Skrzynka Prawie Jackpot", price:25000, color:"#f59e0b", icon:"🎰",
+    sub:"Prawie jackpot to wciąż nie jackpot. Ale blisko.",
+    troll:true, noBattle:true, noAlbum:true, noItems:true,
+    trollChance:0.0005, trollJackpot:5000000, trollConsolation:1,
+    odds:{mil:0.9995, special:0.0005}, items:{} },
+
+  { id:"troll_serio", name:"Skrzynka Serio? Znowu?", price:50000, color:"#94a3b8", icon:"😑",
+    sub:"Serio? Znowu? No dobra. Otwieraj, ale się nie zdziw.",
+    troll:true, noBattle:true, noAlbum:true, noItems:true,
+    trollChance:0.0002, trollJackpot:20000000, trollConsolation:1,
+    odds:{mil:0.9998, special:0.0002}, items:{} }
 ];
 
 /* =======================================================================
@@ -370,7 +415,7 @@ const NEW_CASES = [
 
   { id:"celestial", name:"Skrzynka Niebios", price:750000, color:"#e2e8f0", icon:"🕊️",
     sub:"Boski blask, skrzydła i światło z zaświatów",
-    odds:{mil:.080, restricted:.560, classified:.270, covert:.075, special:.015},
+    odds:{mil:.080, restricted:.560, classified:.270, covert:.087, special:.003},
     items:{
       mil:       [["P250","Halo","pistol"],["MP9","Chmurka","smg"],["Galil AR","Świt","rifle"],
                   ["Nova","Obłok","shotgun"],["FAMAS","Anioł Stróż","rifle"],["Tec-9","Świetlik","pistol"]],
@@ -386,7 +431,7 @@ const NEW_CASES = [
 
   { id:"abyss", name:"Skrzynka Otchłani", price:2000000, color:"#4338ca", icon:"🦑",
     sub:"Głębiny, Lewiatan i ciśnienie, które zgniata stal",
-    odds:{mil:.010, restricted:.520, classified:.330, covert:.115, special:.025},
+    odds:{mil:.010, restricted:.520, classified:.330, covert:.1365, special:.0035},
     items:{
       mil:       [["P250","Głębia","pistol"],["MP9","Plankton","smg"],["Galil AR","Osad","rifle"],
                   ["Nova","Koral","shotgun"],["Tec-9","Ciśnienie","pistol"]],
@@ -687,7 +732,7 @@ const NEW_CASES_2 = [
 
   { id:"phoenix", name:"Skrzynka Feniksa", price:1250000, color:"#f97316", icon:"🦅",
     sub:"Ognisty ptak, wieczny powrót i popiół w garści",
-    odds:{mil:.020, restricted:.500, classified:.320, covert:.130, special:.030},
+    odds:{mil:.020, restricted:.500, classified:.320, covert:.156, special:.004},
     items:{
       mil:       [["P250","Popiół Feniksa","pistol"],["MP9","Żar Feniksa","smg"],["Galil AR","Spopielony","rifle"],
                   ["Nova","Gniazdo Ognia","shotgun"],["Tec-9","Iskra Feniksa","pistol"]],
@@ -705,7 +750,7 @@ const NEW_CASES_2 = [
 const NEW_CASES_3 = [
   { id:"star", name:"Skrzynka Gwiazd", price:2500000, color:"#fde047", icon:"🌟",
     sub:"Błysk supernowych, pył gwiazdowy i ostrza z nieba",
-    odds:{mil:.050, restricted:.550, classified:.280, covert:.095, special:.025},
+    odds:{mil:.050, restricted:.550, classified:.280, covert:.1165, special:.0035},
     items:{
       mil:       [["MP9","Pył Gwiazdowy","smg"],["P250","Supernowa","pistol"],["Galil AR","Jutrzenka","rifle"],
                   ["Nova","Kometa","shotgun"],["Tec-9","Meteor","pistol"]],
@@ -721,7 +766,7 @@ const NEW_CASES_3 = [
 
   { id:"power", name:"Skrzynka Mocy", price:5000000, color:"#a855f7", icon:"⚡",
     sub:"Czysta energia, przepięcia i ostrza naładowane prądem",
-    odds:{mil:.030, restricted:.500, classified:.320, covert:.120, special:.030},
+    odds:{mil:.030, restricted:.500, classified:.320, covert:.146, special:.004},
     items:{
       mil:       [["MP9","Prąd","smg"],["P250","Iskra","pistol"],["Galil AR","Napięcie","rifle"],
                   ["Nova","Wyładowanie","shotgun"],["Tec-9","Kondensator","pistol"]],
@@ -740,7 +785,7 @@ const NEW_CASES_3 = [
 
   { id:"apoc", name:"Skrzynka Apokalipsy", price:20000000, color:"#7f1d1d", icon:"💀",
     sub:"Koniec świata, popiół i ostrza z otchłani",
-    odds:{mil:.005, restricted:.400, classified:.380, covert:.165, special:.050},
+    odds:{mil:.005, restricted:.400, classified:.380, covert:.209, special:.006},
     items:{
       mil:       [["P250","Popiół Końca","pistol"],["MP9","Zgliszcza","smg"],["Galil AR","Zniszczenie","rifle"]],
       restricted:[["AK-47","Zgliszcza Świata","rifle"],["AWP","Koniec Czasu","awp"],["M4A1-S","Apokalipsa","rifle"],
@@ -756,7 +801,7 @@ const NEW_CASES_3 = [
 
   { id:"secret10", name:"Skrzynka Sekretna", price:10000000, color:"#1e293b", icon:"🔐", secret:true,
     sub:"Zamknięta na siedem kłódek. W środku tylko to, czego nikt nie powinien mieć.",
-    odds:{mil:.001, restricted:.350, classified:.400, covert:.199, special:.050},
+    odds:{mil:.001, restricted:.350, classified:.400, covert:.243, special:.006},
     items:{
       mil:       [["P250","Ostatni Oddech","pistol"],["MP9","Szept Echa","smg"],["Galil AR","Zamek Cieni","rifle"],
                   ["Nova","Kopuła","shotgun"],["Tec-9","Lekki Jak Cień","pistol"]],
@@ -782,7 +827,7 @@ const NEW_CASES_3 = [
 
   { id:"secret50", name:"Skrzynka Legendarna", price:50000000, color:"#fbbf24", icon:"👑", secret:true,
     sub:"Szczyt. Tylko dla tych, którzy nie mają już czego szukać. Najrzadsze ostrza na świecie.",
-    odds:{mil:.001, restricted:.350, classified:.400, covert:.199, special:.050},
+    odds:{mil:.001, restricted:.350, classified:.400, covert:.243, special:.006},
     items:{
       mil:       [["P250","Ostatni Oddech","pistol"],["MP9","Echa Tronu","smg"],["Galil AR","Kolumna","rifle"],
                   ["Nova","Korona Popiołów","shotgun"],["Tec-9","Złoty Pył","pistol"],["MAC-10","Siedem","smg"]],
@@ -810,7 +855,141 @@ const NEW_CASES_3 = [
                   ["Nóż Klasyczny","Berło","knife"],["Nóż Bowie","Ornament","knife"]] } }
 ];
 
-CASES.push(...NEW_CASES, ...NEW_CASES_2, ...NEW_CASES_3);
+/* =======================================================================
+   1a4b. NOWA PORCJA ZWYKŁYCH SKRZYNEK + TANIE SKRZYNKI BUDŻETOWE
+   Sześć zwykłych skrzynek w różnych przedziałach cenowych oraz cztery
+   tańsze i gorsze skrzynki na start. Bez flag specjalnych — trafiają
+   do kategorii „Zwykłe” i do albumu.
+   ======================================================================= */
+const NEW_CASES_4 = [
+  { id:"cardboard", name:"Skrzynka Kartonowa", price:25, color:"#b45309", icon:"📦",
+    sub:"Karton po przeprowadzce. Może coś zostało.",
+    odds:{mil:.920, restricted:.070, classified:.008, covert:.0017, special:.0003},
+    items:{
+      mil:       [["MP9","Karton","smg"],["P250","Taśma","pistol"],["Galil AR","Pudełko","rifle"],
+                  ["Nova","Wypełniacz","shotgun"]],
+      restricted:[["AK-47","Przeprowadzka","rifle"],["AWP","Kurier","awp"],["M4A1-S","Adres","rifle"]],
+      classified:[["AK-47","Zwrot do Nadawcy","rifle"],["Desert Eagle","Pieczątka","pistol"]],
+      covert:    [["AWP","Zaginiona Paczka","awp"],["AK-47","Kartonowy Król","rifle"]],
+      special:   [["Karambit","Karton","knife"],["Nóż Motylkowy","Taśma","knife"],
+                  ["Nóż Talon","Pudełko","knife"],["Bayonet","Wypełniacz","knife"]] } },
+
+  { id:"lost", name:"Skrzynka Zgubiona", price:40, color:"#64748b", icon:"🧦",
+    sub:"Ktoś zostawił ją na przystanku. Pachnie deszczem.",
+    odds:{mil:.900, restricted:.085, classified:.011, covert:.0033, special:.0007},
+    items:{
+      mil:       [["MP9","Zguba","smg"],["P250","Deszcz","pistol"],["Galil AR","Przystanek","rifle"],
+                  ["Nova","Kałuża","shotgun"]],
+      restricted:[["AK-47","Zapomniane","rifle"],["AWP","Bilet","awp"],["M4A1-S","Rozkład","rifle"]],
+      classified:[["AK-47","Rzeczy Znalezione","rifle"],["Desert Eagle","Portfel","pistol"]],
+      covert:    [["AWP","Biuro Rzeczy Znalezionych","awp"],["AK-47","Właściciel","rifle"]],
+      special:   [["Karambit","Zguba","knife"],["Nóż Motylkowy","Bilet","knife"],
+                  ["Nóż Talon","Portfel","knife"],["Bayonet","Przystanek","knife"]] } },
+
+  { id:"junk", name:"Skrzynka Złomowa", price:60, color:"#78716c", icon:"🔩",
+    sub:"Stare śrubki, taśma i odrobina nadziei.",
+    odds:{mil:.880, restricted:.100, classified:.014, covert:.005, special:.001},
+    items:{
+      mil:       [["MP9","Śruba","smg"],["P250","Nakrętka","pistol"],["Galil AR","Złom","rifle"],
+                  ["Nova","Drut","shotgun"]],
+      restricted:[["AK-47","Warsztat","rifle"],["AWP","Rura","awp"],["M4A1-S","Spaw","rifle"]],
+      classified:[["AK-47","Złomiarz","rifle"],["Desert Eagle","Klucz","pistol"]],
+      covert:    [["AWP","Wielki Złom","awp"],["AK-47","Pan Złomu","rifle"]],
+      special:   [["Karambit","Złom","knife"],["Nóż Motylkowy","Śruba","knife"],
+                  ["Nóż Talon","Nakrętka","knife"],["Bayonet","Drut","knife"]] } },
+
+  { id:"mystery", name:"Skrzynka Tajemnicza", price:80, color:"#a78bfa", icon:"❓",
+    sub:"Tania, podejrzana i lekko mokra. Czego chcieć więcej?",
+    odds:{mil:.860, restricted:.115, classified:.018, covert:.006, special:.001},
+    items:{
+      mil:       [["MP9","Znak Zapytania","smg"],["P250","Niewiadoma","pistol"],["Galil AR","Zagadka","rifle"],
+                  ["Nova","Sekret","shotgun"]],
+      restricted:[["AK-47","Tajemnica","rifle"],["AWP","Cień","awp"],["M4A1-S","Zasłona","rifle"]],
+      classified:[["AK-47","Mroczna Sprawa","rifle"],["Desert Eagle","Klucz do Zagadki","pistol"]],
+      covert:    [["AWP","Rozwiązanie","awp"],["AK-47","Wielka Niewiadoma","rifle"]],
+      special:   [["Karambit","Tajemnica","knife"],["Nóż Motylkowy","Zagadka","knife"],
+                  ["Nóż Talon","Sekret","knife"],["Bayonet","Niewiadoma","knife"]] } },
+
+  { id:"cargo", name:"Skrzynka Ładunkowa", price:750, color:"#f59e0b", icon:"📦",
+    sub:"Kontener pełen stali, taśmy i przypadkowych skarbów.",
+    odds:{mil:.760, restricted:.180, classified:.045, covert:.012, special:.003},
+    items:{
+      mil:       [["MP9","Kontener","smg"],["P250","Skrzynia","pistol"],["Galil AR","Ładunek","rifle"],
+                  ["Nova","Paleta","shotgun"],["Tec-9","Taśma","pistol"]],
+      restricted:[["AK-47","Spedycja","rifle"],["AWP","Kontenerowiec","awp"],["M4A1-S","Manifest","rifle"],
+                  ["USP-S","Cło","pistol"]],
+      classified:[["AK-47","Czarny Rynek","rifle"],["Desert Eagle","Konosament","pistol"],["AWP","Port","awp"]],
+      covert:    [["AWP","Wielki Ładunek","awp"],["AK-47","Kapitan Portu","rifle"],["M4A4","Stalowy Kontener","rifle"]],
+      special:   [["Karambit","Kontrabanda","knife"],["Nóż Motylkowy","Ładownia","knife"],
+                  ["Nóż Talon","Port","knife"],["Bayonet","Kontener","knife"]] } },
+
+  { id:"arctic", name:"Skrzynka Arktyczna", price:4000, color:"#7dd3fc", icon:"❄️",
+    sub:"Lód, wiatr i coś, co nie powinno było zamarznąć.",
+    odds:{mil:.700, restricted:.220, classified:.060, covert:.017, special:.003},
+    items:{
+      mil:       [["MP9","Szron","smg"],["P250","Lód","pistol"],["Galil AR","Zamieć","rifle"],
+                  ["Nova","Sopel","shotgun"],["Tec-9","Mróz","pistol"]],
+      restricted:[["AK-47","Arktyka","rifle"],["AWP","Biała Cisza","awp"],["M4A1-S","Lodowiec","rifle"],
+                  ["USP-S","Igloo","pistol"]],
+      classified:[["AK-47","Wieczna Zmarzlina","rifle"],["Desert Eagle","Kriolit","pistol"],["AWP","Biegun","awp"]],
+      covert:    [["AWP","Noc Polarna","awp"],["AK-47","Lodowy Tron","rifle"],["M4A4","Glacjał","rifle"]],
+      special:   [["Karambit","Lód","knife"],["Nóż Motylkowy","Szron","knife"],
+                  ["Nóż Talon","Sopel","knife"],["Bayonet","Zamieć","knife"]] } },
+
+  { id:"ember", name:"Skrzynka Żaru", price:7000, color:"#f97316", icon:"🔥",
+    sub:"Wciąż ciepła. Lepiej nie pytać, co ją podpaliło.",
+    odds:{mil:.680, restricted:.230, classified:.065, covert:.021, special:.004},
+    items:{
+      mil:       [["MP9","Żar","smg"],["P250","Iskra","pistol"],["Galil AR","Ogień","rifle"],
+                  ["Nova","Popiół","shotgun"],["Tec-9","Węgiel","pistol"]],
+      restricted:[["AK-47","Czerwony Żar","rifle"],["AWP","Płomień","awp"],["M4A1-S","Kominek","rifle"],
+                  ["USP-S","Zapałka","pistol"]],
+      classified:[["AK-47","Piekło","rifle"],["Desert Eagle","Magma","pistol"],["AWP","Fajerwerk","awp"]],
+      covert:    [["AWP","Słońce","awp"],["AK-47","Wieczny Ogień","rifle"],["M4A4","Lawina","rifle"]],
+      special:   [["Karambit","Żar","knife"],["Nóż Motylkowy","Płomień","knife"],
+                  ["Nóż Talon","Iskra","knife"],["Bayonet","Popiół","knife"]] } },
+
+  { id:"mirage", name:"Skrzynka Mirażu", price:14000, color:"#fbbf24", icon:"🌅",
+    sub:"Widać ją tylko kątem oka. I tylko przy pustej kieszeni.",
+    odds:{mil:.650, restricted:.250, classified:.070, covert:.025, special:.005},
+    items:{
+      mil:       [["MP9","Piasek","smg"],["P250","Fata Morgana","pistol"],["Galil AR","Miraż","rifle"],
+                  ["Nova","Oaza","shotgun"],["Tec-9","Halucynacja","pistol"]],
+      restricted:[["AK-47","Złudzenie","rifle"],["AWP","Pustynny Wiatr","awp"],["M4A1-S","Optyka","rifle"],
+                  ["USP-S","Cień","pistol"]],
+      classified:[["AK-47","Iluzja","rifle"],["Desert Eagle","Sfinks","pistol"],["AWP","Oaza","awp"]],
+      covert:    [["AWP","Miraż Absolutny","awp"],["AK-47","Pan Iluzji","rifle"],["M4A4","Pustynna Burza","rifle"]],
+      special:   [["Karambit","Miraż","knife"],["Nóż Motylkowy","Fata","knife"],
+                  ["Nóż Talon","Oaza","knife"],["Bayonet","Złudzenie","knife"]] } },
+
+  { id:"oracle", name:"Skrzynka Wyroczni", price:40000, color:"#a78bfa", icon:"🔮",
+    sub:"Przepowiada ci noże. Zwykle się myli.",
+    odds:{mil:.620, restricted:.260, classified:.080, covert:.034, special:.006},
+    items:{
+      mil:       [["MP9","Karta","smg"],["P250","Kość","pistol"],["Galil AR","Wróżba","rifle"],
+                  ["Nova","Kadzidło","shotgun"],["Tec-9","Sen","pistol"]],
+      restricted:[["AK-47","Przepowiednia","rifle"],["AWP","Trzecie Oko","awp"],["M4A1-S","Tarot","rifle"],
+                  ["USP-S","Kryształ","pistol"]],
+      classified:[["AK-47","Wyrocznia","rifle"],["Desert Eagle","Proroctwo","pistol"],["AWP","Wizja","awp"]],
+      covert:    [["AWP","Przyszłość","awp"],["AK-47","Pan Przeznaczenia","rifle"],["M4A4","Kronika","rifle"]],
+      special:   [["Karambit","Wyrocznia","knife"],["Nóż Motylkowy","Tarot","knife"],
+                  ["Nóż Talon","Wizja","knife"],["Bayonet","Proroctwo","knife"]] } },
+
+  { id:"citadel", name:"Skrzynka Cytadeli", price:70000, color:"#94a3b8", icon:"🏰",
+    sub:"Ostatnia forteca zwykłych skrzynek. Mury ze stali i złota.",
+    odds:{mil:.600, restricted:.270, classified:.085, covert:.038, special:.007},
+    items:{
+      mil:       [["MP9","Mur","smg"],["P250","Straż","pistol"],["Galil AR","Baszta","rifle"],
+                  ["Nova","Fosa","shotgun"],["Tec-9","Ślepy Nabój","pistol"]],
+      restricted:[["AK-47","Cytadela","rifle"],["AWP","Wieża","awp"],["M4A1-S","Warownia","rifle"],
+                  ["USP-S","Klucz","pistol"]],
+      classified:[["AK-47","Twierdza","rifle"],["Desert Eagle","Brama","pistol"],["AWP","Donżon","awp"]],
+      covert:    [["AWP","Zamek","awp"],["AK-47","Król Twierdzy","rifle"],["M4A4","Mury","rifle"]],
+      special:   [["Karambit","Cytadela","knife"],["Nóż Motylkowy","Baszta","knife"],
+                  ["Nóż Talon","Warownia","knife"],["Bayonet","Fosa","knife"]] } }
+];
+
+CASES.push(...NEW_CASES, ...NEW_CASES_2, ...NEW_CASES_3, ...NEW_CASES_4);
 CASES.sort((a,b)=>a.price - b.price);
 
 /* druga porcja broni wchodzi do wszystkich skrzynek — także tych nowych */
@@ -844,7 +1023,7 @@ const BOT_CASES = [
 
   { id:"gambler", name:"Skrzynka Hazardzisty", price:900000, color:"#e11d48", icon:"🎲", botOnly:true,
     sub:"Jedno rozdanie decyduje o wszystkim. Stawka? Twoja kolekcja.",
-    odds:{mil:.120, restricted:.540, classified:.250, covert:.070, special:.020},
+    odds:{mil:.120, restricted:.540, classified:.250, covert:.086, special:.004},
     items:{
       mil:       [["MP9","Kostka","smg"],["P250","Żeton","pistol"],["Galil AR","Ruletka","rifle"],
                   ["Nova","Zakład","shotgun"],["Tec-9","Szuler","pistol"],["MAC-10","Talia Kart","smg"]],
@@ -900,7 +1079,7 @@ const BOT_CASES = [
 const MEGA_CASES = [
   { id:"quantum", name:"Skrzynka Kwantowa", price:5000000000000, color:"#22d3ee", icon:"⚛️", mega:true,
     sub:"Pięć bilionów monet. Fizyka przestaje działać.",
-    odds:{mil:.004, restricted:.300, classified:.360, covert:.260, special:.076},
+    odds:{mil:.004, restricted:.300, classified:.360, covert:.328, special:.008},
     items:{
       mil:       [["MP9","Kwant","smg"],["P250","Superpozycja","pistol"],["Galil AR","Obserwator","rifle"],
                   ["Nova","Skok Kwantowy","shotgun"],["Tec-9","Foton","pistol"],["MAC-10","Splątanie","smg"],
@@ -919,7 +1098,7 @@ const MEGA_CASES = [
 
   { id:"eternity", name:"Skrzynka Wieczności", price:10000000000000, color:"#a78bfa", icon:"♾️", mega:true,
     sub:"Dziesięć bilionów. Czas nie ma tu znaczenia.",
-    odds:{mil:.002, restricted:.240, classified:.340, covert:.318, special:.100},
+    odds:{mil:.002, restricted:.240, classified:.340, covert:.408, special:.010},
     items:{
       mil:       [["P250","Piasek Czasu","pistol"],["MP9","Wieczny","smg"],["Galil AR","Cykl","rifle"],
                   ["Nova","Klepsydra","shotgun"],["Tec-9","Zegar","pistol"],["MAC-10","Epoka","smg"],
@@ -936,7 +1115,7 @@ const MEGA_CASES = [
 
   { id:"singularity", name:"Skrzynka Osobliwości", price:15000000000000, color:"#a855f7", icon:"🕳️", mega:true,
     sub:"Piętnaście bilionów. Ostatnia skrzynka w grze.",
-    odds:{mil:.001, restricted:.200, classified:.330, covert:.369, special:.100},
+    odds:{mil:.001, restricted:.200, classified:.330, covert:.459, special:.010},
     items:{
       mil:       [["P250","Pył","pistol"],["MP9","Ciemność","smg"],["Galil AR","Grawitacja","rifle"],
                   ["Nova","Zapadnia","shotgun"],["Tec-9","Horyzont","pistol"],["MAC-10","Zapadłość","smg"],
@@ -961,7 +1140,7 @@ const MEGA_CASES = [
 const ELITE_CASES = [
   { id:"aurora", name:"Skrzynka Aurory", price:1000000000, color:"#34d399", icon:"🌠", elite:true,
     sub:"Miliard monet. Niebo płonie kolorami.",
-    odds:{mil:.020, restricted:.420, classified:.340, covert:.190, special:.030},
+    odds:{mil:.020, restricted:.420, classified:.340, covert:.2155, special:.0045},
     items:{
       mil:       [["MP9","Zorza","smg"],["P250","Świt","pistol"],["Galil AR","Arktyka","rifle"],
                   ["Nova","Szron","shotgun"],["Tec-9","Iskra","pistol"],["MAC-10","Wiatr","smg"],
@@ -977,7 +1156,7 @@ const ELITE_CASES = [
 
   { id:"nebula", name:"Skrzynka Mgławicy", price:10000000000, color:"#f472b6", icon:"🌌", elite:true,
     sub:"Dziesięć miliardów. Gwiazdy rodzą się na twoich oczach.",
-    odds:{mil:.015, restricted:.380, classified:.360, covert:.210, special:.035},
+    odds:{mil:.015, restricted:.380, classified:.360, covert:.240, special:.005},
     items:{
       mil:       [["P250","Mgławica","pistol"],["MP9","Pył Gwiezdny","smg"],["Galil AR","Chmura","rifle"],
                   ["Nova","Kosmos","shotgun"],["Tec-9","Gwiezdny Wiatr","pistol"],["MAC-10","Nebula","smg"],
@@ -993,7 +1172,7 @@ const ELITE_CASES = [
 
   { id:"vortex", name:"Skrzynka Wiru", price:50000000000, color:"#38bdf8", icon:"🌀", elite:true,
     sub:"Pięćdziesiąt miliardów. Wszystko wiruje.",
-    odds:{mil:.010, restricted:.330, classified:.380, covert:.240, special:.040},
+    odds:{mil:.010, restricted:.330, classified:.380, covert:.2745, special:.0055},
     items:{
       mil:       [["P250","Wir","pistol"],["MP9","Pęd","smg"],["Galil AR","Cyklon","rifle"],
                   ["Nova","Podmuch","shotgun"],["Tec-9","Łuk","pistol"],["MAC-10","Turbina","smg"],
@@ -1009,7 +1188,7 @@ const ELITE_CASES = [
 
   { id:"titan", name:"Skrzynka Tytana", price:200000000000, color:"#fbbf24", icon:"🗿", elite:true,
     sub:"Dwieście miliardów. Legenda z kamienia i złota.",
-    odds:{mil:.005, restricted:.280, classified:.380, covert:.290, special:.045},
+    odds:{mil:.005, restricted:.280, classified:.380, covert:.329, special:.006},
     items:{
       mil:       [["P250","Brąz","pistol"],["MP9","Kolos","smg"],["Galil AR","Głaz","rifle"],
                   ["Nova","Młot","shotgun"],["Tec-9","Kowadło","pistol"],["MAC-10","Stalowy","smg"],
@@ -1025,7 +1204,7 @@ const ELITE_CASES = [
 
   { id:"eclipse", name:"Skrzynka Zaćmienia", price:900000000000, color:"#fb923c", icon:"🌑", elite:true,
     sub:"Dziewięćset miliardów. Słońce gaśnie, zostaje tylko cień.",
-    odds:{mil:.003, restricted:.230, classified:.360, covert:.347, special:.060},
+    odds:{mil:.003, restricted:.230, classified:.360, covert:.400, special:.007},
     items:{
       mil:       [["P250","Cień","pistol"],["MP9","Półcień","smg"],["Galil AR","Korona","rifle"],
                   ["Nova","Promień","shotgun"],["Tec-9","Pierścień","pistol"],["MAC-10","Mrok","smg"],
@@ -1041,13 +1220,13 @@ const ELITE_CASES = [
 ];
 
 /* =======================================================================
-   1a8. 💠 SKRZYNKI ULTRA — od 20 bilionów (20T) do 1 kwadryliona (1Qd)
+   1a8. 💠 SKRZYNKI ULTRA — od 20 bilionów (20T) do 5 kwadrylionów (5Qd)
    Oznaczone ultra:true — poza bazarem botów i poza zwykłą skalą.
    ======================================================================= */
 const ULTRA_CASES = [
   { id:"quad", name:"Kwadra", price:2e13, color:"#22d3ee", icon:"💠", ultra:true,
     sub:"Dwadzieścia bilionów monet. Cztery wymiary, jedna skrzynka.",
-    odds:{mil:.002, restricted:.250, classified:.350, covert:.320, special:.078},
+    odds:{mil:.002, restricted:.250, classified:.350, covert:.390, special:.008},
     items:{
       mil:       [["MP9","Kwadrat","smg"],["P250","Tetrada","pistol"],["Galil AR","Kwadrant","rifle"],
                   ["Nova","Cztery Wiatry","shotgun"],["Tec-9","Kwartet","pistol"],["MAC-10","Poczwórny","smg"]],
@@ -1061,7 +1240,7 @@ const ULTRA_CASES = [
 
   { id:"quint", name:"Kwinta", price:5e13, color:"#818cf8", icon:"🔷", ultra:true,
     sub:"Pięćdziesiąt bilionów monet. Piąty wymiar otwiera się tylko tutaj.",
-    odds:{mil:.0015, restricted:.230, classified:.350, covert:.340, special:.0785},
+    odds:{mil:.0015, restricted:.230, classified:.350, covert:.410, special:.0085},
     items:{
       mil:       [["P250","Pięciokąt","pistol"],["MP9","Kwinta","smg"],["Galil AR","Pentagon","rifle"],
                   ["Nova","Pięć Wiatrów","shotgun"],["Tec-9","Piątka","pistol"],["MAC-10","Pięciokrotny","smg"]],
@@ -1075,7 +1254,7 @@ const ULTRA_CASES = [
 
   { id:"sext", name:"Seksta", price:1e14, color:"#fb7185", icon:"🔶", ultra:true,
     sub:"Sto bilionów monet. Sześć pieczęci pęka naraz.",
-    odds:{mil:.001, restricted:.210, classified:.350, covert:.359, special:.080},
+    odds:{mil:.001, restricted:.210, classified:.350, covert:.431, special:.008},
     items:{
       mil:       [["P250","Heksagon","pistol"],["MP9","Seksta","smg"],["Galil AR","Sześcian","rifle"],
                   ["Nova","Sześć Wiatrów","shotgun"],["Tec-9","Szóstka","pistol"],["MAC-10","Sześciokrotny","smg"]],
@@ -1089,7 +1268,7 @@ const ULTRA_CASES = [
 
   { id:"sept", name:"Septa", price:2.5e14, color:"#f59e0b", icon:"🔺", ultra:true,
     sub:"Dwieście pięćdziesiąt bilionów monet. Siedem kręgów w jednej skrzynce.",
-    odds:{mil:.0008, restricted:.190, classified:.350, covert:.3792, special:.080},
+    odds:{mil:.0008, restricted:.190, classified:.350, covert:.4512, special:.008},
     items:{
       mil:       [["P250","Heptagon","pistol"],["MP9","Septyma","smg"],["Galil AR","Siedem Wiatrów","rifle"],
                   ["Nova","Siódemka","shotgun"],["Tec-9","Siedmioramienny","pistol"],["MAC-10","Siedmiokrotny","smg"]],
@@ -1104,7 +1283,7 @@ const ULTRA_CASES = [
 
   { id:"oct", name:"Okta", price:5e14, color:"#2dd4bf", icon:"🧿", ultra:true,
     sub:"Pięćset bilionów monet. Osiem cudów, zero litości.",
-    odds:{mil:.0006, restricted:.170, classified:.350, covert:.3994, special:.080},
+    odds:{mil:.0006, restricted:.170, classified:.350, covert:.4714, special:.008},
     items:{
       mil:       [["P250","Oktagon","pistol"],["MP9","Oktawa","smg"],["Galil AR","Osiem Wiatrów","rifle"],
                   ["Nova","Ósemka","shotgun"],["Tec-9","Ośmioramienny","pistol"],["MAC-10","Ośmiokrotny","smg"]],
@@ -1118,7 +1297,7 @@ const ULTRA_CASES = [
 
   { id:"non", name:"Nona", price:1e15, color:"#c084fc", icon:"🔮", ultra:true,
     sub:"Kwadrylion monet. Dziewięć otchłani czeka na śmiałka.",
-    odds:{mil:.0005, restricted:.150, classified:.350, covert:.4195, special:.080},
+    odds:{mil:.0005, restricted:.150, classified:.350, covert:.4915, special:.008},
     items:{
       mil:       [["P250","Nonagon","pistol"],["MP9","Nonet","smg"],["Galil AR","Dziewięć Wiatrów","rifle"],
                   ["Nova","Dziewiątka","shotgun"],["Tec-9","Dziewięcioramienny","pistol"],["MAC-10","Dziewięciokrotny","smg"]],
@@ -1128,7 +1307,39 @@ const ULTRA_CASES = [
                   ["AWP","Dziewięcioramienna Gwiazda","awp"],["P90","Enneaktyl","smg"]],
       covert:    [["AWP","Nonylion","awp"],["AK-47","Dziewięć Koron","rifle"],["M4A4","Enneagram Absolutny","rifle"]],
       special:   [["Karambit","Nonagon","knife"],["Nóż Motylkowy","Enneagram","knife"],
-                  ["Nóż Talon","Nowenna","knife"],["Bayonet","Dziewięć Ostrzy","knife"]] } }
+                  ["Nóż Talon","Nowenna","knife"],["Bayonet","Dziewięć Ostrzy","knife"]] } },
+
+  { id:"infinity", name:"Skrzynka Nieskończoności", price:2e15, color:"#22d3ee", icon:"♾️", ultra:true,
+    sub:"Dwa kwadryliony monet. Skala przestaje mieć znaczenie.",
+    odds:{mil:.0004, restricted:.120, classified:.340, covert:.5311, special:.0085},
+    items:{
+      mil:       [["MP9","Bezkres","smg"],["P250","Pętla","pistol"],["Galil AR","Horyzont","rifle"],
+                  ["Nova","Nieskończoność","shotgun"],["Tec-9","Wieczność","pistol"],["MAC-10","Poza Czasem","smg"]],
+      restricted:[["AK-47","Nieskończony","rifle"],["AWP","Horyzont Zdarzeń","awp"],
+                  ["M4A1-S","Wieczna Pętla","rifle"],["USP-S","Kres Skali","pistol"]],
+      classified:[["AK-47","Pan Nieskończoności","rifle"],["Desert Eagle","Osobliwość Czasu","pistol"],
+                  ["AWP","Poza Wszechświatem","awp"],["P90","Nieskończona Fala","smg"]],
+      covert:    [["AWP","Bezkres","awp"],["AK-47","Wieczny Horyzont","rifle"],
+                  ["M4A4","Nieskończona Materia","rifle"]],
+      special:   [["Karambit","Nieskończoność","knife"],["Nóż Motylkowy","Bezkres","knife"],
+                  ["Nóż Talon","Horyzont","knife"],["Bayonet","Wieczność","knife"],
+                  ["Nóż Skeleton","Poza Czasem","knife"]] } },
+
+  { id:"omega", name:"Skrzynka Absolutu", price:5e15, color:"#f43f5e", icon:"🌌", ultra:true,
+    sub:"Pięć kwadrylionów monet. Ostatnia granica.",
+    odds:{mil:.0003, restricted:.100, classified:.330, covert:.5612, special:.0085},
+    items:{
+      mil:       [["MP9","Alfa","smg"],["P250","Omega","pistol"],["Galil AR","Punkt Zero","rifle"],
+                  ["Nova","Koniec","shotgun"],["Tec-9","Ostatni","pistol"],["MAC-10","Absolut","smg"]],
+      restricted:[["AK-47","Początek i Koniec","rifle"],["AWP","Ostateczny Horyzont","awp"],
+                  ["M4A1-S","Granica","rifle"],["USP-S","Kres","pistol"]],
+      classified:[["AK-47","Pan Absolutu","rifle"],["Desert Eagle","Omega","pistol"],
+                  ["AWP","Ostatnie Światło","awp"],["P90","Koniec Wszechświata","smg"]],
+      covert:    [["AWP","Absolut","awp"],["AK-47","Ostateczny","rifle"],
+                  ["M4A4","Granica Wszechświata","rifle"]],
+      special:   [["Karambit","Omega","knife"],["Nóż Motylkowy","Absolut","knife"],
+                  ["Nóż Talon","Ostateczny","knife"],["Bayonet","Koniec","knife"],
+                  ["Nóż Skeleton","Punkt Zero","knife"]] } }
 ];
 
 CASES.push(...BOT_CASES, ...MEGA_CASES, ...ELITE_CASES, ...ULTRA_CASES);
@@ -1144,7 +1355,7 @@ const SELL_STEP   = 0.02;   // +2% wartości przy sprzedaży za poziom
 const SPEED_STEP  = 2000;   // -2 s odnowienia bonusu za poziom
 const COUPON_STEP = 0.04;   // +4% szans na darmowe otwarcie za poziom
 const VALUE_STEP  = 0.10;   // +10% wartości zdobytych przedmiotów
-const BULK_STEP   = 0.03;   // -3% ceny przy otwieraniu ×10
+const BULK_STEP   = 0.03;   // -3% ceny przy otwieraniu hurtowym (×10 i więcej)
 const CLOVER_STEP = 15000;  // +15 s działania koniczyny za poziom
 const BATTLE_STEP = 0.05;   // +5% wartości WYGRANYCH dropów gracza (nie wpływa na szansę wygranej)
 const IDLE_STEP   = 0.20;   // +20% monet za czas gry
@@ -1152,7 +1363,7 @@ const KOH_STEP    = 0.010;  // +1% szczęścia w Królowej góry
 const TRADE_STEP  = 0.020;  // -2% cen u botów
 const FXHUNT_STEP = 0.10;   // +10% szansy na efekt
 const PATCH_STEP  = 0.05;   // -5% ceny kosmetyków
-const BASECASE    = 100;    // najtańsza skrzynka (do ratunku)
+const BASECASE    = 25;     // najtańsza skrzynka (do ratunku)
 
 /* Noże prawie nie korzystają ze szczęścia — inaczej przy pełnym szczęściu
    z każdej skrzynki leciałyby same kosy. Wzrost rośnie z rzadkością, żeby
@@ -1191,9 +1402,9 @@ const UPGRADES = [
     costs:[10000,40000,140000,450000,1500000],
     fmt:l => "+"+Math.round(VALUE_STEP*l*100)+"% wartości nowych dropów" },
   { id:"bulk", icon:"📦", name:"Hurt", max:8,
-    desc:"Rabat na otwieranie ×10 i na bitwy 5×5. Przydatne, gdy wolisz otwierać hurtem zamiast pojedynczo.",
+    desc:"Rabat na otwieranie hurtowe (×10, ×100, ×1000, ×10000 i MAX) oraz na bitwy 5×5. Przydatne, gdy wolisz otwierać partiami zamiast pojedynczo.",
     costs:[5000,18000,65000,220000,800000,2500000,9000000,32000000],
-    fmt:l => l ? "−"+Math.round(BULK_STEP*l*100)+"% ceny przy ×10" : "bez rabatu przy ×10" },
+    fmt:l => l ? "−"+Math.round(BULK_STEP*l*100)+"% ceny przy otwieraniu hurtowym" : "bez rabatu przy otwieraniu hurtowym" },
   { id:"auto", icon:"🤖", name:"Auto-otwieranie", max:1,
     desc:"Odblokowuje przycisk 🤖 Auto przy każdej skrzynce — gra otwiera ją za Ciebie jedno po drugim, dopóki wystarcza monet (albo wciśniesz ⏹ Stop). Otwarcia liczą się jak zwykłe: kupony, 🍀 koniczyna, misje dzienne, album i ekwipunek działają normalnie. W panelu auto-otwierania znajdziesz ⚡ tryb turbo (4 otwarcia na sekundę) i ⏹ limit otwarć (∞ / 25 / 100 / 500).",
     costs:[12500],
@@ -1273,8 +1484,8 @@ function oddsFor(c){
 }
 
 /* --- pozostałe efekty ulepszeń --- */
-const sellRate     = () => SELL_RATE + SELL_STEP*upLvl("sell");
+const sellRate     = () => SELL_RATE + SELL_STEP*upLvl("sell") + (typeof worldEventSellBonus === "function" ? worldEventSellBonus() : 0);
 const bonusCd      = () => Math.max(4000, 20000 - SPEED_STEP*upLvl("speed"));
 const couponChance = () => COUPON_STEP*upLvl("coupon");
-const valueBoost   = () => 1 + VALUE_STEP*upLvl("value");
+const valueBoost   = () => 1 + VALUE_STEP*upLvl("value") + (typeof worldEventValueBonus === "function" ? worldEventValueBonus() : 0);
 const bulkRate     = () => BULK_STEP*upLvl("bulk");
