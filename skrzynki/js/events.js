@@ -131,11 +131,32 @@ const MINI_EVENTS = [
     id: "bot_tip", name: "Napiwek od bota", icon: "🤖", color: "#4b9bff",
     desc: "Bot dorzucił kilka monet „na kawę”.",
     short: "+drobne monety", weight: 2, kind: "coins", pct: 0.0015, min: 50, max: 3000
+  },
+  {
+    id: "double_exp", name: "Podwójne EXP", icon: "⚡", color: "#a78bfa",
+    desc: "Na chwilę wszystkie zdobywane punkty doświadczenia liczą się podwójnie.",
+    short: "×2 EXP przez 5 min", weight: 2, kind: "expboost", ms: 5 * 60 * 1000, mult: 2
+  },
+  {
+    id: "free_spin", name: "Darmowy spin", icon: "🎁", color: "#38bdf8",
+    desc: "Kasyno dorzuca jeden darmowy rzut monetą — bez ryzyka utraty skinów.",
+    short: "+1 darmowy spin", weight: 2, kind: "freespin", amount: 1
+  },
+  {
+    id: "bonus_clover", name: "Bonusowa koniczyna", icon: "🍀", color: "#38e08a",
+    desc: "Ktoś zasadził wyjątkowo tłustą koniczynę. Szanse rosną na dłużej.",
+    short: "+5–10 min koniczyny", weight: 2, kind: "clover", minMs: 5 * 60 * 1000, maxMs: 10 * 60 * 1000
+  },
+  {
+    id: "cheap_upgrade", name: "Tańsze ulepszenia", icon: "🧩", color: "#fbbf24",
+    desc: "Mechanik z warsztatu dał ci zniżkę na wszystkie ulepszenia.",
+    short: "−25% na ulepszenia przez 10 min", weight: 2, kind: "updiscount", pct: 25, ms: 10 * 60 * 1000
   }
 ];
 
 let miniEventState = {
   nextAt: 0,
+  lastAt: 0,
   history: []
 };
 
@@ -392,7 +413,7 @@ function weGrantAdminCoins(now){
 function weGrantAdminCase(now){
   /* darmowe skrzynki z admin abuse: maks. 120 tys., żeby event nie rozdawał
      milionowych skrzynek co 10 minut */
-  const pool = CASES.filter(c => c && c.price > 0 && c.price <= 120000 && !c.botOnly && !c.noBattle && !c.troll);
+  const pool = CASES.filter(c => c && c.price > 0 && c.price <= 120000 && !c.botOnly && !c.eventOnly && !c.noBattle && !c.troll);
   if(!pool.length) return;
   const c = pool[Math.floor(Math.random() * pool.length)];
   state.caseStock = state.caseStock || {};
@@ -412,6 +433,7 @@ function miniEventSave(){
   try{
     localStorage.setItem(MINI_EVENT_KEY, JSON.stringify({
       nextAt: miniEventState.nextAt,
+      lastAt: miniEventState.lastAt,
       history: miniEventState.history.slice(0, 8)
     }));
   }catch(e){}
@@ -423,6 +445,7 @@ function miniEventLoad(){
       const o = JSON.parse(raw);
       if(o && typeof o === "object"){
         if(Number.isFinite(o.nextAt)) miniEventState.nextAt = o.nextAt;
+        if(Number.isFinite(o.lastAt)) miniEventState.lastAt = o.lastAt;
         if(Array.isArray(o.history)) miniEventState.history = o.history.filter(h => h && h.at).slice(0, 8);
       }
     }
@@ -430,14 +453,22 @@ function miniEventLoad(){
   const now = Date.now();
   if(!miniEventState.nextAt || miniEventState.nextAt < now - 5 * WE_MIN){
     miniEventState.nextAt = now + MINI_FIRST_DELAY;
+    miniEventState.lastAt = now;
   }
+  if(!Number.isFinite(miniEventState.lastAt) || miniEventState.lastAt <= 0){
+    const lastHistory = miniEventState.history[0] && miniEventState.history[0].at;
+    miniEventState.lastAt = Math.min(now, lastHistory || (miniEventState.nextAt - MINI_FIRST_DELAY));
+  }
+  if(miniEventState.lastAt > now) miniEventState.lastAt = now;
   miniEventSave();
 }
 function miniEventReset(){
   try{ localStorage.removeItem(MINI_EVENT_KEY); }catch(e){}
-  miniEventState = { nextAt: Date.now() + MINI_FIRST_DELAY, history: [] };
+  const now = Date.now();
+  miniEventState = { nextAt: now + MINI_FIRST_DELAY, lastAt: now, history: [] };
   miniEventSave();
   renderMiniEventPanel();
+  renderMiniEventPill(now);
 }
 function miniEventRandomGap(){
   return MINI_GAP_MIN + Math.floor(Math.random() * (MINI_GAP_MAX - MINI_GAP_MIN + 1));
@@ -456,6 +487,17 @@ function miniEventCoins(def){
   const v = Math.max(def.min || 0, Math.min(def.max || Infinity, Math.round(numFrom(state.coins) * (def.pct || 0) / 10) * 10));
   return Math.max(1, v);
 }
+/* ⚡ bonusy czasowe z mini eventów — używane też przez EXP i ulepszenia */
+function expBuffMult(){
+  return numFrom(state.expBoostUntil) > Date.now() ? 2 : 1;
+}
+function upDiscountPct(){
+  return numFrom(state.upDiscountUntil) > Date.now() ? Math.min(90, numFrom(state.upDiscountPct)) / 100 : 0;
+}
+function upDiscountText(){
+  const pct = Math.round(upDiscountPct() * 100);
+  return pct > 0 ? "−" + pct + "% na ulepszenia" : "";
+}
 function miniEventReward(def){
   if(def.kind === "clover"){
     const ms = Math.round((def.minMs + Math.random() * (def.maxMs - def.minMs)) / 1000) * 1000;
@@ -464,6 +506,26 @@ function miniEventReward(def){
     if(typeof updateClover === "function") updateClover();
     sfxClover();
     return "+" + Math.round(ms / 60000) + " min koniczyny";
+  }
+  if(def.kind === "expboost"){
+    const ms = Math.max(60000, numFrom(def.ms) || 5 * 60 * 1000);
+    state.expBoostUntil = Math.max(Date.now(), numFrom(state.expBoostUntil)) + ms;
+    if(typeof renderRankBadge === "function") renderRankBadge();
+    return "×" + (def.mult || 2) + " EXP przez " + Math.round(ms / 60000) + " min";
+  }
+  if(def.kind === "freespin"){
+    const n = Math.max(1, def.amount | 0);
+    state.freeSpins = numFrom(state.freeSpins) + n;
+    if(typeof currentView !== "undefined" && currentView === "casino" && typeof renderCoinflip === "function") renderCoinflip();
+    return "+" + n + " darmowy spin w coinflipie";
+  }
+  if(def.kind === "updiscount"){
+    const ms = Math.max(60000, numFrom(def.ms) || 10 * 60 * 1000);
+    const pct = Math.max(1, Math.min(90, def.pct | 0));
+    state.upDiscountUntil = Math.max(Date.now(), numFrom(state.upDiscountUntil)) + ms;
+    state.upDiscountPct = Math.max(numFrom(state.upDiscountPct), pct);
+    if(typeof renderUp === "function") renderUp();
+    return "−" + pct + "% na ulepszenia przez " + Math.round(ms / 60000) + " min";
   }
   if(def.kind === "coins"){
     const gain = miniEventCoins(def);
@@ -479,7 +541,7 @@ function miniEventReward(def){
     return "+" + amount + " EXP";
   }
   if(def.kind === "case"){
-    const pool = CASES.filter(c => c && c.price > 0 && c.price <= (def.maxPrice || 1000) && !c.botOnly && !c.noItems && !c.troll && !c.secret && !c.mega && !c.elite && !c.ultra);
+    const pool = CASES.filter(c => c && c.price > 0 && c.price <= (def.maxPrice || 1000) && !c.botOnly && !c.eventOnly && !c.noItems && !c.troll && !c.secret && !c.mega && !c.elite && !c.ultra);
     const c = pool.length ? pool[Math.floor(Math.random() * pool.length)] : CASES.find(x => x.id === "start");
     if(c){
       state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
@@ -500,7 +562,9 @@ function miniEventTrigger(now){
     id: def.id, name: def.name, icon: def.icon, at: now, text: rewardText
   }].concat(miniEventState.history.filter(h => h && !(h.id === def.id && h.at === now))).slice(0, 8);
   miniEventState.nextAt = now + miniEventRandomGap();
+  miniEventState.lastAt = now;
   miniEventSave();
+  renderMiniEventPill(now);
   markDirty();
   if(typeof checkAchievements === "function") checkAchievements();
   if(typeof save === "function") save({ kind: "event" });
@@ -527,7 +591,7 @@ function miniEventPanelHTML(now){
   return '<div class="world-card mini-card">' +
     '<div class="mini-head"><div><div class="wa-kicker">✨ MINI EVENTY</div><h3>Drobne bonusy co 3–8 min</h3></div>' +
     '<span class="mini-badge">' + (left > 0 ? "za " + weMmss(left) : "lada chwila") + '</span></div>' +
-    '<p class="muted">Nic wielkiego — koniczyna, kilka monet, 2 EXP albo uszkodzona skrzynka. Ale zawsze coś.</p>' +
+    '<p class="muted">Nic wielkiego — koniczyna, monety, EXP, darmowy spin, tańsze ulepszenia albo uszkodzona skrzynka. Ale zawsze coś.</p>' +
     '<div class="mini-list">' + chips + '</div>' +
     '<div class="mini-hist">' + histHTML + '</div>' +
     '</div>';
@@ -536,8 +600,46 @@ function renderMiniEventPanel(){
   const el = document.getElementById("miniEventPanel");
   if(el) el.innerHTML = miniEventPanelHTML(Date.now());
 }
+function miniEventPillState(now){
+  const next = miniEventState.nextAt || 0;
+  const left = Math.max(0, next - now);
+  const hist = miniEventState.history || [];
+  const age = hist[0] ? now - numFrom(hist[0].at) : Infinity;
+  const recent = hist[0] && age >= 0 && age < 9000 ? hist[0] : null;
+  const lastAt = numFrom(miniEventState.lastAt) || (next - MINI_FIRST_DELAY);
+  const total = Math.max(1000, next - lastAt);
+  const pct = Math.max(0, Math.min(100, 100 * (1 - left / total)));
+  return { next, left, hist, recent, pct };
+}
+function renderMiniEventPill(now){
+  const pill = document.getElementById("miniEventPill");
+  if(!pill) return;
+  const st = miniEventPillState(now || Date.now());
+  const ico = pill.querySelector(".mp-ico");
+  const label = pill.querySelector(".mp-t");
+  const time = pill.querySelector(".mp-time");
+  const bar = pill.querySelector(".mp-bar i");
+  if(ico) ico.textContent = st.recent ? (st.recent.icon || "✨") : "✨";
+  if(label) label.textContent = st.recent ? "Mini event!" : "Mini eventy";
+  if(time) time.textContent = st.recent
+    ? (st.recent.text || "bonus!")
+    : (st.left > 0 ? "za " + weMmss(st.left) : "lada chwila");
+  if(bar) bar.style.width = st.pct.toFixed(1) + "%";
+  pill.classList.toggle("flash", !!st.recent);
+  pill.title = st.recent
+    ? "Ostatni mini event: " + st.recent.name + " — " + (st.recent.text || "") + ". Następny za " + weMmss(st.left) + ". Kliknij, aby zobaczyć szczegóły."
+    : "Następny mini event za " + weMmss(st.left) + ". Kliknij, aby zobaczyć szczegóły.";
+  pill.setAttribute("aria-label", pill.title);
+}
 
 /* --------------------------- pętla --------------------------- */
+let upDiscountShown = false;
+function syncUpDiscountUI(){
+  const active = numFrom(state.upDiscountUntil) > Date.now();
+  if(active === upDiscountShown) return;
+  upDiscountShown = active;
+  if(typeof currentView !== "undefined" && currentView === "up" && typeof renderUp === "function") renderUp();
+}
 function worldEventTick(){
   const now = Date.now();
   const adminWindow = weCurrentAdminWindow(now);
@@ -557,6 +659,8 @@ function worldEventTick(){
   }
   renderWorldEventUI();
   miniEventTick(now);
+  renderMiniEventPill(now);
+  syncUpDiscountUI();
   if(typeof currentView !== "undefined" && currentView === "events") renderEvents(false);
 }
 
@@ -602,19 +706,54 @@ function renderWorldEventUI(){
       bar.hidden = false;
       bar.className = "event-bar" + (ev.admin ? " admin" : "");
       bar.style.setProperty("--ev", ev.color || "#ffb02e");
+      const ec = eventCaseForEvent(ev);
       bar.innerHTML =
         '<div class="eb-ico">' + ev.icon + '</div>' +
         '<div class="eb-main">' +
           '<div class="eb-kicker">' + (ev.admin ? "ŚWIĘTA · ADMIN ABUSE · 16:00–19:00" : "EVENT ŚWIATA · LOSOWY BONUS") + '</div>' +
           '<div class="eb-name">' + esc(ev.name) + '</div>' +
           '<div class="eb-desc">' + esc(ev.desc) + '</div>' +
-          '<div class="eb-bonuses">' + weChipsHTML(ev) + '</div>' +
+          '<div class="eb-bonuses">' + weChipsHTML(ev) +
+            (ec ? '<span class="ev-chip" title="' + esc(ec.name) + '">🎟️ limitowana skrzynka</span>' : '') +
+          '</div>' +
         '</div>' +
         '<div class="eb-time"><b>' + weMmss(ev.end - Date.now()) + '</b><small>do końca</small></div>';
       document.body.classList.add("world-event-on");
       document.body.classList.toggle("world-event-admin", !!ev.admin);
     }
   }
+}
+function eventClaimKey(ev){
+  return ev && ev.id ? ev.id+"|"+(ev.start || 0) : "";
+}
+function eventCaseClaimed(ev){
+  const key = eventClaimKey(ev);
+  return !!(key && state.eventClaims && state.eventClaims[key]);
+}
+function claimEventCase(){
+  const ev = worldEventActive();
+  if(!ev || Date.now() >= ev.end){ sfxErr(); toast("Ten event już się zakończył.","bad"); return; }
+  const c = eventCaseForEvent(ev);
+  if(!c){ sfxErr(); toast("Ten event nie ma przypisanej skrzynki.","bad"); return; }
+  const key = eventClaimKey(ev);
+  if(!key) return;
+  state.eventClaims = (state.eventClaims && typeof state.eventClaims === "object" && !Array.isArray(state.eventClaims)) ? state.eventClaims : {};
+  if(state.eventClaims[key]){
+    sfxErr();
+    toast("🎟️ Limitowana skrzynka z tego eventu jest już odebrana.","bad");
+    return;
+  }
+  state.eventClaims[key] = true;
+  state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+  state.caseStock[c.id] = numFrom(state.caseStock[c.id]) + 1;
+  markDirty();
+  save({kind:"event"});
+  if(typeof renderShop === "function") renderShop(true);
+  if(typeof renderBots === "function") renderBots();
+  renderEvents();
+  sfxWin("covert");
+  confetti([c.color, "#ffffff"]);
+  toast("🎟️ <b>Limitowana skrzynka!</b> "+c.icon+" "+esc(c.name)+" czeka w zapasie w zakładce <b>Skrzynki</b> — filtr <b>🎟️ Eventowe</b>.","good");
 }
 function weActivePanelHTML(ev, now){
   if(!ev){
@@ -630,6 +769,22 @@ function weActivePanelHTML(ev, now){
   const total = Math.max(1, ev.end - ev.start);
   const pct = Math.max(0, Math.min(100, Math.round(((now - ev.start) / total) * 100)));
   const admin = !!ev.admin;
+  const ec = eventCaseForEvent(ev);
+  const claimed = eventCaseClaimed(ev);
+  const ecStock = ec && typeof caseStock === "function" ? caseStock(ec.id) : 0;
+  const rewardHTML = ec
+    ? '<div class="event-reward' + (claimed ? " done" : "") + '">' +
+        '<div class="er-ico">' + ec.icon + '</div>' +
+        '<div class="er-main"><b>Limitowana skrzynka: ' + esc(ec.name) + '</b>' +
+          '<span>' + (claimed
+            ? (ecStock
+                ? "Odebrana — czeka w zapasie w zakładce Skrzynki (szt.: " + ecStock + ")."
+                : "Odebrana — ta skrzynka została już otwarta.")
+            : "Odbierz ją z tego eventu. Pierwsze otwarcie gwarantuje nową broń z puli eventowej.") + '</span></div>' +
+        '<button class="btn ghost" data-event-loot="' + ec.id + '">📋 Podgląd</button>' +
+        '<button class="btn gold event-claim" data-event-claim="1" ' + (claimed ? "disabled" : "") + '>' + (claimed ? "✔ Odebrano" : "🎟️ Odbierz") + '</button>' +
+      '</div>'
+    : "";
   return '<div class="world-card world-active' + (admin ? " admin" : "") + '" style="--ev:' + (ev.color || "#ffb02e") + '">' +
     '<div class="wa-ico">' + ev.icon + '</div>' +
     '<div class="wa-main">' +
@@ -639,17 +794,20 @@ function weActivePanelHTML(ev, now){
       '<div class="ev-chips">' + weChipsHTML(ev) + '</div>' +
       '<div class="wa-progress"><i style="width:' + pct + '%"></i></div>' +
       '<div class="wa-foot"><span>Start: <b>' + weClock(ev.start) + '</b></span><span>Koniec: <b>' + weClock(ev.end) + '</b></span><span>Pozostało: <b>' + weMmss(ev.end - now) + '</b></span></div>' +
+      rewardHTML +
     '</div>' +
     '<div class="wa-time"><b>' + weMmss(ev.end - now) + '</b><small>do końca</small></div>' +
     '</div>';
 }
 function weEventCardHTML(def, ev){
   const active = ev && ev.id === def.id;
+  const ec = eventCaseForEvent(def);
   return '<div class="world-card event-def' + (active ? " active" : "") + '" style="--ev:' + def.color + '">' +
     '<div class="ed-top"><span class="ed-ico">' + def.icon + '</span><span class="ed-badge">' + (active ? "AKTYWNY" : "LOSOWY") + '</span></div>' +
     '<h4>' + esc(def.name) + '</h4>' +
     '<p>' + esc(def.desc) + '</p>' +
     '<div class="ev-chips">' + weChipsHTML(def) + '</div>' +
+    (ec ? '<div class="ed-reward">🎟️ Limitowana skrzynka: <b>' + esc(ec.name) + '</b></div>' : '') +
     '<div class="ed-meta">Czas: <b>' + Math.round(def.dur / WE_MIN) + ' min</b> · szansa: <b>' + (def.weight >= 3 ? "wysoka" : def.weight === 2 ? "średnia" : "niska") + '</b></div>' +
     '</div>';
 }
@@ -719,4 +877,33 @@ worldEventTimer = setInterval(worldEventTick, WE_TICK_MS);
 document.addEventListener("visibilitychange", () => { if(!document.hidden) worldEventTick(); });
 renderWorldEventUI();
 renderMiniEventPanel();
+renderMiniEventPill();
+const miniPill = document.getElementById("miniEventPill");
+if(miniPill){
+  const openMiniEvents = () => {
+    switchView("events");
+    setTimeout(() => {
+      const panel = document.getElementById("miniEventPanel");
+      if(panel) panel.scrollIntoView({ behavior:"smooth", block:"center" });
+    }, 60);
+  };
+  miniPill.addEventListener("click", openMiniEvents);
+  miniPill.addEventListener("keydown", (e) => {
+    if(e.key === "Enter" || e.key === " "){
+      e.preventDefault();
+      openMiniEvents();
+    }
+  });
+}
+const eventActiveEl = document.getElementById("eventActivePanel");
+if(eventActiveEl){
+  eventActiveEl.addEventListener("click", (e) => {
+    const loot = e.target.closest("[data-event-loot]");
+    if(loot){
+      if(typeof showLoot === "function") showLoot(loot.dataset.eventLoot);
+      return;
+    }
+    if(e.target.closest("[data-event-claim]")) claimEventCase();
+  });
+}
 setTimeout(worldEventTick, 1200);

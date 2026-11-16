@@ -41,7 +41,9 @@ function getNextRank(currentRank){
 
 function addExp(amount, sourceLabel){
   if(!amount || amount <= 0) return;
-  state.exp = (state.exp || 0) + amount;
+  const mult = typeof expBuffMult === "function" ? expBuffMult() : 1;
+  const gain = Math.max(1, Math.round(amount * mult));
+  state.exp = (state.exp || 0) + gain;
   state.rank = state.rank || 1;
   const oldRank = RANKS.find(r => r.id === state.rank) || RANKS[0];
   const newRank = getPlayerRank(state.exp);
@@ -107,6 +109,26 @@ function casinoHistoryHTML(list, empty){
   }).join("");
 }
 
+let casinoSubtab = "cf";
+function setCasinoTab(tab){
+  const valid = ["cf", "crash", "dice", "mines", "league"];
+  if(!valid.includes(tab)) tab = "cf";
+  casinoSubtab = tab;
+  $$("#casinoSubTabs [data-casino-tab]").forEach(btn=>{
+    const on = btn.dataset.casinoTab === tab;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-selected", on ? "true" : "false");
+  });
+  $$("#view-casino [data-casino-panel]").forEach(panel=>{
+    panel.classList.toggle("active", panel.dataset.casinoPanel === tab);
+  });
+  if(tab === "cf") renderCoinflip();
+  if(tab === "crash"){ renderCrashHistory(); renderCrashUpgrades(); }
+  if(tab === "dice"){ renderDiceMeta(); renderDiceHistory(); }
+  if(tab === "mines") renderMines();
+  if(tab === "league") renderCasinoLeague();
+}
+
 /* =======================================================================
    COINFLIP — RZUT MONETĄ SKINAMI
    ======================================================================= */
@@ -134,7 +156,7 @@ function renderCoinflip(){
       const isSel = cfSelectedUids.has(it.uid);
       const t = TIER[it.tier] || TIER.mil;
       const f = fxOf(it);
-      const tierName = it.tier === "special" ? "★ Special" : it.tier === "relic" ? "✦ Relikt" : t.name;
+      const tierName = it.tier === "special" ? "★ Special" : it.tier === "gloves" ? "🧤 Rękawice" : it.tier === "relic" ? "✦ Relikt" : t.name;
       return `<div class="cf-item ${isSel ? "selected" : ""}" data-uid="${it.uid}" style="--c:${t.color}">
         <span class="cf-check">${isSel ? "✓" : ""}</span>
         <span class="cf-tier">${tierName}</span>
@@ -162,6 +184,10 @@ function updateCoinflipSummary(){
   $("#cfPickT")?.toggleAttribute("disabled", cfBusy || selList.length === 0);
   $("#cfSelectBest")?.toggleAttribute("disabled", cfBusy || !state.inv.length);
   $("#cfClear")?.toggleAttribute("disabled", cfBusy || !cfSelectedUids.size);
+  const freeBtn = $("#cfFreeSpin");
+  const freeCount = $("#cfFreeCount");
+  if(freeCount) freeCount.textContent = String(numFrom(state.freeSpins));
+  if(freeBtn) freeBtn.disabled = cfBusy || numFrom(state.freeSpins) <= 0;
 }
 
 function renderCoinflipHistory(){
@@ -214,6 +240,8 @@ function runCoinflip(playerChoice){
       state.stats.earned = numFrom(state.stats.earned) + totalValue;
       cfStreak++;
       cfBestStreak = Math.max(cfBestStreak, cfStreak);
+      missionTrack("coinflip_win", 1, { streak: cfStreak, value: totalValue });
+      if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("coinflip", totalValue);
       addExp(Math.max(25, Math.floor(totalValue / 1000)), "coinflip_win");
       sfxWin("covert");
       confetti(["#38bdf8", "#ffd700", "#ffffff"]);
@@ -240,6 +268,71 @@ function runCoinflip(playerChoice){
     cfSelectedUids.clear();
     cfBusy = false;
     renderInv();
+    renderBalance();
+    renderCoinflip();
+    renderCasinoProfile();
+    casinoSave();
+  }, CF_FLIP_MS);
+}
+
+function runFreeCoinflip(){
+  if(cfBusy) return;
+  if(numFrom(state.freeSpins) <= 0){
+    sfxErr();
+    toast("Brak darmowych spinów. Wypatruj mini eventu 🎁 Darmowy spin.","bad");
+    return;
+  }
+  cfBusy = true;
+  state.freeSpins = Math.max(0, numFrom(state.freeSpins) - 1);
+  const playerChoice = Math.random() < 0.5 ? "ct" : "t";
+  const winSide = Math.random() < 0.5 ? "ct" : "t";
+  const playerWon = playerChoice === winSide;
+  const prize = Math.max(5000, Math.round(numFrom(state.coins) * 0.005));
+
+  casinoSetResult("#cfResult", `<span>🎁 <b>Darmowy spin…</b> Bez ryzyka. Trzymaj kciuki!</span>`, "rolling");
+  updateCoinflipSummary();
+  const stage = $("#cfStage");
+  if(stage){
+    clearTimeout(cfResultTimer);
+    stage.classList.remove("win", "loss", "flipping");
+    void stage.offsetWidth;
+    stage.classList.add("flipping");
+  }
+  const coin = $("#cfCoin");
+  if(coin){
+    coin.classList.remove("flip-t", "flip-ct");
+    void coin.offsetWidth;
+    coin.classList.add(winSide === "ct" ? "flip-ct" : "flip-t");
+  }
+  sfxWhoosh();
+
+  setTimeout(()=>{
+    if(stage){
+      stage.classList.remove("flipping");
+      stage.classList.add(playerWon ? "win" : "loss");
+      clearTimeout(cfResultTimer);
+      cfResultTimer = setTimeout(()=>stage.classList.remove("win", "loss"), 1600);
+    }
+    if(playerWon){
+      state.coins += prize;
+      state.stats.earned = numFrom(state.stats.earned) + prize;
+      missionTrack("coinflip_win", 1, { free:true, value:prize });
+      if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("coinflip", prize);
+      addExp(Math.max(15, Math.floor(prize / 2000)), "free_coinflip");
+      sfxWin("covert");
+      confetti(["#38bdf8", "#ffd700", "#ffffff"]);
+      casinoSetResult("#cfResult",
+        `<span>🎁 <b>DARMOWY SPIN — WYGRANA!</b> Wypadło: <b>${cfSideName(winSide)}</b>. Bonus <b>🪙 ${fmt(prize)}</b> bez ryzyka.</span>`, "win");
+      toast(`🎁 <b>DARMOWY SPIN!</b> +🪙 ${fmt(prize)} — nic nie traciłeś.`, "good");
+    } else {
+      sfxErr();
+      casinoSetResult("#cfResult",
+        `<span>🎁 <b>Darmowy spin zakończony.</b> Wypadło: <b>${cfSideName(winSide)}</b>. Tym razem bez bonusu — ale bez strat.</span>`, "loss");
+      toast(`🎁 Darmowy spin bez wygranej. Następny raz!`, "bad");
+    }
+    cfHistory.unshift({ win:playerWon, label:"🎁 " + fmtShort(prize), title:"Darmowy spin · " + cfSideName(playerChoice) });
+    cfHistory = cfHistory.slice(0, 8);
+    cfBusy = false;
     renderBalance();
     renderCoinflip();
     renderCasinoProfile();
@@ -424,6 +517,7 @@ function cashoutCrash(){
   state.stats.earned = numFrom(state.stats.earned) + winAmount;
   missionTrack("crash_cashout", 1, { mult: crashMult, win: winAmount });
   missionTrack("casino_win", winAmount);
+  if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("crash", winAmount);
   addExp(Math.max(15, Math.floor(winAmount / 1500)), "crash_win");
   renderBalance();
 
@@ -606,7 +700,7 @@ function runDice(){
       toast(`🎲 <b>PRZEGRANA.</b> ${roll} · −🪙 ${fmt(bet)}`, "bad");
     }
     const histTitle = exact ? "Dokładnie! 4×" : won ? "Dystans "+distance+" · "+casinoMult(mult) : "Przegrana · "+(onSide ? "za daleko" : "zła strona");
-    if(won){ missionTrack("dice_win", 1, { payout, mult }); missionTrack("casino_win", payout); }
+    if(won){ missionTrack("dice_win", 1, { payout, mult }); missionTrack("casino_win", payout); if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("dice", payout); }
     diceHistory.unshift({ win:won, label: String(roll), title: histTitle });
     diceHistory = diceHistory.slice(0, 8);
     renderDiceHistory();
@@ -618,6 +712,393 @@ function runDice(){
   }, 80);
 }
 
+/* =======================================================================
+   MINES — PLANSZA 5 × 5
+   ======================================================================= */
+const MINES_SIZE = 5;
+const MINES_TILES = MINES_SIZE * MINES_SIZE;
+const MINES_HOUSE_EDGE = 0.97;
+const MINES_MAX_MULT = 5000;
+const MINES_COUNTS = [3, 5, 8, 12];
+
+let minesCount = 5;
+let minesBet = 500;
+let minesActive = false;
+let minesGameOver = false;
+let minesMines = new Set();
+let minesRevealed = new Set();
+let minesHistory = [];
+
+function minesMultFor(picks, mines = minesCount){
+  const mineTotal = Math.max(1, Math.min(MINES_TILES - 1, mines|0));
+  const safeTotal = MINES_TILES - mineTotal;
+  const n = Math.max(0, Math.min(safeTotal, picks|0));
+  if(!n) return 1;
+  let fair = 1;
+  for(let i = 0; i < n; i++){
+    fair *= (MINES_TILES - i) / (safeTotal - i);
+  }
+  return Math.max(1.01, Math.min(MINES_MAX_MULT, +(fair * MINES_HOUSE_EDGE).toFixed(2)));
+}
+function minesMaxPicks(){ return MINES_TILES - minesCount; }
+function minesActivePicks(){ return minesActive ? minesRevealed.size : 0; }
+function minesCurrentMult(){ return minesActivePicks() ? minesMultFor(minesActivePicks()) : 1; }
+function minesPayout(){ return minesActivePicks() ? Math.round(minesBet * minesCurrentMult()) : 0; }
+function minesNextMult(){
+  const picks = minesActivePicks();
+  if(picks >= minesMaxPicks()) return null;
+  return minesMultFor(picks + 1);
+}
+
+function renderMinesMeta(){
+  const multEl = $("#minesMult");
+  const nextEl = $("#minesNext");
+  const payoutEl = $("#minesPayout");
+  if(multEl) multEl.textContent = casinoMult(minesCurrentMult());
+  const next = minesNextMult();
+  if(nextEl) nextEl.textContent = next ? casinoMult(next) : "MAX";
+  if(payoutEl) payoutEl.textContent = "🪙 " + fmtShort(minesPayout());
+
+  $$("#minesCounts [data-mines-count]").forEach(btn=>{
+    const on = +btn.dataset.minesCount === minesCount;
+    btn.classList.toggle("active", on);
+    btn.disabled = minesActive;
+  });
+  const startBtn = $("#minesStartBtn");
+  const cashBtn = $("#minesCashoutBtn");
+  if(startBtn){
+    startBtn.disabled = minesActive;
+    startBtn.textContent = minesActive ? "💣 Gra w toku…" : "💣 Rozpocznij grę";
+  }
+  if(cashBtn){
+    cashBtn.disabled = !minesActive || minesRevealed.size === 0;
+    cashBtn.textContent = minesActive && minesRevealed.size
+      ? `Wypłać 🪙 ${fmtShort(minesPayout())}`
+      : "Wypłać";
+  }
+  const betInput = $("#minesBet");
+  if(betInput) betInput.disabled = minesActive;
+  ["#minesHalf", "#mines2x", "#minesMax"].forEach(sel=>{
+    const b = $(sel);
+    if(b) b.disabled = minesActive;
+  });
+}
+
+function renderMinesBoard(){
+  const board = $("#minesBoard");
+  if(!board) return;
+  let html = "";
+  for(let i = 0; i < MINES_TILES; i++){
+    const isMine = minesMines.has(i);
+    const picked = minesRevealed.has(i);
+    let cls = "mines-tile";
+    let txt = "?";
+    if(minesActive){
+      if(picked){ cls += " safe"; txt = "💎"; }
+    } else if(minesGameOver){
+      if(isMine){ cls += " mine"; txt = "💣"; }
+      else { cls += " safe ghost"; txt = "💎"; }
+    }
+    const disabled = !minesActive || picked;
+    html += `<button type="button" class="${cls}" data-mines-index="${i}" ${disabled ? "disabled" : ""} aria-label="Pole ${i + 1}">${txt}</button>`;
+  }
+  board.innerHTML = html;
+  const lock = $("#minesLock");
+  if(lock) lock.classList.toggle("show", !minesActive && !minesGameOver);
+}
+
+function renderMinesHistory(){
+  const h = $("#minesHistory");
+  if(h) h.innerHTML = casinoHistoryHTML(minesHistory, "Ostatnie gry w Mines pojawią się tutaj.");
+}
+
+function renderMines(){
+  renderMinesMeta();
+  renderMinesBoard();
+  renderMinesHistory();
+}
+
+function setMinesCount(count){
+  if(minesActive) return;
+  minesCount = MINES_COUNTS.includes(count) ? count : 5;
+  minesMines = new Set();
+  minesRevealed = new Set();
+  minesGameOver = false;
+  casinoSetResult("#minesResult", "Wybierz liczbę min i rozpocznij grę.", "");
+  renderMines();
+}
+
+function minesPushHistory(win, label, title){
+  minesHistory.unshift({ win, label, title });
+  minesHistory = minesHistory.slice(0, 8);
+  renderMinesHistory();
+}
+
+function startMines(){
+  if(minesActive) return;
+  const input = $("#minesBet");
+  minesBet = Math.max(100, casinoInputNum(input ? input.value : 500));
+  if(state.coins < minesBet){
+    sfxErr();
+    toast("Za mało monet na ten zakład!", "bad");
+    return;
+  }
+
+  state.coins -= minesBet;
+  state.stats.spent = numFrom(state.stats.spent) + minesBet;
+  minesActive = true;
+  minesGameOver = false;
+  minesRevealed = new Set();
+  minesMines = new Set();
+
+  const pool = Array.from({ length: MINES_TILES }, (_, i) => i);
+  for(let i = pool.length - 1; i > 0; i--){
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  for(let i = 0; i < minesCount; i++) minesMines.add(pool[i]);
+
+  casinoSetResult("#minesResult", `💣 <b>Gra rozpoczęta.</b> Odkryj pierwsze pole — wypłata rośnie z każdym bezpiecznym trafieniem.`, "");
+  addExp(Math.max(5, Math.floor(minesBet / 2000)), "mines_bet");
+  renderBalance();
+  renderMines();
+  casinoSave();
+}
+
+function revealMinesTile(index){
+  if(!minesActive || minesRevealed.has(index)) return;
+  if(index < 0 || index >= MINES_TILES) return;
+
+  if(minesMines.has(index)){
+    minesActive = false;
+    minesGameOver = true;
+    addExp(Math.max(5, Math.floor(minesBet / 3000)), "mines_loss");
+    sfxErr();
+    casinoSetResult("#minesResult",
+      `💥 <b>MINA!</b> Trafiłeś bombę po <b>${minesRevealed.size}</b> ${plural(minesRevealed.size, "bezpiecznym polu", "bezpiecznych polach", "bezpiecznych polach")}. Tracisz <b>🪙 ${fmt(minesBet)}</b>.`, "loss");
+    toast(`💥 <b>MINA W MINES!</b> Straciłeś 🪙 ${fmt(minesBet)}.`, "bad");
+    minesPushHistory(false, `${minesCount} min · ${minesRevealed.size} ${plural(minesRevealed.size, "pole", "pola", "pól")}`, "Mines · mina");
+    renderBalance();
+    renderMines();
+    renderCasinoProfile();
+    casinoSave();
+    return;
+  }
+
+  minesRevealed.add(index);
+
+  if(minesRevealed.size >= minesMaxPicks()){
+    const picks = minesRevealed.size;
+    const mult = minesMultFor(picks);
+    const payout = Math.round(minesBet * mult);
+    minesActive = false;
+    minesGameOver = true;
+    state.coins += payout;
+    state.stats.earned = numFrom(state.stats.earned) + payout;
+    missionTrack("casino_win", payout);
+    if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("mines", payout);
+    addExp(Math.max(25, Math.floor(payout / 1500)), "mines_win");
+    sfxWin("special");
+    confetti(["#ffd700", "#38e08a", "#45e6ff", "#ffffff"]);
+    casinoSetResult("#minesResult",
+      `💎 <b>PEŁNE WYCZYSZCZENIE!</b> Odkryłeś wszystkie ${picks} ${plural(picks, "bezpieczne pole", "bezpieczne pola", "bezpiecznych pól")} przy mnożniku <b>${casinoMult(mult)}</b> → <b>🪙 ${fmt(payout)}</b>.`, "exact");
+    toast(`💎 <b>FULL CLEAR W MINES!</b> ${casinoMult(mult)} · +🪙 ${fmt(payout)}`, "good");
+    minesPushHistory(true, `${minesCount} min · ${picks} ${plural(picks, "pole", "pola", "pól")}`, "Mines · full clear");
+    renderBalance();
+    renderMines();
+    renderCasinoProfile();
+    casinoSave();
+    return;
+  }
+
+  sfxCoin();
+  casinoSetResult("#minesResult",
+    `💎 <b>Bezpieczne pole!</b> Mnożnik <b>${casinoMult(minesCurrentMult())}</b>. Możesz odkrywać dalej albo wypłacić <b>🪙 ${fmt(minesPayout())}</b>.`, "win");
+  renderMines();
+}
+
+function cashoutMines(){
+  if(!minesActive || minesRevealed.size === 0) return;
+  const picks = minesRevealed.size;
+  const mult = minesMultFor(picks);
+  const payout = Math.round(minesBet * mult);
+  minesActive = false;
+  minesGameOver = true;
+  state.coins += payout;
+  state.stats.earned = numFrom(state.stats.earned) + payout;
+  missionTrack("casino_win", payout);
+  if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("mines", payout);
+  addExp(Math.max(15, Math.floor(payout / 1500)), "mines_win");
+  sfxWin("covert");
+  confetti(["#38e08a", "#ffd700", "#ffffff"]);
+  casinoSetResult("#minesResult",
+    `✅ <b>WYPŁACONO!</b> ${picks} ${plural(picks, "bezpieczne pole", "bezpieczne pola", "bezpiecznych pól")} · mnożnik <b>${casinoMult(mult)}</b> → <b>🪙 ${fmt(payout)}</b>.`, "win");
+  toast(`💣 <b>WYPŁATA Z MINES!</b> ${casinoMult(mult)} · +🪙 ${fmt(payout)}`, "good");
+  minesPushHistory(true, `${minesCount} min · ${picks} ${plural(picks, "pole", "pola", "pól")}`, "Mines · wypłata");
+  renderBalance();
+  renderMines();
+  renderCasinoProfile();
+  casinoSave();
+}
+
+function minesAdjustBet(kind){
+  if(minesActive) return;
+  const input = $("#minesBet");
+  if(!input) return;
+  let v = casinoInputNum(input.value);
+  if(kind === "half") v = Math.max(100, Math.floor(v / 2));
+  if(kind === "2x") v = Math.max(100, Math.floor(v * 2));
+  if(kind === "max") v = Math.max(100, Math.floor(state.coins));
+  input.value = v;
+  minesBet = v;
+}
+
+/* =======================================================================
+   🏆 LIGA KASYNA — tygodniowy ranking wygranych
+   ======================================================================= */
+const CASINO_LEAGUE_BOTS = [
+  {name:"NeonWolf", icon:"🐺"}, {name:"AWP_King", icon:"🎯"}, {name:"MinesQueen", icon:"💣"},
+  {name:"CrashKid", icon:"🚀"}, {name:"DiceGoblin", icon:"🎲"}, {name:"SkinBaron", icon:"👑"},
+  {name:"ZeroCool", icon:"🧊"}, {name:"FragMachine", icon:"⚙️"}, {name:"BetonowyBog", icon:"🗿"},
+  {name:"LuckyLena_Fan", icon:"🍀"}
+];
+function casinoWeekKey(date){
+  const d = date ? new Date(date) : new Date();
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (t.getDay() + 6) % 7; // poniedziałek = 0
+  t.setDate(t.getDate() - day);
+  return t.getFullYear() + "-" + String(t.getMonth()+1).padStart(2,"0") + "-" + String(t.getDate()).padStart(2,"0");
+}
+function casinoWeekEnd(){
+  const d = new Date();
+  const t = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = (t.getDay() + 6) % 7;
+  t.setDate(t.getDate() - day + 7);
+  return t.getTime();
+}
+function casinoLeagueBots(week){
+  return CASINO_LEAGUE_BOTS.map((b,i)=>{
+    const h = hash(String(week) + "|" + b.name + "|" + i) >>> 0;
+    const score = Math.round((0.05 + (h % 1000) / 1000 * 0.95) * (200000 + ((h >>> 10) % 800000)));
+    return { name:b.name, icon:b.icon, score, bot:true };
+  });
+}
+function casinoLeagueReward(rank, score){
+  let coins = 0, caseId = null;
+  if(rank === 1){ coins = 1000000; caseId = "gambler"; }
+  else if(rank <= 3){ coins = 500000; caseId = "sticker"; }
+  else if(rank <= 10){ coins = 150000; }
+  else if(rank <= 50){ coins = 50000; }
+  else if(score > 0){ coins = 10000; }
+  return { coins, caseId };
+}
+function casinoLeagueEnsure(){
+  const week = casinoWeekKey();
+  let lg = state.casinoLeague;
+  if(!lg || typeof lg !== "object" || lg.week !== week){
+    const prev = (lg && typeof lg === "object" && lg.week) ? lg : null;
+    let last = prev && prev.last ? prev.last : null;
+    if(prev && (numFrom(prev.score) > 0 || numFrom(prev.plays) > 0)){
+      const bots = Array.isArray(prev.bots) && prev.bots.length ? prev.bots : casinoLeagueBots(prev.week);
+      const score = numFrom(prev.score);
+      const rank = 1 + bots.filter(b=>numFrom(b.score) > score).length;
+      /* Nie nadpisujemy nieodebranej nagrody starszym wynikiem — gracz
+         może ją odebrać nawet po rozpoczęciu kolejnego tygodnia. */
+      if(!last || last.claimed) last = { week:prev.week, rank, score, reward:casinoLeagueReward(rank, score), claimed:false };
+    }
+    state.casinoLeague = { week, score:0, plays:0, bots:casinoLeagueBots(week), last };
+    markDirty(); save({ kind:"casino_league" });
+    return true;
+  }
+  lg.score = numFrom(lg.score);
+  lg.plays = numFrom(lg.plays);
+  if(!Array.isArray(lg.bots) || !lg.bots.length) lg.bots = casinoLeagueBots(week);
+  return false;
+}
+function casinoLeagueRank(){
+  casinoLeagueEnsure();
+  const lg = state.casinoLeague;
+  return 1 + lg.bots.filter(b=>numFrom(b.score) > numFrom(lg.score)).length;
+}
+function casinoLeagueAdd(game, amount){
+  const add = Math.max(0, Math.round(numFrom(amount)));
+  if(!add) return;
+  casinoLeagueEnsure();
+  const lg = state.casinoLeague;
+  lg.score = numFrom(lg.score) + add;
+  lg.plays = numFrom(lg.plays) + 1;
+  lg.byGame = (lg.byGame && typeof lg.byGame === "object") ? lg.byGame : {};
+  lg.byGame[game] = numFrom(lg.byGame[game]) + add;
+  markDirty();
+  if(typeof currentView !== "undefined" && currentView === "casino" && casinoSubtab === "league") renderCasinoLeague();
+  save({ kind:"casino_league" });
+}
+function casinoLeagueClaim(){
+  casinoLeagueEnsure();
+  const lg = state.casinoLeague;
+  const last = lg && lg.last;
+  if(!last || last.claimed){ sfxErr(); return; }
+  const r = last.reward || {};
+  if(r.coins){ state.coins += numFrom(r.coins); state.stats.earned = numFrom(state.stats.earned) + numFrom(r.coins); }
+  if(r.caseId){
+    state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+    state.caseStock[r.caseId] = numFrom(state.caseStock[r.caseId]) + 1;
+  }
+  last.claimed = true;
+  markDirty(); save();
+  renderBalance(); renderShop(); renderCasinoLeague();
+  sfxWin("special");
+  confetti(["#ffd700", "#38e08a", "#8ee7ff"]);
+  const box = r.caseId ? CASES.find(c=>c.id===r.caseId) : null;
+  toast("🏆 <b>Nagroda z ligi odebrana!</b> Miejsce #"+last.rank+" · 🪙 "+fmt(r.coins||0)+(box?" + "+box.name:""),"good");
+}
+function renderCasinoLeague(){
+  const el = $("#casinoLeaguePanel");
+  if(!el) return;
+  casinoLeagueEnsure();
+  const lg = state.casinoLeague;
+  const meScore = numFrom(lg.score);
+  const rank = 1 + lg.bots.filter(b=>numFrom(b.score) > meScore).length;
+  const all = lg.bots.concat([{ name:"Ty", icon:"🫵", score:meScore, me:true }]).sort((a,b)=>numFrom(b.score)-numFrom(a.score));
+  const myRow = all.findIndex(x=>x.me) + 1;
+  const rows = all.slice(0, 12).map((x,i)=>{
+    const r = i + 1;
+    const medal = r === 1 ? "🥇" : r === 2 ? "🥈" : r === 3 ? "🥉" : "#" + r;
+    return `<div class="league-row${x.me?" me":""}">
+      <span class="lr-pos">${medal}</span>
+      <span class="lr-ico">${x.icon || "🎮"}</span>
+      <span class="lr-name">${esc(x.name)}${x.me?" <b>· Ty</b>":""}</span>
+      <span class="lr-score">🪙 ${fmtShort(x.score)}</span>
+    </div>`;
+  }).join("");
+  const myRowHTML = myRow > 12
+    ? `<div class="league-row me"><span class="lr-pos">#${myRow}</span><span class="lr-ico">🫵</span><span class="lr-name">Ty <b>· Twoja pozycja</b></span><span class="lr-score">🪙 ${fmtShort(meScore)}</span></div>`
+    : "";
+  const last = lg.last;
+  const lastHTML = last
+    ? `<div class="league-last ${last.claimed?"claimed":""}">
+        <div class="ll-head"><span>📜 Poprzedni tydzień</span><b>#${last.rank}</b></div>
+        <div class="ll-desc">Wynik: <b>🪙 ${fmt(last.score)}</b> · nagroda: <b>🪙 ${fmt(last.reward && last.reward.coins || 0)}</b>${last.reward && last.reward.caseId ? " + 📦 "+(CASES.find(c=>c.id===last.reward.caseId)||{}).name : ""}</div>
+        ${last.claimed
+          ? `<span class="ll-done">✔ odebrano</span>`
+          : `<button class="btn primary" data-league-claim="1">🎁 Odbierz nagrodę</button>`}
+      </div>`
+    : `<div class="league-last empty">Brak rozliczonego tygodnia. Zagraj w kasynie — po zakończeniu tygodnia pojawi się tu nagroda.</div>`;
+  const left = Math.max(0, casinoWeekEnd() - Date.now());
+  const h = Math.floor(left / 3600000), m = Math.floor((left % 3600000) / 60000);
+  const timeTxt = h > 0 ? h + " godz. " + m + " min" : m + " min";
+  el.innerHTML = `
+    <div class="league-top">
+      <div class="league-stat"><span>Twoje miejsce</span><b>#${rank}</b></div>
+      <div class="league-stat"><span>Wygrane w tym tygodniu</span><b>🪙 ${fmt(meScore)}</b></div>
+      <div class="league-stat"><span>Do końca tygodnia</span><b>${timeTxt}</b></div>
+    </div>
+    <div class="league-list">${rows}${myRowHTML}</div>
+    ${lastHTML}
+    <div class="league-rewards">
+      <b>🏅 Nagrody za miejsce:</b> #1 — 🪙 1 000 000 + Skrzynka Hazardzisty · #2–3 — 🪙 500 000 + Skrzynka Naklejek · #4–10 — 🪙 150 000 · #11–50 — 🪙 50 000 · pozostali z wynikiem — 🪙 10 000.
+    </div>`;
+}
 /* =======================================================================
    PROFIL RANGI W KASYnie
    ======================================================================= */
@@ -641,6 +1122,8 @@ function renderCasinoProfile(){
   }
   renderDiceMeta();
   renderCrashUpgrades();
+  renderMines();
+  if(casinoSubtab === "league") renderCasinoLeague();
 }
 
 /* =======================================================================
@@ -652,6 +1135,14 @@ function initCasinoEvents(){
   casinoEventsBound = true;
 
   $("#rankPill")?.addEventListener("click", ()=>switchView("casino"));
+
+  $("#casinoSubTabs")?.addEventListener("click", e=>{
+    const btn = e.target.closest("[data-casino-tab]");
+    if(btn) setCasinoTab(btn.dataset.casinoTab);
+  });
+  $("#casinoLeaguePanel")?.addEventListener("click", e=>{
+    if(e.target.closest("[data-league-claim]")) casinoLeagueClaim();
+  });
 
   $("#cfItems")?.addEventListener("click", e => {
     if(e.target.closest("[data-go-shop]")){ switchView("shop"); return; }
@@ -688,6 +1179,7 @@ function initCasinoEvents(){
 
   $("#cfPickCT")?.addEventListener("click", () => runCoinflip("ct"));
   $("#cfPickT")?.addEventListener("click", () => runCoinflip("t"));
+  $("#cfFreeSpin")?.addEventListener("click", runFreeCoinflip);
 
   $("#crashStartBtn")?.addEventListener("click", startCrash);
   $("#crashCashoutBtn")?.addEventListener("click", cashoutCrash);
@@ -734,6 +1226,24 @@ function initCasinoEvents(){
     const inp = $("#diceBet");
     if(inp) inp.value = Math.max(100, Math.floor(state.coins));
   });
+
+  $("#minesBoard")?.addEventListener("click", e=>{
+    const tile = e.target.closest("[data-mines-index]");
+    if(tile) revealMinesTile(+tile.dataset.minesIndex);
+  });
+  $("#minesStartBtn")?.addEventListener("click", startMines);
+  $("#minesCashoutBtn")?.addEventListener("click", cashoutMines);
+  $("#minesCounts")?.addEventListener("click", e=>{
+    const btn = e.target.closest("[data-mines-count]");
+    if(btn) setMinesCount(+btn.dataset.minesCount);
+  });
+  $("#minesHalf")?.addEventListener("click", ()=>minesAdjustBet("half"));
+  $("#mines2x")?.addEventListener("click", ()=>minesAdjustBet("2x"));
+  $("#minesMax")?.addEventListener("click", ()=>minesAdjustBet("max"));
+  $("#minesBet")?.addEventListener("keydown", e=>{
+    if(e.key === "Enter" && !minesActive) startMines();
+  });
 }
 
 initCasinoEvents();
+renderMines();

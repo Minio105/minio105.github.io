@@ -59,6 +59,12 @@
       uiAnim.disabled = perf;
     }
 
+    const reduceMotion = $("#setReduceMotion");
+    if(reduceMotion) reduceMotion.checked = state.reduceMotion === true;
+
+    const colorblind = $("#setColorblind");
+    if(colorblind) colorblind.checked = state.colorblind === true;
+
     const fast = $("#setFast");
     if(fast) fast.checked = state.fast === true;
 
@@ -73,14 +79,17 @@
 
   function applySettings(){
     const perf = state.perfMode === true;
+    const reduceMotion = state.reduceMotion === true;
     const noParticles = perf || state.fxParticles === false;
-    const noUiAnim = perf || state.uiAnim === false;
-    const noShake = perf || state.screenShake === false;
+    const noUiAnim = perf || state.uiAnim === false || reduceMotion;
+    const noShake = perf || state.screenShake === false || reduceMotion;
 
     document.body.classList.toggle("perf-lite", perf);
     document.body.classList.toggle("no-particles", noParticles);
     document.body.classList.toggle("no-ui-anim", noUiAnim);
     document.body.classList.toggle("no-shake", noShake);
+    document.body.classList.toggle("reduce-motion", reduceMotion);
+    document.body.classList.toggle("cb-tiers", state.colorblind === true);
 
     if(noParticles) clearParticles();
     syncSettingsUI();
@@ -157,6 +166,26 @@
     state.uiAnim = e.target.checked;
     applySettings();
     saveSettings();
+  });
+
+  $("#setReduceMotion")?.addEventListener("change", e => {
+    state.reduceMotion = e.target.checked;
+    applySettings();
+    saveSettings();
+  });
+
+  $("#setColorblind")?.addEventListener("change", e => {
+    state.colorblind = e.target.checked;
+    applySettings();
+    if(typeof renderShop === "function") renderShop(true);
+    if(typeof renderInv === "function") renderInv();
+    if(typeof renderBattle === "function") renderBattle();
+    saveSettings();
+    if(typeof toast === "function"){
+      toast(state.colorblind
+        ? "♿ Włączono oznaczenia tierów dla colorblind — litery i kształty zamiast samych kolorów."
+        : "Kolory tierów wróciły do standardowego widoku.", "good");
+    }
   });
 
   $("#setFast")?.addEventListener("change", e => {

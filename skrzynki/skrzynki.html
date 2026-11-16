@@ -21,7 +21,7 @@
     <span>CASE OPENER<small>SYMULATOR SKRZYNEK</small></span>
   </div>
   <div class="tabs">
-    <button class="tab active" data-view="shop"><span class="ti">🗝️</span><span class="tl">Skrzynki</span></button>
+    <button class="tab active" data-view="shop"><span class="ti">🗝️</span><span class="tl">Skrzynki</span><span class="cnt" id="eventCaseCount" style="display:none">0</span></button>
     <button class="tab" data-view="bots"><span class="ti">🤖</span><span class="tl">Bazar botów</span><span class="cnt" id="botCount">0</span></button>
     <button class="tab" data-view="market"><span class="ti">🛒</span><span class="tl">Sklep</span><span class="cnt" id="shopCount">0</span></button>
     <button class="tab" data-view="codes"><span class="ti">🔑</span><span class="tl">Kody</span><span class="cnt" id="codeCount">0</span></button>
@@ -36,6 +36,7 @@
   </div>
   <div class="spacer"></div>
   <span id="saveFlag" class="save-flag">✓ zapisano</span>
+  <span id="saveStatus" class="save-status" role="button" tabindex="0" title="Ostatni zapis — kliknij, aby skopiować kod">✓ —</span>
   <div id="rankPill" class="rank-pill"></div>
   <button class="tb-btn" id="fastBtn" title="Pomiń animację otwierania">⚡ Szybkie</button>
   <button class="tb-btn" id="eventBtn" title="Losowe eventy, mini eventy i admin abuse w święta">🎉 Eventy</button>
@@ -73,11 +74,39 @@
         ale są <b>jednorazowe</b>: po otwarciu znikają i <b>nie da się ich wznowić za monety</b>.
         Kolejną musisz upolować u bota. W dwóch nowych skrzynkach czekają <b>✦ Relikty</b>:
         kosy, noże, naklejki i ozdoby — każdy ma własne osiągnięcie.
+        Czasem trafi się też <b>🧳 rzadka walizka</b> — 🧤 Walizka Rękawic albo 💼 Walizka Ostrzy.
+        <b>Rękawice wypadają wyłącznie z walizek</b>, a szansa na ofertę walizki rośnie z reputacją
+        u danego bota (od <b>2,5%</b> do <b>18%</b>). Kupiona walizka trafia do <b>Ekwipunku</b> —
+        otwierasz ją tam, kiedy chcesz, z pełną animacją. Walizki też są jednorazowe.
         Pod ofertami botów znajdziesz też <b>🔑 Kody</b> — wszystkie z kolekcji, w tym
         <b>jeden bardzo rzadki</b>. Każdy kod kupisz u bota tylko raz.
       </div>
     </div>
     <div class="bot-grid" id="botGrid"></div>
+
+    <h2 class="sec-title black-title" style="margin-top:34px">🕶️ Czarny rynek <span class="line"></span><span class="muted" id="blackHint"></span></h2>
+    <div class="bot-note black-note">
+      <span class="bnote-ico">🕶️</span>
+      <div>
+        <b>Raz na tydzień jedna wyjątkowa oferta.</b> Może to być <b>walizka</b>, <b>nóż</b>
+        albo <b>rzadki kod</b> — tylko jedna sztuka, bez powtórek w tym tygodniu.
+        Cena bywa wysoka, ale to okazja, której nie kupisz w zwykłym Sklepie.
+        Nowa oferta pojawia się automatycznie co 7 dni.
+      </div>
+    </div>
+    <div class="black-market" id="blackMarket"></div>
+
+    <h2 class="sec-title weekly-title" style="margin-top:34px">📅 Kontrakty tygodniowe <span class="line"></span><span class="muted" id="bazarWeeklyHint"></span></h2>
+    <div class="bot-note weekly-note">
+      <span class="bnote-ico">📅</span>
+      <div>
+        <b>Trzy dodatkowe zadania na tydzień — niezależne od Misji.</b>
+        Kontrakty dotyczą życia bazaru: kupowania u botów, otwierania skrzynek, sprzedaży
+        i wygranych bitew. Postęp liczy się sam, a nagrody odbierasz tutaj.
+        Zestaw resetuje się co 7 dni.
+      </div>
+    </div>
+    <div class="mission-grid" id="bazarWeekly"></div>
 
     <h2 class="sec-title" style="margin-top:34px">🔑 Kody u botów <span class="line"></span><span class="muted" id="codeShopHint"></span></h2>
     <div class="code-note">
@@ -98,19 +127,20 @@
   <section class="view" id="view-market">
     <h2 class="sec-title">🛒 Sklep <span class="line"></span>
       <span class="muted" id="marketHint"></span>
-      <button class="tb-btn" id="shopRefresh" title="Poproś sprzedawców o nowy towar">🔄 Nowe oferty</button>
     </h2>
-    <div class="bot-note">
-      <span class="bnote-ico">🛒</span>
+    <div class="shop-happy" id="shopHappy" aria-live="polite"></div>
+    <div class="shop-note">
+      <span class="bnote-ico">🏪</span>
       <div>
-        <b>Sklep działa jak bazar botów, ale ma więcej sprzedawców i większe zapasy.</b>
-        Kupujesz tu bronie i zwykłe skrzynki — bez skrzynek zastrzeżonych tylko dla bazaru.
-        Oferty rotują co kilka minut, a ceny są <b>niższe albo wyższe</b> od normalnych:
-        zielona plakietka to okazja, czerwona to przepłacanie.
-        Kupione skrzynki trafiają do <b>zapasu</b> w zakładce Skrzynki.
+        <b>Stały katalog broni — bez losowych ofert i targowania.</b>
+        Kupujesz dokładnie tę broń, którą widzisz, od ręki. Ceny regularne są stałe i niezależne od reputacji.
+        Co 30 minut 3 pozycje trafiają do <b>promocji</b> — z limitowaną pulą sztuk.
+        Najlepsze okazje znajdziesz na początku katalogu.
+        Noże, walizki i rzadkie skrzynki upolujesz w <b>Bazarze botów</b>, a skrzynki otwierasz
+        w zakładce <b>Skrzynki</b>.
       </div>
     </div>
-    <div class="bot-grid" id="shopGrid"></div>
+    <div class="shop-catalog" id="shopGrid"></div>
 
     <h2 class="sec-title" style="margin-top:34px">🎁 Pakiety <span class="line"></span><span class="muted" id="packHint"></span></h2>
     <div class="bot-note event-note">
@@ -174,12 +204,17 @@
     <h2 class="sec-title">Ekwipunek <span class="line"></span></h2>
     <div class="inv-toolbar">
       <span class="pill">Przedmiotów: <b id="invTotal">0</b></span>
+      <span class="pill" id="invSuitPill" hidden>🧳 Walizki: <b id="invSuitTotal">0</b></span>
       <span class="pill">Wartość: <span class="big" id="invValue">0</span></span>
-      <span class="muted">Kliknij przedmiot, aby sprzedać (<span id="sellRateHint">90% wartości</span>)</span>
+      <span class="muted">Kliknij przedmiot, aby sprzedać (<span id="sellRateHint">90% wartości</span>) · ♥ chroni przed sprzedażą · drogie przedmioty wymagają potwierdzenia</span>
       <div class="spacer"></div>
+      <input id="invSearch" class="inv-search" type="search" placeholder="🔎 Szukaj broni lub skina…" autocomplete="off" spellcheck="false" aria-label="Szukaj w ekwipunku">
       <select id="invFilter">
         <option value="all">Wszystkie rzadkości</option>
+        <option value="fav">♥ Tylko ulubione</option>
+        <option value="dupes">♻ Tylko duplikaty</option>
         <option value="special">★ Rzadkie specjalne</option>
+        <option value="gloves">🧤 Rękawice</option>
         <option value="relic">✦ Relikty</option>
         <option value="covert">Covert</option>
         <option value="classified">Classified</option>
@@ -190,9 +225,15 @@
         <option value="value">Najdroższe</option>
         <option value="new">Najnowsze</option>
         <option value="rarity">Najrzadsze</option>
+        <option value="name">Nazwa A–Z</option>
       </select>
+      <button class="tb-btn" id="sellDupes">Sprzedaj duplikaty</button>
       <button class="tb-btn" id="sellCheap">Sprzedaj poniżej progu</button>
       <button class="tb-btn" id="sellAll">Sprzedaj wszystko</button>
+    </div>
+    <div class="inv-suit-wrap" id="invSuitWrap" hidden>
+      <div class="inv-suit-head">🧳 Walizki z bazaru <span class="muted">Otwórz, kiedy chcesz — z animacją</span></div>
+      <div class="inv-suitcases" id="invSuitcases"></div>
     </div>
     <div class="inv-grid" id="invGrid"></div>
   </section>
@@ -279,11 +320,11 @@
     <div class="casino-hero">
       <div>
         <h2 class="sec-title">🎰 Kasyno skinów <span class="line"></span></h2>
-        <p class="casino-sub">Trzy gry, jedna pula wirtualnych monet. Obstawiaj skiny, łap mnożniki i wspinaj się w rangach CS2.</p>
+        <p class="casino-sub">Cztery gry, jedna pula wirtualnych monet. Obstawiaj skiny, łap mnożniki, odkrywaj pola i wspinaj się w rangach CS2.</p>
       </div>
       <div class="casino-chips">
         <span>💠 Wirtualna waluta</span>
-        <span>🎮 3 gry</span>
+        <span>🎮 4 gry + liga</span>
         <span>🎖️ Rangi CS2</span>
       </div>
     </div>
@@ -291,9 +332,17 @@
     <!-- Profil Rangi -->
     <div id="casinoRankBox" class="casino-rank-box"></div>
 
+    <div class="casino-subtabs" id="casinoSubTabs" role="tablist" aria-label="Gry w kasynie">
+      <button class="casino-subtab active" data-casino-tab="cf" role="tab" aria-selected="true"><span>🪙</span> Coinflip</button>
+      <button class="casino-subtab" data-casino-tab="crash" role="tab" aria-selected="false"><span>🚀</span> Crash</button>
+      <button class="casino-subtab" data-casino-tab="dice" role="tab" aria-selected="false"><span>🎲</span> Kości</button>
+      <button class="casino-subtab" data-casino-tab="mines" role="tab" aria-selected="false"><span>💣</span> Mines <em>NOWA</em></button>
+      <button class="casino-subtab" data-casino-tab="league" role="tab" aria-selected="false"><span>🏆</span> Liga</button>
+    </div>
+
     <div class="casino-grid">
       <!-- COINFLIP -->
-      <div class="casino-card cf-card">
+      <div class="casino-card cf-card casino-panel active" data-casino-panel="cf" role="tabpanel">
         <div class="cc-head">
           <div class="cc-title">
             <span class="cc-kicker">GRA 01 · PvP</span>
@@ -352,6 +401,10 @@
           <button class="btn primary cf-btn ct" id="cfPickCT">🦅 Obstaw Orła</button>
           <button class="btn gold cf-btn t" id="cfPickT">✦ Obstaw Reszkę</button>
         </div>
+        <div class="cf-free">
+          <button class="mini-btn" id="cfFreeSpin" title="Darmowy rzut monetą bez ryzyka — z mini eventów">🎁 Darmowy spin <b id="cfFreeCount">0</b></button>
+          <span class="muted">bez ryzyka · wygrana to bonusowe monety</span>
+        </div>
 
         <div class="cf-toolbar">
           <div class="cf-summary">
@@ -373,7 +426,7 @@
       </div>
 
       <!-- CRASH -->
-      <div class="casino-card crash-card">
+      <div class="casino-card crash-card casino-panel" data-casino-panel="crash" role="tabpanel">
         <div class="cc-head">
           <div class="cc-title">
             <span class="cc-kicker">GRA 02 · NA CZAS</span>
@@ -435,7 +488,7 @@
       </div>
 
       <!-- DICE -->
-      <div class="casino-card dice-card">
+      <div class="casino-card dice-card casino-panel" data-casino-panel="dice" role="tabpanel">
         <div class="cc-head">
           <div class="cc-title">
             <span class="cc-kicker">GRA 03 · SZYBKA</span>
@@ -480,6 +533,67 @@
         <button class="btn primary dice-roll-btn" id="diceRollBtn">🎲 Rzuć kośćmi</button>
         <div class="ch-list" id="diceHistory"></div>
       </div>
+
+      <!-- MINES -->
+      <div class="casino-card mines-card casino-panel" data-casino-panel="mines" role="tabpanel">
+        <div class="cc-head">
+          <div class="cc-title">
+            <span class="cc-kicker">GRA 04 · LOGIKA</span>
+            <h3>💣 Mines</h3>
+          </div>
+          <span class="tag">5 × 5</span>
+        </div>
+        <p class="muted">Wybierz liczbę min, postaw zakład i odkrywaj pola. Każde bezpieczne pole zwiększa mnożnik — możesz wypłacić w dowolnym momencie. Trafienie miny kończy grę. Maksymalny mnożnik: <b>5000×</b>.</p>
+
+        <div class="mines-top">
+          <div class="mines-stat"><span>Mnożnik</span><b id="minesMult">1,00×</b></div>
+          <div class="mines-stat"><span>Następny</span><b id="minesNext">1,21×</b></div>
+          <div class="mines-stat"><span>Wypłata</span><b id="minesPayout">🪙 0</b></div>
+        </div>
+
+        <div class="mines-board-wrap">
+          <div class="mines-board" id="minesBoard" aria-label="Plansza Mines 5 na 5"></div>
+          <div class="mines-lock show" id="minesLock">Postaw zakład, aby odsłonić planszę</div>
+        </div>
+
+        <div class="casino-result" id="minesResult">Wybierz liczbę min i rozpocznij grę.</div>
+
+        <div class="mines-settings">
+          <div class="mines-mine-row" id="minesCounts">
+            <span>Min:</span>
+            <button class="mines-count" data-mines-count="3">3</button>
+            <button class="mines-count active" data-mines-count="5">5</button>
+            <button class="mines-count" data-mines-count="8">8</button>
+            <button class="mines-count" data-mines-count="12">12</button>
+          </div>
+          <div class="mines-bet-row">
+            <label for="minesBet">Stawka</label>
+            <input type="number" id="minesBet" value="500" min="100" step="100">
+            <button class="tb-btn" id="minesHalf">½</button>
+            <button class="tb-btn" id="mines2x">2×</button>
+            <button class="tb-btn" id="minesMax">MAX</button>
+          </div>
+        </div>
+
+        <div class="mines-actions">
+          <button class="btn primary" id="minesStartBtn">💣 Rozpocznij grę</button>
+          <button class="btn gold" id="minesCashoutBtn" disabled>Wypłać</button>
+        </div>
+        <div class="ch-list" id="minesHistory"></div>
+      </div>
+
+      <!-- LIGA KASYNA -->
+      <div class="casino-card league-card casino-panel" data-casino-panel="league" role="tabpanel">
+        <div class="cc-head">
+          <div class="cc-title">
+            <span class="cc-kicker">TYDZIEŃ · RANKING</span>
+            <h3>🏆 Liga kasyna</h3>
+          </div>
+          <span class="tag">Darmowa liga</span>
+        </div>
+        <p class="muted">Wygrane z coinflipa, Crashu, kości i Mines trafiają do tygodniowego rankingu. Liga jest darmowa — liczy się tylko wynik. Po zakończeniu tygodnia odbierzesz nagrodę za swoje miejsce.</p>
+        <div id="casinoLeaguePanel"></div>
+      </div>
     </div>
 
     <div class="casino-note">
@@ -501,7 +615,9 @@
       <b>💡 Jak to działa?</b> Eventy losowe włączają się same co <b>18–42 min</b> i trwają od 20 do 35 minut.
       Mini eventy wpadają częściej, co <b>3–8 min</b>, i dają drobiazgi: koniczynę, kilka monet, 2 EXP
       albo uszkodzoną skrzynkę. W polskie święta między <b>16:00 a 19:00</b> uruchamia się <b>ADMIN ABUSE</b>:
-      dostajesz monety, darmowe skrzynki i wszystkie efekty eventowe. Eventy efektów kupisz też w Sklepie.
+      dostajesz monety, darmowe skrzynki i wszystkie efekty eventowe. Z aktywnego eventu odbierzesz też
+      <b>limitowaną skrzynkę eventową</b> — pierwsze otwarcie gwarantuje nową broń z małej puli.
+      Eventy efektów kupisz też w Sklepie.
     </div>
   </section>
 </main>
@@ -537,6 +653,20 @@
     </div>
     <div class="panel-body result-wrap" id="resBody"></div>
   </div>
+</div>
+
+<!-- 🏆 Unikalna feta na nowy rekord wartości dropu -->
+<div class="record-overlay" id="recordOverlay" aria-live="assertive" aria-hidden="true">
+  <div class="record-flash"></div>
+  <div class="record-rays"></div>
+  <div class="record-ring"></div>
+  <div class="record-core">
+    <div class="record-kicker">🏆 NOWY REKORD</div>
+    <div class="record-title">LEPSZY DROP</div>
+    <div class="record-sub">Przebiłeś swój najlepszy dotychczasowy przedmiot</div>
+    <div class="record-compare" id="recordCompare"></div>
+  </div>
+  <div class="record-sparks" id="recordSparks" aria-hidden="true"></div>
 </div>
 
 <div class="overlay" id="battleOverlay">
@@ -646,13 +776,34 @@
         </label>
       </section>
 
-      <div class="settings-note">💡 Tryb wydajności nadpisuje ustawienia efektów. Zmiany zapisują się automatycznie.</div>
+      <section class="settings-sec">
+        <div class="settings-sec-head"><span>♿ Dostępność</span><small>czytelność i ruch</small></div>
+        <label class="set-row set-feature">
+          <span class="set-copy"><b>Ogranicz animacje (reduce motion)</b><small>Wyłącza animacje i przejścia — dla wrażliwych na ruch i słabszych urządzeń.</small></span>
+          <input type="checkbox" class="switch" id="setReduceMotion">
+        </label>
+        <label class="set-row">
+          <span class="set-copy"><b>Oznaczenia tierów dla colorblind</b><small>Dodaje litery i różne kształty do kolorów rzadkości.</small></span>
+          <input type="checkbox" class="switch" id="setColorblind">
+        </label>
+      </section>
+
+      <div class="settings-note">💡 Tryb wydajności nadpisuje ustawienia efektów. Skróty: <b>1–9</b> zakładki · <b>Enter</b> otwiera zaznaczoną skrzynkę · <b>Esc</b> zamyka okno. Zmiany zapisują się automatycznie.</div>
     </div>
     <div class="settings-foot">
       <span>Zmiany zapisują się od razu.</span>
       <button class="btn primary" id="settingsDone">Gotowe</button>
     </div>
   </div>
+</div>
+
+<div id="miniEventPill" role="button" tabindex="0" title="Mini eventy — kliknij, aby zobaczyć szczegóły">
+  <span class="mp-ico">✨</span>
+  <span class="mp-col">
+    <span class="mp-t">Mini eventy</span>
+    <span class="mp-time" id="miniEventTime">za 1:15</span>
+  </span>
+  <span class="mp-bar"><i id="miniEventBar"></i></span>
 </div>
 
 <div id="cloverPill">

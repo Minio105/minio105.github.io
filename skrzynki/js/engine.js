@@ -264,6 +264,23 @@ const ART = {
     {d:"M100 66 L116 52 L100 100 Z", r:"dark"},
     {d:"M52 44 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0", r:"detail"},
     {d:"M136 44 a6 6 0 1 0 12 0 a6 6 0 1 0 -12 0", r:"detail"}
+  ],
+  /* 🧤 Rękawice — para taktycznych rękawic, tylko z walizek bazaru botów. */
+  gloves: [
+    {d:"M28 30 C28 16 40 8 54 8 H86 C100 8 112 16 112 30 V64 C112 82 98 96 80 96 H60 C42 96 28 82 28 64 Z", r:"base"},
+    {d:"M36 34 C36 22 46 16 58 16 H82 C94 16 104 22 104 34 V62 C104 76 94 86 80 86 H60 C46 86 36 76 36 62 Z", r:"light"},
+    {d:"M40 26 H52 V70 H40 Z M56 20 H68 V70 H56 Z M72 26 H84 V70 H72 Z M88 34 H100 V70 H88 Z", r:"accent"},
+    {d:"M28 56 H112 V76 H28 Z", r:"accent"},
+    {d:"M28 56 H112 V63 H28 Z", r:"light"},
+    {d:"M38 80 H102 V96 C102 104 94 110 84 110 H56 C46 110 38 104 38 96 Z", r:"dark"},
+    {d:"M46 86 H94 V93 H46 Z", r:"detail"},
+    {d:"M120 38 C120 24 132 16 146 16 H176 C190 16 200 24 200 38 V68 C200 86 188 98 170 98 H152 C134 98 120 86 120 68 Z", r:"base"},
+    {d:"M128 42 C128 30 138 24 150 24 H172 C184 24 192 30 192 42 V66 C192 80 182 90 168 90 H152 C138 90 128 80 128 66 Z", r:"light"},
+    {d:"M132 34 H144 V74 H132 Z M148 28 H160 V74 H148 Z M164 34 H176 V74 H164 Z M180 42 H192 V74 H180 Z", r:"accent"},
+    {d:"M120 60 H200 V78 H120 Z", r:"accent"},
+    {d:"M120 60 H200 V67 H120 Z", r:"light"},
+    {d:"M130 82 H190 V98 C190 106 182 112 172 112 H148 C138 112 130 106 130 98 Z", r:"dark"},
+    {d:"M138 88 H182 V95 H138 Z", r:"detail"}
   ]
 };
 
@@ -343,6 +360,7 @@ function guessArt(w){
   if (/kosa|scythe/.test(s)) return "scythe";
   if (/naklejka|sticker/.test(s)) return "sticker";
   if (/ozdoba|charm|amulet|klejnot/.test(s)) return "charm";
+  if (/rękawic|rekawic|glove/.test(s)) return "gloves";
   if (/nóż|karambit|bayonet|kukri|sztylet|talon|skeleton|falchion|stiletto|ursus|navaja|nomad|paracord|survival|shadow|szpon/.test(s)) return "knife";
   if (s.includes("awp")||s.includes("ssg")||s.includes("scar")||s.includes("g3sg")) return "awp";
   if (s.includes("m249")||s.includes("negev")||s.includes("lmg")) return "lmg";
@@ -416,8 +434,8 @@ function fxBadge(it){
 /* ile razy w tym zapisie wypadł dany efekt (zwykły lub eventowy) */
 const fxCount = id => numFrom((state.stats && state.stats.fx && state.stats.fx[id]) || 0);
 
-function makeItem(caseDef, tier){
-  const [w,n,art] = pick(caseDef.items[tier]);
+function makeItem(caseDef, tier, forced){
+  const [w,n,art] = forced || pick(caseDef.items[tier]);
   const fx = rollFx(tier);
   const f = fx ? (FX_BY_ID[fx] || EVENT_FX_BY_ID[fx]) : null;
   return {
@@ -446,16 +464,21 @@ const LEGACY_KEYS = ["caseOpenerSave_v2","caseOpenerSave_v1"];
 const START_COINS = 5000;
 let state = {
   coins: START_COINS, inv: [], recent: [], battles: [],
-  stats:{opened:0, spent:0, earned:0, sold:0, knives:0, relics:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{},
-    codeDrops:0, codeRedeems:0, codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0},
+  stats:{opened:0, spent:0, earned:0, sold:0, knives:0, gloves:0, relics:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{},
+    codeDrops:0, codeRedeems:0, codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0,
+    happyBuys:0, happySells:0, happySaved:0, happyEarned:0,
+    blackBuys:0, blackSpent:0, blackBestDeal:0,
+    bazarContracts:0, bazarWeeks:0, suitcaseOpens:0},
   up: UP_ZERO(),
   crashUp:{engine:0, stability:0, shield:0},
-  album:{}, albumClaimed:{}, missions:null, weekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false, idleSec:0,
-  caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{}, botRep:{},
+  album:{}, albumClaimed:{}, missions:null, weekly:null, bazarWeekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false, idleSec:0,
+  caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{}, botRep:{}, blackBought:{},
   shopSalt:0, shopBought:{}, shopRefreshAt:0, packClaims:{},
   codes:{}, codeRedeemed:{}, codeBought:{},
   dailyCase:null, login:null,
-  sound:true, volume:1, fast:false, perfMode:false, fxParticles:true, screenShake:true, uiAnim:true,
+  fav:{}, botContracts:{}, casinoLeague:null, bossCampaign:{cleared:{}}, eventClaims:{},
+  expBoostUntil:0, upDiscountUntil:0, upDiscountPct:0, freeSpins:0,
+  sound:true, volume:1, fast:false, perfMode:false, fxParticles:true, screenShake:true, uiAnim:true, colorblind:false, reduceMotion:false,
   bonusAt:0, rescueAt:0, cloverUntil:0, fxEvents:{}, battleCase:"start", battleSize:1,
   autoTurbo:false, autoLimit:0, exp:0, rank:1
 };
@@ -472,6 +495,7 @@ let lastSavedCoins = null;      // stan monet w chwili ostatniego zapisu
 let otherTabWarned = false;
 /* Cache zapisu: bez tego każdy drop parsował cały save dwa razy. */
 let lastSaveRaw = null;         // dokładny string ostatniego udanego zapisu
+let lastSaveAt = 0;             // znacznik czasu ostatniego udanego zapisu
 let externalSaveDirty = true;   // inna karta coś zapisała (storage event)
 let lastExternalCheck = 0;      // awaryjne sprawdzenie innych kart co 5 s
 window.addEventListener("storage", e=>{
@@ -517,6 +541,7 @@ function mergeFrom(other){
   m.earned = Math.max(numFrom(m.earned), numFrom(s.earned));
   m.sold   = Math.max(numFrom(m.sold),   numFrom(s.sold));
   m.knives = Math.max(numFrom(m.knives), numFrom(s.knives));
+  m.gloves = Math.max(numFrom(m.gloves), numFrom(s.gloves));
   m.relics = Math.max(numFrom(m.relics), numFrom(s.relics));
   if (s.best && (!m.best || s.best.value > m.best.value)) m.best = s.best;
   Object.entries(s.cases||{}).forEach(([k,v])=>{ m.cases[k] = Math.max(numFrom(m.cases[k]), numFrom(v)); });
@@ -533,6 +558,8 @@ function mergeFrom(other){
   m.shopCases = Math.max(numFrom(m.shopCases), numFrom(s.shopCases));
   m.packBuys = Math.max(numFrom(m.packBuys), numFrom(s.packBuys));
   m.packSpent = Math.max(numFrom(m.packSpent), numFrom(s.packSpent));
+  ["happyBuys","happySells","happySaved","happyEarned","blackBuys","blackSpent","blackBestDeal","bazarContracts","bazarWeeks","suitcaseOpens"]
+    .forEach(k=>{ m[k] = Math.max(numFrom(m[k]), numFrom(s[k])); });
   /* ⚙️ ulepszenia Crash — przy dwóch kartach zostaje wyższy poziom */
   const ocu = normalizeCrashUp(other.crashUp);
   state.crashUp = normalizeCrashUp(state.crashUp);
@@ -540,14 +567,75 @@ function mergeFrom(other){
   const osb = (other.shopBought && typeof other.shopBought === "object" && !Array.isArray(other.shopBought)) ? other.shopBought : {};
   state.shopBought = (state.shopBought && typeof state.shopBought === "object" && !Array.isArray(state.shopBought)) ? state.shopBought : {};
   Object.keys(osb).forEach(k=>{ state.shopBought[k] = Math.max(numFrom(state.shopBought[k]), numFrom(osb[k])); });
+  /* 🕶️ czarny rynek — jednorazowy zakup tygodnia nie może zginąć przy dwóch oknach */
+  const obb = (other.blackBought && typeof other.blackBought === "object" && !Array.isArray(other.blackBought)) ? other.blackBought : {};
+  state.blackBought = (state.blackBought && typeof state.blackBought === "object" && !Array.isArray(state.blackBought)) ? state.blackBought : {};
+  Object.keys(obb).forEach(k=>{ if(obb[k]) state.blackBought[k] = true; });
   /* 🎁 pakiety — jednorazowe odbioru (starter) nie mogą zginąć przy dwóch oknach */
   const opc = (other.packClaims && typeof other.packClaims === "object" && !Array.isArray(other.packClaims)) ? other.packClaims : {};
   state.packClaims = (state.packClaims && typeof state.packClaims === "object" && !Array.isArray(state.packClaims)) ? state.packClaims : {};
   Object.keys(opc).forEach(k=>{ if(opc[k]) state.packClaims[k] = true; });
+  /* ⭐ ulubione — suma z obu okien, tylko dla przedmiotów, które nadal mamy */
+  const ofav = (other.fav && typeof other.fav === "object" && !Array.isArray(other.fav)) ? other.fav : {};
+  state.fav = (state.fav && typeof state.fav === "object" && !Array.isArray(state.fav)) ? state.fav : {};
+  Object.keys(ofav).forEach(k=>{ if(ofav[k]) state.fav[k] = true; });
+  const haveUids = new Set(state.inv.map(i=>i.uid));
+  Object.keys(state.fav).forEach(k=>{ if(!haveUids.has(k)) delete state.fav[k]; });
+  /* 🤝 kontrakty botów — bierzemy dalszy etap i większy postęp */
+  const obc = (other.botContracts && typeof other.botContracts === "object" && !Array.isArray(other.botContracts)) ? other.botContracts : {};
+  state.botContracts = (state.botContracts && typeof state.botContracts === "object" && !Array.isArray(state.botContracts)) ? state.botContracts : {};
+  Object.keys(obc).forEach(k=>{
+    const a = state.botContracts[k] || { idx:0, prog:0 }, b = obc[k] || { idx:0, prog:0 };
+    const ai = numFrom(a.idx), bi = numFrom(b.idx);
+    state.botContracts[k] = ai === bi
+      ? { idx:ai, prog:Math.max(numFrom(a.prog), numFrom(b.prog)) }
+      : (ai > bi ? { idx:ai, prog:numFrom(a.prog) } : { idx:bi, prog:numFrom(b.prog) });
+  });
+  /* 👑 kampania bossów — łączymy odhaczone etapy */
+  const obcamp = other.bossCampaign && other.bossCampaign.cleared && typeof other.bossCampaign.cleared === "object" ? other.bossCampaign.cleared : {};
+  state.bossCampaign = (state.bossCampaign && typeof state.bossCampaign === "object") ? state.bossCampaign : { cleared:{} };
+  state.bossCampaign.cleared = (state.bossCampaign.cleared && typeof state.bossCampaign.cleared === "object") ? state.bossCampaign.cleared : {};
+  Object.keys(obcamp).forEach(k=>{ if(obcamp[k]) state.bossCampaign.cleared[k] = true; });
+  /* 🎟️ eventowe skrzynki — odebranie z dowolnego okna zostaje odebrane */
+  const oec = (other.eventClaims && typeof other.eventClaims === "object" && !Array.isArray(other.eventClaims)) ? other.eventClaims : {};
+  state.eventClaims = (state.eventClaims && typeof state.eventClaims === "object" && !Array.isArray(state.eventClaims)) ? state.eventClaims : {};
+  Object.keys(oec).forEach(k=>{ if(oec[k]) state.eventClaims[k] = true; });
+  /* ⏱️ bonusy — dłuższy czas i większy rabat wygrywa */
+  state.expBoostUntil = Math.max(numFrom(state.expBoostUntil), numFrom(other.expBoostUntil));
+  state.upDiscountUntil = Math.max(numFrom(state.upDiscountUntil), numFrom(other.upDiscountUntil));
+  state.upDiscountPct = Math.max(numFrom(state.upDiscountPct), numFrom(other.upDiscountPct));
+  state.freeSpins = Math.max(numFrom(state.freeSpins), numFrom(other.freeSpins));
+  /* 🏆 liga kasyna — przy dwóch oknach zostaje wyższy wynik */
+  if(other.casinoLeague && typeof other.casinoLeague === "object"){
+    if(!state.casinoLeague || typeof state.casinoLeague !== "object") state.casinoLeague = other.casinoLeague;
+    else if(other.casinoLeague.week === state.casinoLeague.week){
+      state.casinoLeague.score = Math.max(numFrom(state.casinoLeague.score), numFrom(other.casinoLeague.score));
+      state.casinoLeague.plays = Math.max(numFrom(state.casinoLeague.plays), numFrom(other.casinoLeague.plays));
+    }
+  }
   /* 🎰 eventy efektów — przy grze w dwóch oknach liczy się dłuższy czas */
   const ofxEv = (other.fxEvents && typeof other.fxEvents === "object" && !Array.isArray(other.fxEvents)) ? other.fxEvents : {};
   state.fxEvents = (state.fxEvents && typeof state.fxEvents === "object" && !Array.isArray(state.fxEvents)) ? state.fxEvents : {};
   Object.keys(ofxEv).forEach(k=>{ state.fxEvents[k] = Math.max(numFrom(state.fxEvents[k]), numFrom(ofxEv[k])); });
+
+  // 📅 kontrakty tygodniowe bazaru — scalamy postęp i odebrania
+  const obw = other.bazarWeekly;
+  if(obw && typeof obw === "object" && Array.isArray(obw.list) && obw.list.length){
+    if(!state.bazarWeekly || !Array.isArray(state.bazarWeekly.list) || !state.bazarWeekly.list.length){
+      state.bazarWeekly = obw;
+    } else if(numFrom(obw.start) > numFrom(state.bazarWeekly.start)){
+      state.bazarWeekly = obw;
+    } else if(numFrom(obw.start) === numFrom(state.bazarWeekly.start)){
+      const mine = state.bazarWeekly.list;
+      obw.list.forEach(x=>{
+        if(!x || !x.id) return;
+        const m2 = mine.find(y=>y && y.id===x.id);
+        if(!m2) return;
+        m2.prog = Math.max(m2.prog|0, x.prog|0);
+        m2.claimed = m2.claimed || !!x.claimed;
+      });
+    }
+  }
 
   // 📅 misje tygodniowe — ta sama pula: scalamy postęp i odebrania
   const ow = other.weekly;
@@ -640,6 +728,40 @@ function flashSaved(kind){
   flagTimer = setTimeout(()=>el.classList.remove("show"), 1900);
 }
 
+/* Trwały wskaźnik ostatniego zapisu w topbarze. Pokazuje godzinę, ostrzega
+   o niezapisanych zmianach i błędzie zapisu. Kliknięcie robi szybką kopię. */
+function updateSaveStatus(){
+  const el = $("#saveStatus");
+  if(!el) return;
+  const now = Date.now();
+  let text = "✓ —", cls = "", title = "Brak zapisu";
+  if(saveFails > 0){
+    text = "⚠ błąd zapisu";
+    cls = "bad";
+    title = "Ostatni zapis nie powiódł się. Zrób kopię (💾 Kopia).";
+  } else if(lastSaveAt){
+    const d = new Date(lastSaveAt);
+    const hh = String(d.getHours()).padStart(2,"0");
+    const mm = String(d.getMinutes()).padStart(2,"0");
+    text = "✓ " + hh + ":" + mm;
+    title = "Ostatni zapis: " + d.toLocaleString("pl-PL");
+    const age = now - lastSaveAt;
+    if(dirty && age > 8000){
+      text = "⚠ " + hh + ":" + mm;
+      cls = "stale";
+      title += " · masz niezapisane zmiany";
+    } else if(age > 30 * 60 * 1000){
+      text = "🕒 " + hh + ":" + mm;
+      cls = "stale";
+      title += " · ostatni zapis był dawno temu";
+    }
+  }
+  el.textContent = text;
+  el.className = "save-status" + (cls ? " " + cls : "");
+  el.title = title + " · kliknij, aby skopiować kod zapisu";
+  el.setAttribute("aria-label", el.title);
+}
+
 function snapshot(){
   return { v:3, tab:TAB_ID, rev:saveRev, ts:Date.now(),
     coins:state.coins, inv:state.inv, recent:state.recent, stats:state.stats,
@@ -648,17 +770,23 @@ function snapshot(){
     sound:state.sound, volume:state.volume, fast:state.fast,
     perfMode:state.perfMode, fxParticles:state.fxParticles,
     screenShake:state.screenShake, uiAnim:state.uiAnim,
+    colorblind:state.colorblind === true, reduceMotion:state.reduceMotion === true,
     bonusAt:state.bonusAt, rescueAt:state.rescueAt,
     autoTurbo:state.autoTurbo === true, autoLimit:autoLimitSan(state.autoLimit),
     exp:numFrom(state.exp), rank:numFrom(state.rank)||1,
     cloverUntil:state.cloverUntil||0,
     fxEvents:state.fxEvents || {},
-    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly, achievements:state.achievements, cosmetics:state.cosmetics, bossKills:state.bossKills,
+    album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly, bazarWeekly:state.bazarWeekly, achievements:state.achievements, cosmetics:state.cosmetics, bossKills:state.bossKills,
     idleKnifeClaimed:state.idleKnifeClaimed===true, idleSec:numFrom(state.idleSec),
     codes:state.codes, codeRedeemed:state.codeRedeemed, codeBought:state.codeBought,
     caseStock:state.caseStock, botSalt:state.botSalt, botBought:state.botBought, botRefreshAt:state.botRefreshAt, botUnlocked:state.botUnlocked,
-    botRep:state.botRep || {},
+    botRep:state.botRep || {}, blackBought:state.blackBought || {},
     dailyCase:state.dailyCase || null, login:state.login || null,
+    fav:state.fav || {}, botContracts:state.botContracts || {},
+    casinoLeague:state.casinoLeague || null, bossCampaign:state.bossCampaign || {cleared:{}},
+    eventClaims:state.eventClaims || {},
+    expBoostUntil:numFrom(state.expBoostUntil), upDiscountUntil:numFrom(state.upDiscountUntil),
+    upDiscountPct:numFrom(state.upDiscountPct), freeSpins:numFrom(state.freeSpins),
     shopSalt:state.shopSalt, shopBought:state.shopBought, shopRefreshAt:state.shopRefreshAt,
     packClaims:state.packClaims || {} };
 }
@@ -734,18 +862,21 @@ function save(opts){
     knownRev = saveRev;
     dirty = false; saveFails = 0;
     lastSavedCoins = state.coins;
+    lastSaveAt = Date.now();
     flashSaved(opts.kind);
+    updateSaveStatus();
     return true;
   }catch(e){
     saveFails++;
     if(saveFails <= 3) toast("⚠️ Nie udało się zapisać postępu (pamięć przeglądarki pełna?)","bad");
+    updateSaveStatus();
     return false;
   }
 }
 
 /* zapis konkretnie po zdobyciu przedmiotu — najważniejszy moment */
 function saveDrop(item){
-  const kind = item && item.tier === "relic" ? "relic" : item && item.tier === "special" ? "rare" : "drop";
+  const kind = item && item.tier === "relic" ? "relic" : (item && (item.tier === "special" || item.tier === "gloves")) ? "rare" : "drop";
   return save({kind});
 }
 
@@ -767,6 +898,11 @@ function load(){
 
   if(typeof d.coins === "number") state.coins = d.coins;
   state.inv    = validInv(d.inv);
+  const invUids = new Set(state.inv.map(i=>i.uid));
+  state.fav = {};
+  if(d.fav && typeof d.fav === "object" && !Array.isArray(d.fav)){
+    Object.keys(d.fav).forEach(k=>{ if(d.fav[k] && invUids.has(k)) state.fav[k] = true; });
+  }
   state.recent = Array.isArray(d.recent) ? d.recent.filter(r=>r&&r.uid) : [];
   state.stats  = Object.assign(state.stats, d.stats||{});
   if(!state.stats.cases || typeof state.stats.cases !== "object") state.stats.cases = {};
@@ -777,6 +913,8 @@ function load(){
   state.fxParticles  = d.fxParticles !== false;
   state.screenShake  = d.screenShake !== false;
   state.uiAnim       = d.uiAnim !== false;
+  state.colorblind   = d.colorblind === true;
+  state.reduceMotion = d.reduceMotion === true;
   state.bonusAt= d.bonusAt || 0;
   state.rescueAt = d.rescueAt || 0;
   state.cloverUntil = numFrom(d.cloverUntil);   // ⚠ bez |0 — inaczej koniczyna „ginęła” przy odświeżeniu
@@ -800,6 +938,7 @@ function load(){
   if(typeof state.stats.battleWins !== "number") state.stats.battleWins = 0;
   if(typeof state.stats.albums !== "number") state.stats.albums = 0;
   if(typeof state.stats.relics !== "number") state.stats.relics = 0;
+  if(typeof state.stats.gloves !== "number") state.stats.gloves = 0;
   state.battles = Array.isArray(d.battles) ? d.battles.filter(b=>b && b.cn).slice(0,8) : [];
   state.battleCase = CASES.some(c=>c.id===d.battleCase && !c.botOnly && !c.noBattle) ? d.battleCase : "start";
   state.battleSize = [1,2,3,5].includes(d.battleSize) ? d.battleSize : 1;
@@ -819,11 +958,44 @@ function load(){
       if(n > 0) state.botRep[k] = n;
     });
   }
+  /* 🕶️ czarny rynek — zapamiętujemy tylko wykupione tygodnie */
+  state.blackBought = {};
+  if(d.blackBought && typeof d.blackBought === "object" && !Array.isArray(d.blackBought)){
+    Object.keys(d.blackBought).forEach(k=>{ if(d.blackBought[k]) state.blackBought[k] = true; });
+  }
+  /* 📅 kontrakty tygodniowe bazaru — walidacja w bazarWeeklyState() */
+  state.bazarWeekly = (d.bazarWeekly && typeof d.bazarWeekly === "object" && !Array.isArray(d.bazarWeekly)) ? d.bazarWeekly : null;
   /* 🛒 sklep — osobny zapas, żeby nie kolidował z bazarowym */
   state.shopSalt = numFrom(d.shopSalt);
   state.shopBought = (d.shopBought && typeof d.shopBought === "object" && !Array.isArray(d.shopBought)) ? d.shopBought : {};
   state.shopRefreshAt = numFrom(d.shopRefreshAt);
   state.packClaims = (d.packClaims && typeof d.packClaims === "object" && !Array.isArray(d.packClaims)) ? d.packClaims : {};
+  /* 🤝 kontrakty botów — aktywny kontrakt i jego postęp */
+  state.botContracts = {};
+  if(d.botContracts && typeof d.botContracts === "object" && !Array.isArray(d.botContracts)){
+    Object.keys(d.botContracts).forEach(k=>{
+      const c = d.botContracts[k];
+      if(c && typeof c === "object" && !Array.isArray(c)){
+        state.botContracts[k] = { idx: numFrom(c.idx), prog: numFrom(c.prog) };
+      }
+    });
+  }
+  /* 🏆 liga kasyna — zapisujemy wynik tygodnia i rozliczenie poprzedniego */
+  state.casinoLeague = (d.casinoLeague && typeof d.casinoLeague === "object" && !Array.isArray(d.casinoLeague)) ? d.casinoLeague : null;
+  /* 👑 kampania bossów — odhaczone etapy */
+  state.bossCampaign = (d.bossCampaign && typeof d.bossCampaign === "object" && !Array.isArray(d.bossCampaign))
+    ? { cleared:(d.bossCampaign.cleared && typeof d.bossCampaign.cleared === "object" && !Array.isArray(d.bossCampaign.cleared)) ? d.bossCampaign.cleared : {} }
+    : { cleared:{} };
+  /* 🎟️ limitowane skrzynki eventowe — odebrane raz na dany event */
+  state.eventClaims = {};
+  if(d.eventClaims && typeof d.eventClaims === "object" && !Array.isArray(d.eventClaims)){
+    Object.keys(d.eventClaims).forEach(k=>{ if(d.eventClaims[k]) state.eventClaims[k] = true; });
+  }
+  /* ⏱️ bonusy z mini eventów */
+  state.expBoostUntil = numFrom(d.expBoostUntil);
+  state.upDiscountUntil = numFrom(d.upDiscountUntil);
+  state.upDiscountPct = Math.max(0, Math.min(90, numFrom(d.upDiscountPct)));
+  state.freeSpins = numFrom(d.freeSpins);
   /* skrzynki botów są jednorazowe — stary zapis mógł mieć flagę „odblokowana”,
      ale jej nie używamy: po otwarciu trzeba kupić kolejną u bota. */
   state.botUnlocked = {};
@@ -845,23 +1017,30 @@ function load(){
   ["codeDrops","codeRedeems","codeBuys"].forEach(k=>{ if(typeof state.stats[k] !== "number") state.stats[k] = 0; });
   state.idleKnifeClaimed = d.idleKnifeClaimed === true;
   state.idleSec = numFrom(d.idleSec);
-  ["botBuys","botSpent","botCases","stockOpened","bestDeal","trollOpened","trollWins","shopBuys","shopSpent","shopCases","packBuys","packSpent"].forEach(k=>{
+  ["botBuys","botSpent","botCases","stockOpened","bestDeal","trollOpened","trollWins","shopBuys","shopSpent","shopCases","packBuys","packSpent",
+   "happyBuys","happySells","happySaved","happyEarned","blackBuys","blackSpent","blackBestDeal","bazarContracts","bazarWeeks","suitcaseOpens"].forEach(k=>{
     if(typeof state.stats[k] !== "number") state.stats[k] = 0;
   });
   saveRev = d.rev|0; knownRev = saveRev;
+  lastSaveAt = Number(d.ts) || 0;
   lastSavedCoins = state.coins;
 }
 
 /* --- eksport / import zapisu (ręczna kopia bezpieczeństwa) --- */
 function exportSave(){
-  save();
+  const saved = save();
+  if(!saved) toast("⚠️ Zapis nie potwierdził się — kopia może być nieaktualna.","bad");
   const raw = localStorage.getItem(SAVE_KEY);
   if(!raw){ toast("Brak zapisu do skopiowania","bad"); return; }
   const code = btoa(unescape(encodeURIComponent(raw)));
   const done = ()=>{ toast("📋 Kod zapisu skopiowany do schowka","good"); };
+  const fallback = ()=>{
+    const v = prompt("Skopiuj kod zapisu:", code);
+    if(v === null) toast("⚠️ Kopia zapisu nie została skopiowana.","bad");
+  };
   if(navigator.clipboard && navigator.clipboard.writeText){
-    navigator.clipboard.writeText(code).then(done).catch(()=>prompt("Skopiuj kod zapisu:", code));
-  } else prompt("Skopiuj kod zapisu:", code);
+    navigator.clipboard.writeText(code).then(done).catch(fallback);
+  } else fallback();
 }
 function importSave(){
   const code = prompt("Wklej kod zapisu (z przycisku „Kopia zapisu”):","");
@@ -880,7 +1059,8 @@ function importSave(){
       botRep:d.botRep||{}, dailyCase:d.dailyCase||null, login:d.login||null,
       sound:state.sound, volume:state.volume, fast:state.fast,
       perfMode:state.perfMode, fxParticles:state.fxParticles,
-      screenShake:state.screenShake, uiAnim:state.uiAnim, bonusAt:0 }));
+      screenShake:state.screenShake, uiAnim:state.uiAnim,
+      colorblind:state.colorblind === true, reduceMotion:state.reduceMotion === true, bonusAt:0 }));
     location.reload();
   }catch(e){ toast("❌ Nieprawidłowy kod zapisu","bad"); }
 }
@@ -919,6 +1099,7 @@ function sfxTick(){ beep(1250 + Math.random()*420, 0.03, "square", 0.022); }
 function sfxWin(tier, fx){
   const sets = {
     relic:      [392,523,659,784,1046,1318,1568,2093],
+    gloves:     [440,554,659,880,1108,1318,1760,2093],
     special:    [523,659,784,1046,1318,1568,2093],
     covert:     [523,659,784,1046,1318],
     classified: [440,554,659,880],
@@ -926,13 +1107,22 @@ function sfxWin(tier, fx){
     mil:        [330,415]
   };
   (sets[tier]||sets.mil).forEach((f,i)=>beep(f, 0.26, "triangle", 0.055, i*0.085));
-  if (tier==="relic"||tier==="special"||tier==="covert") beep(120, 0.7, "sine", 0.09, 0);
+  if (tier==="relic"||tier==="special"||tier==="gloves"||tier==="covert") beep(120, 0.7, "sine", 0.09, 0);
   /* ✨ rzadki efekt dorzuca własny błysk na koniec fanfary */
   if (fx==="diamond"||fx==="rainbow"||fx==="cosmic"){
     beep(1568,0.22,"triangle",0.05,0.55); beep(2093,0.34,"triangle",0.045,0.73); beep(2637,0.42,"sine",0.04,0.95);
   } else if (fx){
     beep(1318,0.2,"triangle",0.045,0.46); beep(1760,0.28,"triangle",0.04,0.62);
   }
+}
+/* 🏆 Nowy rekord wartości — niższy „boom” + wznosząca się, dłuższa fanfara. */
+function sfxRecord(){
+  beep(110, 0.9, "sine", 0.11, 0);
+  beep(220, 0.55, "sine", 0.065, 0.02);
+  [523,659,784,1046,1318,1568,2093,2637].forEach((f,i)=>beep(f, 0.34, "triangle", 0.05, i*0.055));
+  beep(1046, 0.7, "sine", 0.04, 0.42);
+  beep(2093, 0.8, "sine", 0.035, 0.62);
+  beep(2637, 0.9, "sine", 0.03, 0.82);
 }
 function sfxCoin(){ beep(940,0.055,"triangle",0.05); beep(1420,0.1,"triangle",0.045,0.06); }
 function sfxClover(){ beep(1180,0.07,"triangle",0.042); beep(1580,0.07,"triangle",0.038,0.085); beep(2100,0.16,"triangle",0.034,0.17); }
@@ -1016,6 +1206,7 @@ function switchView(v){
   currentView = v;
   $$(".tab").forEach(t=>t.classList.toggle("active", t.dataset.view===v));
   $$(".view").forEach(s=>s.classList.toggle("active", s.id==="view-"+v));
+  if(typeof writeUiPrefs === "function") writeUiPrefs();
   if(v==="inv") renderInv();
   if(v==="stats") renderStats();
   if(v==="up") renderUp();

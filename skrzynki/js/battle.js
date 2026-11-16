@@ -111,7 +111,7 @@ function renderBattleLog(){
     return;
   }
   const side = (tier, name, val, n) =>
-    `<i style="color:${TIER[tier].color}">${tier==="special"?"★":"◆"}</i>${esc(name)}` +
+    `<i style="color:${TIER[tier].color}">${tier==="special"?"★":tier==="gloves"?"🧤":"◆"}</i>${esc(name)}` +
     (n>1 ? `<em class="b-sum">Σ 🪙 ${fmtShort(val||0)}</em>` : "");
   el.innerHTML = state.battles.map((b,i)=>{
     const n = b.n||1;
@@ -188,6 +188,7 @@ function fight(caseId){
 
 function showBattle(my, ai, res, c){
   clearBattleTimers();
+  if(typeof hideRecordFx === "function") hideRecordFx();
   const n = my.length;
   battleStage = 0; battleCtx = { my, ai, res, c, n };
 
@@ -223,12 +224,12 @@ function battleStep(k){
       const bs = bestOf(arr);
       $(valSel).innerHTML =
         `<b style="color:var(--acc)" title="🪙 ${fmt(sumVal(arr))}">🪙 ${fmtShort(sumVal(arr))}</b><span>${n} ${plural(n,"skrzynka","skrzynki","skrzynek")} · najlepsze:
-          <b style="color:${TIER[bs.tier].color};display:inline">${bs.tier==="special"?"★ ":""}${esc(bs.w)} · ${esc(bs.n)}</b></span>`;
+          <b style="color:${TIER[bs.tier].color};display:inline">${bs.tier==="special"?"★ ":bs.tier==="gloves"?"🧤 ":""}${esc(bs.w)} · ${esc(bs.n)}</b></span>`;
     } else {
       const it = arr[0];
       host.innerHTML = itemCardHTML(it);
       $(valSel).innerHTML =
-        `<span style="color:${TIER[it.tier].color}">${it.tier==="special"?"★ ":""}${esc(it.w)} · ${esc(it.n)}</span><b style="color:var(--acc)" title="🪙 ${fmt(it.value)}">🪙 ${fmtShort(it.value)}</b>`;
+        `<span style="color:${TIER[it.tier].color}">${it.tier==="special"?"★ ":it.tier==="gloves"?"🧤 ":""}${esc(it.w)} · ${esc(it.n)}</span><b style="color:var(--acc)" title="🪙 ${fmt(it.value)}">🪙 ${fmtShort(it.value)}</b>`;
     }
     $("#fighter"+who).classList.add("revealed");
     sfxWin(bestOf(arr).tier);
@@ -246,6 +247,11 @@ function battleStep(k){
     ban.innerHTML = `🏆 WYGRYWASZ! Bierzesz wszystko (${2*n} ${plural(2*n,"przedmiot","przedmioty","przedmiotów")})` +
       (bl ? `<span style="display:block;font-size:11px;font-weight:800;opacity:.85;margin-top:5px">⚔️ Wojownik: +${Math.round(BATTLE_STEP*bl*100)}% wartości Twoich wygranych</span>` : "");
     confetti(); sfxCoin();
+    /* 🏆 Jeśli wygrana pobiła rekord wartości, pokaż unikalną fetę. */
+    if(typeof recordDropFor === "function"){
+      const rec = recordDropFor(my.concat(ai));
+      if(rec) setTimeout(()=>{ if($("#battleOverlay").classList.contains("show")) showRecordFx(rec); }, 900);
+    }
   } else if(res < 0){
     $("#fighterAi").classList.add("win");
     $("#fighterMe").classList.add("lose");
@@ -261,6 +267,7 @@ function battleStep(k){
     `<button class="btn primary" id="fightAgain">⚔️ Walcz ponownie (🪙 ${fmtShort(c.price*(n>=5?(1-bulkRate()):1)*n)})</button>
      <button class="btn" id="battleKeep">Zamknij</button>`;
   $("#fightAgain").addEventListener("click", ()=>{
+    if(typeof hideRecordFx === "function") hideRecordFx();
     $("#battleOverlay").classList.remove("show");
     battleStage = 0; battleCtx = null; battleBusy = false;
     fight(c.id);
@@ -278,6 +285,7 @@ function battleSkip(){
 function closeBattle(){
   if(autoTimer){ clearTimeout(autoTimer); autoTimer = null; }
   clearBattleTimers();
+  if(typeof hideRecordFx === "function") hideRecordFx();
   $("#battleOverlay").classList.remove("show");
   battleStage = 0; battleCtx = null; battleBusy = false;
   if(autoBattle){ setAuto(false, true); toast("🔁 Auto-walka zatrzymana."); }
@@ -385,6 +393,7 @@ function renderStats(){
     ["Zysk ze sprzedaży", "🪙 "+fmtShort(s.earned), "", true],
     ["Bilans netto", (net>=0?"+":"")+"🪙 "+fmtShort(net), net>=0?"pos":"neg", false],
     ["Zdobyte noże ★", fmt(s.knives), s.knives>0?"pos":"", false],
+    ["🧤 Zdobyte rękawice", fmt(numFrom(s.gloves)), "tylko z walizek bazaru botów", numFrom(s.gloves)>0?"pos":"", false],
     ["✦ Zdobyte relikty", fmt(numFrom(s.relics)), "najrzadsze przedmioty w grze", numFrom(s.relics)>0?"pos":"", false],
     ["Ekwipunek", fmt(state.inv.length)+" szt.", "wartość 🪙 "+fmtShort(invVal), false],
     ["Najlepszy drop", best?esc(best.n):"—",
@@ -414,6 +423,20 @@ function renderStats(){
   if((s.shopBuys|0) > 0)
     boxes.push(["🛒 Sklep", fmt(numFrom(s.shopBuys))+" zakupów",
       "wydano 🪙 "+fmtShort(numFrom(s.shopSpent))+" · skrzynek: "+fmt(numFrom(s.shopCases)), false]);
+  if(numFrom(s.happyBuys) || numFrom(s.happySells) || numFrom(s.happySaved) || numFrom(s.happyEarned))
+    boxes.push(["⏰ Happy Hour", fmt(numFrom(s.happyBuys))+" zakupów · "+fmt(numFrom(s.happySells))+" sprzedaży",
+      "zaoszczędzono 🪙 "+fmtShort(numFrom(s.happySaved))+" · bonus sprzedaży 🪙 "+fmtShort(numFrom(s.happyEarned)), false]);
+  if(numFrom(s.blackBuys) > 0)
+    boxes.push(["🕶️ Czarny rynek", fmt(numFrom(s.blackBuys))+" ofert",
+      "wydano 🪙 "+fmtShort(numFrom(s.blackSpent))+" · najlepsza okazja −"+fmt(numFrom(s.blackBestDeal))+"%", false]);
+  if(numFrom(s.bazarContracts) > 0){
+    const bz = typeof bazarWeeklyState === "function" ? bazarWeeklyState() : null;
+    boxes.push(["📅 Kontrakty Bazaru", fmt(numFrom(s.bazarContracts))+" ukończonych",
+      "komplet tygodnia: "+fmt(numFrom(s.bazarWeeks))+(bz ? " · nowe za "+bazarWeekLeftTxt(bz.start) : ""), false]);
+  }
+  if(numFrom(s.suitcaseOpens) > 0)
+    boxes.push(["🧳 Walizki otwarte", fmt(numFrom(s.suitcaseOpens))+"×",
+      "rzadkie walizki z Bazaru", false]);
   if((s.packBuys|0) > 0)
     boxes.push(["🎁 Pakiety", fmt(numFrom(s.packBuys))+" otwarć",
       "wydano 🪙 "+fmtShort(numFrom(s.packSpent))+" · starter: "+(state.packClaims && state.packClaims.starter ? "odebrany" : "czeka"), false]);
@@ -436,8 +459,10 @@ function renderStats(){
 
   const perCase = CASES.map(c=>{
     const n = s.cases[c.id]||0;
-    return n ? `<div class="stat-box"><label>${esc(c.name)}</label><b>${fmt(n)}×</b>
-      <div class="sub">wydano 🪙 ${fmtShort(n*c.price)}</div></div>` : "";
+    if(!n) return "";
+    const sub = c.eventOnly ? "event · otwarcia z zapasu" : "wydano 🪙 "+fmtShort(n*c.price);
+    return `<div class="stat-box"><label>${esc(c.name)}</label><b>${fmt(n)}×</b>
+      <div class="sub">${sub}</div></div>`;
   }).join("");
 
   $("#recentList").innerHTML = perCase + (state.recent.length
@@ -452,7 +477,7 @@ function renderStats(){
             <div class="item-weapon">${esc(r.w)}</div>
             <div class="item-skin">${esc(r.n)}</div>
             <div class="item-foot">
-              <span class="item-tier">${r.tier==="special"?"★ Special":r.tier==="relic"?"✦ Relikt":t.name}</span>
+              <span class="item-tier">${r.tier==="special"?"★ Special":r.tier==="gloves"?"🧤 Rękawice":r.tier==="relic"?"✦ Relikt":t.name}</span>
               <span class="item-price">🪙 ${fmtShort(r.value)}</span>
             </div>
           </div></div>`;
@@ -542,7 +567,7 @@ let brokeSince = 0;
 
 /* sytuacja bez wyjścia: puste ręce i za mało monet na najtańszą skrzynkę */
 function brokeAndEmpty(){
-  const cheapest = Math.min(...CASES.map(c=>c.price));
+  const cheapest = Math.min(...CASES.filter(c=>!c.eventOnly).map(c=>c.price));
   return state.inv.length === 0 && state.coins < cheapest;
 }
 
@@ -591,7 +616,7 @@ setInterval(grantRescue, 500);
    ======================================================================= */
 const CLOVER_CHANCE = 0.004;   // 0,4% szansy na koniczynę przy każdym zdobytym przedmiocie (rzadki bonus)
 const CLOVER_DUR    = 80000;   // czas działania: 80 sekund
-const CLOVER_BOOST  = {mil:0, restricted:0.12, classified:0.28, covert:0.35, special:0.40, relic:0.05};
+const CLOVER_BOOST  = {mil:0, restricted:0.12, classified:0.28, covert:0.35, special:0.40, gloves:0.05, relic:0.05};
 
 /* 🍀 ulepszenie "Długi kwiat" wydłuża działanie koniczyny */
 const cloverDur = () => CLOVER_DUR + CLOVER_STEP*upLvl("clover");
@@ -603,6 +628,7 @@ function cloverOdds(){ return cloverActive() ? CLOVER_BOOST : null; }
 /* opis efektu do UI — mnożniki względne, zanim szanse zostaną znormalizowane */
 function cloverDesc(){
   return "★ "   + Math.round(CLOVER_BOOST.special   *100) + "%  "
+       + "🧤 "  + Math.round(CLOVER_BOOST.gloves    *100) + "%  "
        + "✦ "   + Math.round(CLOVER_BOOST.relic     *100) + "%  "
        + "Covert "  + Math.round(CLOVER_BOOST.covert     *100) + "%  "
        + "Classified " + Math.round(CLOVER_BOOST.classified *100) + "%  "
@@ -678,8 +704,10 @@ $("#resetBtn").addEventListener("click", ()=>{
   if(typeof worldEventReset === "function") worldEventReset();
   else localStorage.removeItem("caseOpenerWorldEvents_v1");
   state.coins = START_COINS; state.inv = []; state.recent = [];
-  state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,fx:{},fxTotal:0,best:null,cases:{},
-    codeDrops:0,codeRedeems:0,codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0};
+  state.stats = {opened:0,spent:0,earned:0,sold:0,knives:0,gloves:0,relics:0,rescues:0,battles:0,battleWins:0,clovers:0,albums:0,fx:{},fxTotal:0,best:null,cases:{},
+    codeDrops:0,codeRedeems:0,codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0,
+    happyBuys:0, happySells:0, happySaved:0, happyEarned:0, blackBuys:0, blackSpent:0, blackBestDeal:0,
+    bazarContracts:0, bazarWeeks:0, suitcaseOpens:0};
   state.up = UP_ZERO();
   state.crashUp = {engine:0, stability:0, shield:0};
   state.bonusAt = 0; state.rescueAt = 0; state.cloverUntil = 0;
@@ -687,6 +715,7 @@ $("#resetBtn").addEventListener("click", ()=>{
   state.album = {}; state.albumClaimed = {}; albumCase = null;
   state.codes = {}; state.codeRedeemed = {}; state.codeBought = {};
   state.botUnlocked = {};
+  state.blackBought = {}; state.bazarWeekly = null;
   state.shopSalt = 0; state.shopBought = {}; state.shopRefreshAt = 0;
   state.packClaims = {}; const packRes = $("#packResult"); if(packRes) packRes.innerHTML = "";
   state.fxEvents = {}; FX_EVENT_SIG = "";
@@ -711,6 +740,7 @@ document.addEventListener("keydown", e=>{
     else if($("#battleOverlay").classList.contains("show")) $("#battleClose").click();
     else if($("#resultOverlay").classList.contains("show")) $("#resClose").click();
     else if($("#spinOverlay").classList.contains("show")) $("#spinClose").click();
+    else if($("#bossOverlay") && $("#bossOverlay").classList.contains("show")) closeBossModal();
     else if(autoOpen) autoStop("zatrzymane");       // 🤖 Esc zatrzymuje auto-otwieranie
   }
 });

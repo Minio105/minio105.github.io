@@ -6,16 +6,22 @@
 /* --- katalog wszystkich skinów: klucz "broń|skin" jest unikalny w grze --- */
 const ALBUM = (()=>{
   const m = new Map();
-  CASES.forEach(c=>TIERS.forEach(t=>(c.items[t]||[]).forEach(it=>{
-    const w = it[0], n = it[1], k = w+"|"+n;
-    if(!m.has(k)) m.set(k, {key:k, w, n, art:it[2], tier:t, caseId:c.id});
-  })));
+  CASES.forEach(c=>{
+    if(c.noAlbum) return;
+    TIERS.forEach(t=>(c.items[t]||[]).forEach(it=>{
+      const w = it[0], n = it[1], k = w+"|"+n;
+      if(!m.has(k)) m.set(k, {key:k, w, n, art:it[2], tier:t, caseId:c.id});
+    }));
+  });
   return m;
 })();
 const ALBUM_TOTAL = ALBUM.size;
 const CASE_KEYS = (()=>{
   const o = {};
-  CASES.forEach(c=>{ o[c.id] = TIERS.reduce((a,t)=>a.concat((c.items[t]||[]).map(it=>it[0]+"|"+it[1])), []); });
+  CASES.forEach(c=>{
+    if(c.noAlbum) return;
+    o[c.id] = TIERS.reduce((a,t)=>a.concat((c.items[t]||[]).map(it=>it[0]+"|"+it[1])), []);
+  });
   return o;
 })();
 /* Skrzynki bez własnych skinów (np. Troll) nie zaśmiecają albumu. */
@@ -26,7 +32,7 @@ let currentView = "shop";                     // widoczna zakładka (do renderow
 let albumCase = null;                         // wybrana skrzynka w albumie (tylko ta sesja)
 const albumCaseKeys = id => CASE_KEYS[id] || [];
 const albumDone = id => { const k = albumCaseKeys(id); return k.length>0 && k.every(x=>state.album[x]); };
-const albumReward = c => Math.round(c.price*15) + 2000;
+const albumReward = c => Math.round(c.price*6) + 2000;
 function albumHave(){
   let n = 0;
   for(const k in state.album){ if(state.album[k] && ALBUM.has(k)) n++; }
@@ -99,14 +105,14 @@ function albumCardHTML(p, c, t){
       <div class="item-weapon">${esc(p.w)}</div>
       <div class="item-skin">${esc(p.n)}</div>
       <div class="item-foot">
-        <span class="item-tier">${t==="special"?"★ Special":t==="relic"?"✦ Relikt":TIER[t].name}</span>
+        <span class="item-tier">${t==="special"?"★ Special":t==="gloves"?"🧤 Rękawice":t==="relic"?"✦ Relikt":TIER[t].name}</span>
         <span class="item-price">${cnt ? "🪙 "+fmtShort(itemValue(c, t, p.key)) : "— nieznane —"}</span>
       </div></div>`;
   if(!cnt) return `<div class="item-card tier-${p.tier} locked" style="--c:${TIER[p.tier].color}">
     ${head}<div class="lockmark">?</div>${body}</div>`;
   return `<div class="item-card tier-${p.tier}" style="--c:${TIER[p.tier].color}">
     ${cnt>1?`<span class="alb-count">×${fmt(cnt)}</span>`:""}
-    ${t==="special"?'<span class="star">★</span>':t==="relic"?'<span class="star relic-star">✦</span>':""}
+    ${t==="special"?'<span class="star">★</span>':t==="gloves"?'<span class="star glove-star">🧤</span>':t==="relic"?'<span class="star relic-star">✦</span>':""}
     ${head}${body}</div>`;
 }
 
@@ -161,7 +167,7 @@ function renderAlbum(){
       if(!pool.length) return "";
       const gf = pool.filter(p=>state.album[p.key]).length;
       return `<div class="loot-sec" style="--c:${TIER[t].color}">
-        <div class="loot-sec-h"><i></i>${t==="special"?"★ Noże":t==="relic"?"✦ Relikty":TIER[t].name}<span>${gf} / ${pool.length} odkryte</span></div>
+        <div class="loot-sec-h"><i></i>${t==="special"?"★ Noże":t==="gloves"?"🧤 Rękawice":t==="relic"?"✦ Relikty":TIER[t].name}<span>${gf} / ${pool.length} odkryte</span></div>
         <div class="loot-grid">${pool.map(p=>albumCardHTML(p, sel, t)).join("")}</div></div>`;
     }).join("");
   renderAlbumBadge();
@@ -213,7 +219,7 @@ const MISSION_KINDS = {
   opencase: {g:"easy", icon:"🗃️", mult:1.3, on:m=>["opencase:"+(m.p && m.p.case)],
              /* cel dobierany do ceny skrzynki, żeby misja nie była „przepłacona” */
              mk:()=>{
-               const aff = CASES.filter(c=>!c.troll && !c.botOnly && c.price <= Math.max(1000, state.coins*0.06));
+               const aff = CASES.filter(c=>!c.troll && !c.botOnly && !c.eventOnly && c.price <= Math.max(1000, state.coins*0.06));
                const c = pick(aff.length ? aff : [CASES[0]]);
                const target = Math.min(30000000, Math.max(2000, state.coins*0.06));
                return {goal:Math.max(3, Math.min(25, Math.round(target/Math.max(1,c.price)))), p:{case:c.id}};
@@ -243,6 +249,15 @@ const MISSION_KINDS = {
              txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")} w <b>auto-walce</b>`},
   battleearn:{g:"hard", icon:"🏦", min:()=>mMoney(.02,4000,12000000), max:()=>mMoney(.035,6000,18000000), mult:2, on:"battleearn",
              txt:n=>`Zgarnij <b>🪙 ${fmt(n)}</b> z wygranych bitew`},
+  cfwin:    {g:"hard", icon:"🪙", min:2, max:4, mult:1.6, on:"coinflip_win",
+             txt:n=>`Wygraj <b>${n}</b> ${plural(n,"pojedynek","pojedynki","pojedynków")} w <b>Coinflipie</b>`},
+  kohwin:   {g:"hard", icon:"🎰", min:1, max:1, mult:2.2, on:"koh_win",
+             txt:()=>`Wygraj w maszynie <b>Królowej Góry</b> 🎰`},
+  dicewin:  {g:"hard", icon:"🎲", min:3, max:5, mult:1.8, on:"dice_win",
+             txt:n=>`Wygraj <b>${n}</b> ${plural(n,"rzut","rzuty","rzutów")} kośćmi w kasynie`},
+  crashcash:{g:"hard", icon:"🚀", min:2, max:3, mult:1.9, on:"crash_cashout",
+             filter:(m,d)=>(d.mult||0)>=2.0,
+             txt:n=>`Wypłać w <b>Crashu</b> przy mnożniku min. <b>2,00×</b> (${n} ${plural(n,"raz","razy","razy")})`},
 
   /* 💀 BARDZO TRUDNE WYZWANIA (wysokie ryzyko, elitarna nagroda) */
   boss:     {g:"hard", vhard:true, icon:"👹", min:1, max:1, mult:3.8, on:"boss_win",
@@ -264,6 +279,17 @@ const MISSION_KINDS = {
              txt:n=>`Upoluj <b>${n}</b> ${plural(n,"przedmioty","przedmioty","przedmiotów")} z tieru <b>Covert lub lepszego</b>`},
   fxbigdrop:{g:"hard", vhard:true, icon:"💎", min:1, max:1, mult:3.2, on:"fxbig",
              txt:()=>`Upoluj broń z prestiżowym efektem <b>💎 Diamentowym, 🌈 Pryzmatycznym lub 🌌 Kosmicznym</b>`},
+  knife2:   {g:"hard", vhard:true, icon:"★", min:2, max:2, mult:3.6, on:"knife",
+             txt:n=>`Wylosuj <b>${n}</b> ${plural(n,"nóż","noże","noży")} z dowolnej skrzynki`},
+  diceexact:{g:"hard", vhard:true, icon:"🎯", min:1, max:2, mult:3.4, on:"dice_win",
+             filter:(m,d)=>(d.mult||0)>=4,
+             txt:n=>`Traf <b>${n}</b> ${plural(n,"raz","razy","razy")} dokładnie w wynik na kościach (<b>4×</b>)`},
+  cfstreak5:{g:"hard", vhard:true, icon:"🔥", min:1, max:1, mult:4.0, on:"coinflip_win",
+             filter:(m,d)=>(d.streak||0)>=5,
+             txt:()=>`Wygraj <b>5 razy z rzędu</b> w Coinflipie bez żadnej przegranej`},
+  battlestreak5:{g:"hard", vhard:true, icon:"⚔️", min:1, max:1, mult:3.8, on:"battlestreak",
+             filter:(m,d)=>(d.streak||0)>=5,
+             txt:()=>`Osiągnij passę <b>5 wygranych bitew pod rząd</b> w skrzynkach`},
 
   /* ---------------- grupa „week" (📅 misje tygodniowe) ----------------
      min/max to wartości dla poziomu ⭐ ŁATWA — poziom trudności mnoży cel
@@ -323,6 +349,21 @@ const MISSION_KINDS = {
                txt:n=>`Wygraj <b>${n}</b> ${plural(n,"raz","razy","razy")} na maszynie Królowej Góry 🎰`},
   wcasinoearn:{g:"week", icon:"🏦", min:()=>mMoney(.02,30000,10000000), max:()=>mMoney(.04,60000,20000000), mult:2.2, on:"casino_win",
                txt:n=>`Zgarnij łącznie <b>🪙 ${fmt(n)}</b> z wygranych w kasynie`},
+  wcfstreak:  {g:"week", icon:"🔥", min:1, max:1, mult:3.0, on:"coinflip_win",
+               filter:(m,d)=>(d.streak||0)>=3,
+               txt:n=>`Wygraj <b>${n}</b> ${plural(n,"raz","razy","razy")} w Coinflipie, mając passę min. <b>3 wygranych</b>`},
+  wdiceexact: {g:"week", icon:"🎯", min:1, max:1, mult:3.2, on:"dice_win",
+               filter:(m,d)=>(d.mult||0)>=4,
+               txt:n=>`Traf <b>${n}</b> ${plural(n,"raz","razy","razy")} dokładnie w wynik na kościach (<b>4×</b>)`},
+  wcrashhigh5:{g:"week", icon:"🚀", min:1, max:1, mult:3.2, on:"crash_cashout",
+               filter:(m,d)=>(d.mult||0)>=5,
+               txt:n=>`Wypłać w Crashu przy mnożniku min. <b>5,00×</b> (${n} ${plural(n,"raz","razy","razy")})`},
+  wbattlestreak:{g:"week", icon:"⚔️", min:1, max:1, mult:3.0, on:"battlestreak",
+               filter:(m,d)=>(d.streak||0)>=5,
+               txt:n=>`Osiągnij passę <b>5 wygranych bitew pod rząd</b> (${n} ${plural(n,"raz","razy","razy")})`},
+  wcloverfind:{g:"week", icon:"🍀", min:1, max:2, mult:2.6, on:"clover",
+               avail:()=>(state.stats.opened||0) >= CLOVER_MISSION_MIN,
+               txt:n=>`Znajdź <b>${n}</b> ${plural(n,"czterolistną koniczynę","czterolistne koniczyny","czterolistnych koniczyn")}`},
 };
 const MISSION_EASY_N = 3;
 const MISSION_HARD_N = 2;
@@ -601,7 +642,7 @@ const DAILY_CASE_OFF = 0.6;   // 40% taniej
 const DAILY_LOGIN_DAYS = 7;
 
 function dailyCasePool(){
-  return CASES.filter(c=>!c.botOnly && !c.noItems && !c.troll && !c.secret && !c.mega && !c.elite && !c.ultra && c.price > 0);
+  return CASES.filter(c=>!c.botOnly && !c.eventOnly && !c.noItems && !c.troll && !c.secret && !c.mega && !c.elite && !c.ultra && c.price > 0);
 }
 function dailyCaseDef(){
   const dc = state.dailyCase;
@@ -931,6 +972,8 @@ function trackMissionList(list, ev, n, data){
 }
 function missionTrack(ev, n, data){
   if(!n || n <= 0) return;
+  if(typeof botContractTrack === "function") botContractTrack(ev, n, data);
+  if(typeof bazarContractTrack === "function") bazarContractTrack(ev, n, data);
   const d = trackMissionList(state.missions && state.missions.list, ev, n, data);
   const w = trackMissionList(state.weekly && state.weekly.list, ev, n, data);
   if(!d.changed && !w.changed) return;
@@ -1163,7 +1206,14 @@ const ACHIEVEMENTS = [
   {id:"up_10",      icon:"🧩", name:"Ulepszony",         desc:"Kup 10 poziomów ulepszeń.",              target:10,   prog:()=>upTotal(),         done:()=>upTotal()>=10,             reward:{coins:100000}},
   {id:"up_25",      icon:"🧬", name:"Inżynier",          desc:"Kup 25 poziomów ulepszeń.",              target:25,   prog:()=>upTotal(),         done:()=>upTotal()>=25,             reward:{coins:1000000}},
   {id:"up_max",     icon:"🏅", name:"Perfekcjonista",    desc:"Wymaksuj dowolne ulepszenie.",           target:1,    prog:()=>UPGRADES.filter(u=>upLvl(u.id)>=u.max).length, done:()=>UPGRADES.some(u=>upLvl(u.id)>=u.max), reward:{coins:2000000}},
-  {id:"perk_all",   icon:"🏆", name:"Kolekcjoner mocy",  desc:"Kup po jednym poziomie każdego ulepszenia.", target:UPGRADES.length, prog:()=>UPGRADES.filter(u=>upLvl(u.id)>0).length, done:()=>UPGRADES.every(u=>upLvl(u.id)>0), reward:{coins:10000000}}
+  {id:"perk_all",   icon:"🏆", name:"Kolekcjoner mocy",  desc:"Kup po jednym poziomie każdego ulepszenia.", target:UPGRADES.length, prog:()=>UPGRADES.filter(u=>upLvl(u.id)>0).length, done:()=>UPGRADES.every(u=>upLvl(u.id)>0), reward:{coins:10000000}},
+  /* ⏰🕶️📅 NOWE SYSTEMY — Happy Hour, Czarny rynek, kontrakty i walizki */
+  {id:"hh_buy_10",   icon:"🛍️", name:"Łowca okazji",     desc:"Kup 10 rzeczy w Sklepie podczas Happy Hour.", target:10, prog:()=>numFrom(state.stats.happyBuys), done:()=>numFrom(state.stats.happyBuys)>=10, reward:{coins:150000}},
+  {id:"hh_sell_25",  icon:"💰", name:"Złota godzina",     desc:"Sprzedaj 25 przedmiotów podczas Happy Hour.", target:25, prog:()=>numFrom(state.stats.happySells), done:()=>numFrom(state.stats.happySells)>=25, reward:{coins:250000}},
+  {id:"black_5",     icon:"🕶️", name:"Czarny klient",     desc:"Kup 5 ofert na Czarnym rynku.", target:5, prog:()=>numFrom(state.stats.blackBuys), done:()=>numFrom(state.stats.blackBuys)>=5, reward:{coins:750000}},
+  {id:"contract_10", icon:"📅", name:"Kontraktowy",       desc:"Ukończ i odbierz 10 kontraktów tygodniowych Bazaru.", target:10, prog:()=>numFrom(state.stats.bazarContracts), done:()=>numFrom(state.stats.bazarContracts)>=10, reward:{coins:1000000}},
+  {id:"contract_full",icon:"🏆", name:"Komplet tygodnia", desc:"Odbierz wszystkie 3 kontrakty w jednym tygodniu.", target:1, prog:()=>numFrom(state.stats.bazarWeeks)>0 || bazarWeeklyState().list.every(m=>m.claimed) ? 1 : 0, done:()=>numFrom(state.stats.bazarWeeks)>0 || bazarWeeklyState().list.every(m=>m.claimed), reward:{coins:2000000}},
+  {id:"suitcase_5",  icon:"🧳", name:"Walizkowy magazyn", desc:"Otwórz 5 walizek z Bazaru.", target:5, prog:()=>numFrom(state.stats.suitcaseOpens), done:()=>numFrom(state.stats.suitcaseOpens)>=5, reward:{coins:3000000}}
 ];
 
 function checkAchievements(){
