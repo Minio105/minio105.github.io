@@ -200,6 +200,8 @@ const MISSION_KINDS = {
              txt:n=>`Otwórz <b>${n}</b> ${plural(n,"raz","razy","razy")} hurtem (×10+)`},
   battle:   {g:"easy", icon:"⚔️", min:3,  max:7,  mult:1,   on:"battle",
              txt:n=>`Stocz <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
+  bosskill: {g:"easy", icon:"👹", min:1,  max:2,  mult:1.8, on:"boss_win",
+              txt:n=>`Pokonaj <b>${n}</b> ${plural(n,"bossa","bossów","bossów")} w Arenie Rajdowej`},
   win:      {g:"easy", icon:"🏆", min:2,  max:4,  mult:1.5, on:"win",
              txt:n=>`Wygraj <b>${n}</b> ${plural(n,"bitwę","bitwy","bitew")}`},
   sell:     {g:"easy", icon:"💰", min:12, max:25, mult:1,   on:"sell",
@@ -364,6 +366,14 @@ const MISSION_KINDS = {
   wcloverfind:{g:"week", icon:"🍀", min:1, max:2, mult:2.6, on:"clover",
                avail:()=>(state.stats.opened||0) >= CLOVER_MISSION_MIN,
                txt:n=>`Znajdź <b>${n}</b> ${plural(n,"czterolistną koniczynę","czterolistne koniczyny","czterolistnych koniczyn")}`},
+
+  /* 👑 Dwa stałe, bardzo trudne wyzwania tygodnia — zawsze w zestawie.
+     Nie trafiają do losowej puli ani do 🔄 wymiany. Resetują się co tydzień
+     razem z resztą misji tygodniowych. */
+  wlegendknife:{g:"week", weeklyFixed:true, icon:"★", mk:()=>({goal:1}), mult:8.0, on:"knife",
+                txt:()=>`Wylosuj <b>1 nóż ★</b> z dowolnej skrzynki (szansa 1 na 100 000+)`},
+  wgodslayer:{g:"week", weeklyFixed:true, icon:"👹", mk:()=>({goal:5}), mult:7.0, on:"boss_win",
+                txt:n=>`Pokonaj <b>${n}</b> ${plural(n,"bosa","bossów","bossów")} w Arenie Rajdowej 👹`}
 };
 const MISSION_EASY_N = 3;
 const MISSION_HARD_N = 2;
@@ -445,8 +455,10 @@ setTimeout(updateIdle, 300);
    misje dzienne, więc wszystko działa też przy 🤖 auto-otwieraniu.
    ======================================================================= */
 const WEEK_MS = 7*24*60*60*1000;        // długość tygodnia misji
-const WEEKLY_N = 10;                    // ile misji w zestawie
-const WEEKLY_COMP = [1,1,1,2,2,2,3,3,4,4];   // skład zestawu (poziomy trudności)
+const WEEKLY_RANDOM_N = 10;             // losowe misje w zestawie
+const WEEKLY_FIXED_KINDS = ["wlegendknife","wgodslayer"]; // stałe wyzwania
+const WEEKLY_N = WEEKLY_RANDOM_N + WEEKLY_FIXED_KINDS.length; // razem 12
+const WEEKLY_COMP = [1,1,1,2,2,2,3,3,4,4];   // skład części losowej
 const REROLL_WEEK_MAX = 2;              // ile wymian 🔄 w ciągu tygodnia
 const DIFF = [
   {id:1, name:"Łatwa",       stars:"⭐",      color:"#38e08a", goalK:1,   rewK:1,   cloverMin:20},
@@ -477,12 +489,15 @@ function mkWeekMission(kind, diffId){
     const hi = typeof def.max === "function" ? def.max() : def.max;
     goal = lo + Math.floor(Math.random()*((hi-lo)+1));
   }
-  goal = Math.max(1, Math.round(goal * diff.goalK));
+  const fixed = !!def.weeklyFixed;
+  /* stałe wyzwania mają sztywny cel — nie mnożymy go poziomem trudności */
+  goal = Math.max(1, fixed ? Math.round(goal) : Math.round(goal * diff.goalK));
   const mult = def.mult || 1;
-  const reward = Math.random() < 0.5
+  const reward = fixed || Math.random() < 0.5
     ? {t:"coins", amount:wCoinReward(mult, diff)}
     : {t:"clover", ms:diff.cloverMin*60000};
   const m = {kind, diff:diff.id, goal, prog:0, reward, claimed:false};
+  if(fixed) m.fixed = true;
   if(p) m.p = p;
   return m;
 }
@@ -490,9 +505,10 @@ function rollWeekly(){
   const pool = missionGroup("week");
   const kinds = pool.length ? pool : ["wopen"];
   const diffs = shuffle(WEEKLY_COMP.slice());
-  const n = Math.min(WEEKLY_N, kinds.length);
+  const n = Math.min(WEEKLY_RANDOM_N, kinds.length);
   const list = [];
   for(let i=0;i<n;i++) list.push(mkWeekMission(kinds[i], diffs[i % diffs.length]));
+  WEEKLY_FIXED_KINDS.forEach(k=>list.push(mkWeekMission(k, 4)));
   state.weekly = {start:Date.now(), list:shuffle(list), rerolls:0};
   markDirty();
   return state.weekly;
@@ -514,9 +530,14 @@ function weeklyLoad(d){
         ? {t:"clover", ms:Math.max(60000, x.reward.ms|0)}
         : {t:"coins", amount:Math.max(0, (x.reward && x.reward.amount)|0)}};
     if(p) out.p = p;
+    if(def.weeklyFixed) out.fixed = true;
     list.push(out);
   });
   if(!list.length){ rollWeekly(); return; }
+  /* stary zapis nie miał stałych wyzwań — dogrywamy je bez resetu reszty */
+  WEEKLY_FIXED_KINDS.forEach(k=>{
+    if(!list.some(m=>m.kind===k)){ list.push(mkWeekMission(k, 4)); markDirty(); }
+  });
   state.weekly = {start:numFrom(w.start), list, rerolls:Math.min(REROLL_WEEK_MAX, numFrom(w.rerolls))};
   state.achievements = (d.achievements && typeof d.achievements === "object" && !Array.isArray(d.achievements)) ? d.achievements : {};
   state.cosmetics = (d.cosmetics && typeof d.cosmetics === "object" && !Array.isArray(d.cosmetics)) ? d.cosmetics : {};
@@ -549,9 +570,11 @@ function renderWeekly(){
     const diff = wDiff(m.diff);
     const done = m.prog >= m.goal;
     const rew = m.reward.t==="coins" ? "🪙 "+fmt(m.reward.amount) : "🍀 "+Math.round(m.reward.ms/60000)+" min";
-    return `<div class="mission week d-${diff.id} ${done&&!m.claimed?"done":""} ${m.claimed?"claimed":""}" style="--dc:${diff.color};animation-delay:${i*55}ms">
+    const fixed = !!m.fixed;
+    return `<div class="mission week d-${diff.id}${fixed?" fixed":""} ${done&&!m.claimed?"done":""} ${m.claimed?"claimed":""}" style="--dc:${diff.color};animation-delay:${i*55}ms">
       <div class="mission-top"><span class="mission-ico">${d.icon}</span><span class="mission-txt">${d.txt(m.goal, m.p)}
-        <span class="m-diff" title="Poziom ${diff.name} — cele ×${diff.goalK}, nagrody ×${diff.rewK}">${diff.stars} ${diff.name}</span></span></div>
+        <span class="m-diff" title="Poziom ${diff.name} — cele ×${diff.goalK}, nagrody ×${diff.rewK}">${diff.stars} ${diff.name}</span>
+        ${fixed ? '<span class="m-fixed">👑 WYZWANIE TYGODNIA</span>' : ""}</span></div>
       <div class="mission-bar"><i style="width:${Math.min(100, 100*m.prog/Math.max(1,m.goal))}%"></i></div>
       <div class="mission-foot">
         <span class="mission-rew">Nagroda: <b>${rew}</b></span>
@@ -560,7 +583,7 @@ function renderWeekly(){
       <div class="mission-foot">${m.claimed
         ? `<span class="mission-rew">✔ odebrano</span>`
         : `<button class="btn ${done?"primary":""}" data-wclaim="${i}" ${done?"":"disabled"}>${done?"🎁 Odbierz":"W toku"}</button>
-           <button class="tb-btn" data-wreroll="${i}" ${left?"":"disabled"} title="Wymień misję (zostało ${left} z ${REROLL_WEEK_MAX} w tym tygodniu)">🔄${left?` <small>${left}</small>`:""}</button>`}
+           ${fixed ? '<span class="mission-rew">🔒 bez wymiany</span>' : `<button class="tb-btn" data-wreroll="${i}" ${left?"":"disabled"} title="Wymień misję (zostało ${left} z ${REROLL_WEEK_MAX} w tym tygodniu)">🔄${left?` <small>${left}</small>`:""}</button>`}`}
       </div></div>`;
   }).join("");
   renderDailyBadge();
@@ -571,8 +594,9 @@ function updateWeeklyHint(){
   const list = (state.weekly && state.weekly.list) || [];
   const left = Math.max(0, REROLL_WEEK_MAX - numFrom(state.weekly && state.weekly.rerolls));
   const ready = list.filter(m=>m.claimed).length;
+  const fixedN = list.filter(m=>m.fixed).length;
   const coins = list.reduce((a,m)=>a+(m.reward.t==="coins"?m.reward.amount:0),0);
-  hint.innerHTML = `nowe misje za <b>${wUntilNew()}</b> · odebrane <b>${ready}</b> / ${list.length} · wymiany <b>${left}/${REROLL_WEEK_MAX}</b> · w puli nagród <b>🪙 ${fmtShort(coins)}</b>`;
+  hint.innerHTML = `nowe misje za <b>${wUntilNew()}</b> · odebrane <b>${ready}</b> / ${list.length} · wyzwania <b>${fixedN}</b> · wymiany <b>${left}/${REROLL_WEEK_MAX}</b> · w puli nagród <b>🪙 ${fmtShort(coins)}</b>`;
 }
 function claimWeekly(i){
   const list = (state.weekly && state.weekly.list) || [];
@@ -598,6 +622,9 @@ function rerollWeekly(i){
   const list = (state.weekly && state.weekly.list) || [];
   const m = list[i];
   if(!m || m.claimed) return;
+  if(m.fixed || (MISSION_KINDS[m.kind] && MISSION_KINDS[m.kind].weeklyFixed)){
+    sfxErr(); toast("👑 To wyzwanie tygodnia — nie da się go wymienić","bad"); return;
+  }
   const left = REROLL_WEEK_MAX - numFrom(state.weekly.rerolls);
   if(left <= 0){ sfxErr(); toast("🔄 Wymiana misji tygodniowej — limit <b>"+REROLL_WEEK_MAX+"</b> na tydzień","bad"); return; }
   const used = list.map(x=>x.kind);
@@ -641,6 +668,19 @@ function mDayKeyOffset(delta){
 const DAILY_CASE_OFF = 0.6;   // 40% taniej
 const DAILY_LOGIN_DAYS = 7;
 
+/* 🔥 Długofalowa passa logowania — nagrody co 7/14/30 dni (nie mylić
+   z 7-dniowym cyklem zwykłych nagród). Licznik jest bezpieczny dla starych
+   zapisów: brakujące pola dostają wartości domyślne przy wczytaniu. */
+const LOGIN_MILESTONES = [
+  {days:7,  icon:"🍀", name:"Tydzień",       reward:()=>({t:"clover", ms:30*60000})},
+  {days:14, icon:"🎁", name:"Dwa tygodnie",  reward:()=>{
+    const pool = dailyCasePool().filter(c=>c.price <= Math.max(50000, numFrom(state.coins)*0.02));
+    const c = pool.length ? pick(pool) : null;
+    return c ? {t:"case", caseId:c.id} : {t:"coins", amount:loginCoinReward(0.05,30000,3000000)};
+  }},
+  {days:30, icon:"👑", name:"Miesiąc",       reward:()=>({t:"coins", amount:loginCoinReward(0.08,50000,5000000)})}
+];
+
 function dailyCasePool(){
   return CASES.filter(c=>!c.botOnly && !c.eventOnly && !c.noItems && !c.troll && !c.secret && !c.mega && !c.elite && !c.ultra && c.price > 0);
 }
@@ -669,8 +709,15 @@ function dailyHubEnsure(){
     changed = true;
   }
   if(!state.login || typeof state.login !== "object" || Array.isArray(state.login)){
-    state.login = {last:"", streak:0};
+    state.login = {last:"", streak:0, total:0, best:0, milestone:0};
     changed = true;
+  } else {
+    if(!Number.isFinite(state.login.total)){ state.login.total = numFrom(state.login.streak); changed = true; }
+    if(!Number.isFinite(state.login.best)){ state.login.best = numFrom(state.login.total); changed = true; }
+    if(!Number.isFinite(state.login.milestone)){
+      state.login.milestone = LOGIN_MILESTONES.reduce((a,m)=>state.login.total>=m.days?m.days:a, 0);
+      changed = true;
+    }
   }
   return changed;
 }
@@ -683,12 +730,16 @@ function dailyHubLoad(d){
   }
   const l = d && d.login;
   if(l && typeof l === "object" && !Array.isArray(l)){
+    const total = Math.max(0, numFrom(l.total !== undefined ? l.total : l.streak));
     state.login = {
       last: typeof l.last === "string" ? l.last : "",
-      streak: Math.max(0, Math.min(DAILY_LOGIN_DAYS, numFrom(l.streak)))
+      streak: Math.max(0, Math.min(DAILY_LOGIN_DAYS, numFrom(l.streak))),
+      total,
+      best: Math.max(total, numFrom(l.best)),
+      milestone: LOGIN_MILESTONES.reduce((a,m)=>total>=m.days?m.days:a, Math.max(0, numFrom(l.milestone)))
     };
   } else {
-    state.login = {last:"", streak:0};
+    state.login = {last:"", streak:0, total:0, best:0, milestone:0};
   }
 }
 
@@ -722,17 +773,22 @@ function loginRewardText(r){
 }
 function loginInfo(){
   const today = mDayKey();
-  const st = (state.login && typeof state.login === "object") ? state.login : {last:"", streak:0};
+  const st = (state.login && typeof state.login === "object") ? state.login : {last:"", streak:0, total:0, best:0, milestone:0};
   const last = typeof st.last === "string" ? st.last : "";
   const claimedToday = last === today;
   const yesterday = mDayKeyOffset(-1);
   const continues = last === yesterday;
   const streak = Math.max(0, Math.min(DAILY_LOGIN_DAYS, numFrom(st.streak)));
+  const totalStored = Math.max(0, numFrom(st.total));
+  const total = claimedToday ? totalStored : (continues ? totalStored + 1 : 1);
+  const best = Math.max(total, numFrom(st.best));
+  const milestone = Math.max(0, numFrom(st.milestone));
+  const nextMilestone = LOGIN_MILESTONES.find(m=>m.days>milestone) || null;
   let next = 1;
   if(claimedToday) next = Math.max(1, streak);
   else if(continues) next = (streak % DAILY_LOGIN_DAYS) + 1;
   const doneCount = claimedToday ? streak : (continues && streak < DAILY_LOGIN_DAYS ? streak : 0);
-  return {today, last, claimedToday, continues, streak, next, doneCount, can:!claimedToday};
+  return {today, last, claimedToday, continues, streak, total, best, milestone, nextMilestone, next, doneCount, can:!claimedToday};
 }
 
 function renderDailyHub(){
@@ -761,6 +817,16 @@ function renderDailyHub(){
     : (can ? "Po zakupie trafi do zapasu w zakładce Skrzynki." : `Brakuje 🪙 ${fmt(price - state.coins)}.`);
   const streakNow = info.claimedToday ? info.streak : (info.continues && info.streak < DAILY_LOGIN_DAYS ? info.streak : 0);
   const loginBtn = `<button class="btn ${info.can?"primary":""}" data-loginclaim ${info.can?"":"disabled"}>${info.claimedToday?"Odebrano dzisiaj":"Odbierz dzień "+info.next}</button>`;
+  const milestonesHTML = LOGIN_MILESTONES.map(m=>{
+    const done = info.milestone >= m.days;
+    const isNext = info.nextMilestone && info.nextMilestone.days === m.days;
+    const cur = Math.min(info.total, m.days);
+    return `<div class="dh-milestone${done?" done":""}${isNext?" next":""}" title="${m.icon} ${m.name} — ${m.days} dni logowania">
+      <span>${m.icon}</span><b>${m.days}</b><small>${done?"✔":cur+"/"+m.days}</small></div>`;
+  }).join("");
+  const streakNote = info.nextMilestone
+    ? `Następna nagroda passy: ${info.nextMilestone.icon} ${info.nextMilestone.days} dni — zostało <b>${Math.max(0, info.nextMilestone.days - info.total)}</b>.`
+    : "🔥 Wszystkie nagrody długiej passy odebrane!";
   hub.innerHTML = `<div class="daily-hub-grid">
     <div class="dh-card dh-deal" style="--cc:${c.color}">
       <div class="dh-head"><span class="dh-ico">🎁</span><div><b>Skrzynka dnia</b><small>jedna oferta dziennie · rotacja o północy</small></div><span class="dh-off">-40%</span></div>
@@ -770,10 +836,11 @@ function renderDailyHub(){
       <div class="dh-note">${note}</div>
     </div>
     <div class="dh-card dh-login">
-      <div class="dh-head"><span class="dh-ico">📅</span><div><b>Logowanie</b><small>passa: ${streakNow} / ${DAILY_LOGIN_DAYS}</small></div><span class="dh-streak">${info.claimedToday?"✓ dzisiaj":"🔥 "+info.next+"/"+DAILY_LOGIN_DAYS}</span></div>
+      <div class="dh-head"><span class="dh-ico">📅</span><div><b>Logowanie</b><small>passa: ${streakNow}/${DAILY_LOGIN_DAYS} · łącznie ${info.total} · rekord ${info.best}</small></div><span class="dh-streak">${info.claimedToday?"✓ dzisiaj":"🔥 "+info.next+"/"+DAILY_LOGIN_DAYS}</span></div>
       <div class="dh-days">${days.join("")}</div>
+      <div class="dh-milestones">${milestonesHTML}</div>
       <div class="dh-actions">${loginBtn}</div>
-      <div class="dh-note">${info.claimedToday?"Wróć jutro po kolejną nagrodę.":info.continues?"Kontynuujesz passę — nie przerywaj jej!":"Nowa passa startuje od dnia 1."}</div>
+      <div class="dh-note">${info.claimedToday?"Wróć jutro po kolejną nagrodę.":info.continues?"Kontynuujesz passę — nie przerywaj jej!":"Nowa passa startuje od dnia 1."}<br>${streakNote}</div>
     </div>
   </div>`;
 }
@@ -800,40 +867,61 @@ function openDailyCase(caseId){
   openCase(c.id, null, true);
   setTimeout(renderDailyHub, 0);
 }
+/* Wspólny mechanizm przyznawania nagród logowania (dzienna i kamienie milowe). */
+function grantLoginReward(r){
+  if(!r) return "";
+  if(r.t === "coins"){
+    state.coins += r.amount;
+    return "🪙 "+fmt(r.amount);
+  }
+  if(r.t === "clover"){
+    state.cloverUntil = Math.max(Date.now(), state.cloverUntil||0) + r.ms;
+    if(typeof updateClover === "function") updateClover();
+    return "🍀 "+Math.round(r.ms/60000)+" min";
+  }
+  if(r.t === "case"){
+    const c = CASES.find(x=>x.id===r.caseId);
+    if(c){
+      state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+      state.caseStock[c.id] = caseStock(c.id) + 1;
+      return "🎁 "+esc(c.name)+" (w zapasie)";
+    }
+    const coins = loginCoinReward(0.05, 10000, 500000);
+    state.coins += coins;
+    return "🪙 "+fmt(coins);
+  }
+  return "";
+}
 function claimLogin(){
   const info = loginInfo();
   if(!info.can){ sfxErr(); return; }
   const day = info.next;
-  const reward = loginReward(day);
-  let msg = "";
-  if(reward.t === "coins"){
-    state.coins += reward.amount;
-    msg = "🪙 "+fmt(reward.amount);
-    sfxCoin(); renderBalance(); renderShop();
-  } else if(reward.t === "clover"){
-    state.cloverUntil = Math.max(Date.now(), state.cloverUntil||0) + reward.ms;
-    msg = "🍀 "+Math.round(reward.ms/60000)+" min";
-    sfxClover(); updateClover();
-  } else if(reward.t === "case"){
-    const c = CASES.find(x=>x.id===reward.caseId);
-    if(c){
-      state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
-      state.caseStock[c.id] = caseStock(c.id) + 1;
-      msg = "🎁 "+esc(c.name)+" (w zapasie)";
-      sfxCoin(); renderShop(); renderBots();
-    } else {
-      const coins = loginCoinReward(0.05, 10000, 500000);
-      state.coins += coins;
-      msg = "🪙 "+fmt(coins);
-      sfxCoin(); renderBalance(); renderShop();
+  const total = info.total;
+  const msgs = [grantLoginReward(loginReward(day))];
+
+  /* 🔥 kamienie milowe długiej passy — nagroda tylko raz na konto */
+  let milestoneHit = null, milestoneMsg = "";
+  for(const m of LOGIN_MILESTONES){
+    if(total >= m.days && info.milestone < m.days){
+      milestoneHit = m;
+      milestoneMsg = grantLoginReward(m.reward());
+      info.milestone = m.days;
+      break;
     }
   }
-  state.login = {last:info.today, streak:day};
+
+  state.login = {
+    last: info.today,
+    streak: day,
+    total,
+    best: Math.max(total, info.best),
+    milestone: info.milestone
+  };
   markDirty(); save();
-  confetti(["#45d06a","#ffd166","#8ee7ff"]);
-  toast("📅 <b>Dzień "+day+"</b> odebrany: "+msg,"good");
-  renderDailyHub();
-  renderDailyBadge();
+  sfxCoin(); confetti(["#45d06a","#ffd166","#8ee7ff","#ff9f1c"]);
+  renderBalance(); renderShop(); renderBots(); renderDailyHub(); renderDailyBadge();
+  toast("📅 <b>Dzień "+day+"</b> odebrany: "+msgs.join(" · ")
+    + (milestoneHit ? "<br>🔥 <b>Passa "+milestoneHit.days+" dni!</b> "+milestoneMsg : ""), "good");
 }
 const dailyHubEl = $("#dailyHub");
 if(dailyHubEl){
@@ -881,6 +969,7 @@ function missionGroup(g){
   return Object.keys(MISSION_KINDS).filter(k=>{
     const d = MISSION_KINDS[k];
     if((d.g || "easy") !== g) return false;
+    if(d.weeklyFixed) return false;   // stałe wyzwania dodajemy osobno
     return !d.avail || d.avail();
   });
 }
@@ -1169,6 +1258,10 @@ const ACHIEVEMENTS = [
   {id:"boss_1",    icon:"👹", name:"Pogromca",          desc:"Pokonaj bossa.",                        target:1,     prog:()=>state.stats.bossWins||0, done:()=>(state.stats.bossWins||0)>=1, reward:{coins:1000000}},
   {id:"boss_3",    icon:"👹", name:"Bossów łowca",      desc:"Pokonaj 3 bossów.",                     target:3,     prog:()=>state.stats.bossWins||0, done:()=>(state.stats.bossWins||0)>=3, reward:{coins:3000000}},
   {id:"boss_all",  icon:"👹", name:"Pogromca wszystkich",desc:"Pokonaj każdego bossa (po 1×).",      target:3,     prog:()=>Object.keys(state.bossKills||{}).length, done:()=>Object.keys(state.bossKills||{}).length>=3, reward:{coins:10000000}},
+  {id:"boss_10",   icon:"👹", name:"Łowca głów",         desc:"Pokonaj 10 bossów.",                    target:10,    prog:()=>state.stats.bossWins||0, done:()=>(state.stats.bossWins||0)>=10, reward:{coins:20000000, souls:5}},
+  {id:"boss_25",   icon:"💀", name:"Pogromca hordy",      desc:"Pokonaj 25 bossów.",                    target:25,    prog:()=>state.stats.bossWins||0, done:()=>(state.stats.bossWins||0)>=25, reward:{coins:60000000, souls:10}},
+  {id:"boss_50",   icon:"🩸", name:"Władca areny",        desc:"Pokonaj 50 bossów.",                    target:50,    prog:()=>state.stats.bossWins||0, done:()=>(state.stats.bossWins||0)>=50, reward:{coins:150000000, souls:20, keys:1}},
+  {id:"rush_1",    icon:"🔥", name:"Niepowstrzymany",     desc:"Ukończ Boss Rush bez porażki.",         target:1,     prog:()=>state.stats.bossRushClears||0, done:()=>(state.stats.bossRushClears||0)>=1, reward:{coins:30000000, souls:8, keys:1}},
   {id:"koh_1",     icon:"🎰", name:"Królowa góry",      desc:"Wygraj w trybie Królowa góry.",         target:1,     prog:()=>state.stats.kohWins||0, done:()=>(state.stats.kohWins||0)>=1, reward:{coins:500000}},
   {id:"koh_10",    icon:"🎰", name:"Władca gry",        desc:"Wygraj 10 razy w Królowej góry.",       target:10,    prog:()=>state.stats.kohWins||0, done:()=>(state.stats.kohWins||0)>=10, reward:{coins:5000000}},
   {id:"rich_1b",   icon:"🪙", name:"Milionard",         desc:"Zgromadź 1 000 000 000 monet.",        target:1000000000, prog:()=>state.coins, done:()=>state.coins>=1000000000, reward:{coins:5000000}},
@@ -1226,8 +1319,11 @@ function checkAchievements(){
     if(!met) return;
     state.achievements[a.id] = Date.now();
     if(a.reward && a.reward.coins) state.coins += a.reward.coins;
+    if(a.reward && a.reward.souls) state.bossSouls = numFrom(state.bossSouls) + a.reward.souls;
+    if(a.reward && a.reward.keys) state.bossKeys = numFrom(state.bossKeys) + a.reward.keys;
     unlocked++;
-    toast("🏆 <b>Osiągnięcie!</b> "+a.icon+" "+a.name+" — nagroda: 🪙 "+fmt(a.reward.coins),"good");
+    const extra = (a.reward && a.reward.souls ? " · 🩸 "+a.reward.souls : "") + (a.reward && a.reward.keys ? " · 🔑 "+a.reward.keys : "");
+    toast("🏆 <b>Osiągnięcie!</b> "+a.icon+" "+a.name+" — nagroda: 🪙 "+fmt((a.reward&&a.reward.coins)||0)+extra,"good");
     confetti();
   });
   if(unlocked){ markDirty(); save(); renderStats(); renderBalance(); }

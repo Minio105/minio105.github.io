@@ -33,6 +33,7 @@
     <button class="tab" data-view="daily"><span class="ti">🎯</span><span class="tl">Misje</span><span class="cnt" id="dailyCount" style="display:none">0</span></button>
     <button class="tab" data-view="casino"><span class="ti">🎰</span><span class="tl">Kasyno</span></button>
     <button class="tab" data-view="events"><span class="ti">🎉</span><span class="tl">Eventy</span></button>
+    <button class="tab" data-view="season"><span class="ti">🏆</span><span class="tl">Sezon</span></button>
   </div>
   <div class="spacer"></div>
   <span id="saveFlag" class="save-flag">✓ zapisano</span>
@@ -336,8 +337,11 @@
       <button class="casino-subtab active" data-casino-tab="cf" role="tab" aria-selected="true"><span>🪙</span> Coinflip</button>
       <button class="casino-subtab" data-casino-tab="crash" role="tab" aria-selected="false"><span>🚀</span> Crash</button>
       <button class="casino-subtab" data-casino-tab="dice" role="tab" aria-selected="false"><span>🎲</span> Kości</button>
-      <button class="casino-subtab" data-casino-tab="mines" role="tab" aria-selected="false"><span>💣</span> Mines <em>NOWA</em></button>
+      <button class="casino-subtab" data-casino-tab="mines" role="tab" aria-selected="false"><span>💣</span> Mines</button>
+      <button class="casino-subtab" data-casino-tab="plinko" role="tab" aria-selected="false"><span>🎯</span> Plinko</button>
+      <button class="casino-subtab" data-casino-tab="wheel" role="tab" aria-selected="false"><span>🎡</span> Ruletka <em>NOWA</em></button>
       <button class="casino-subtab" data-casino-tab="league" role="tab" aria-selected="false"><span>🏆</span> Liga</button>
+      <button class="casino-subtab" data-casino-tab="upgrade" role="tab" aria-selected="false"><span>⚗️</span> Upgrader <em>NOWA</em></button>
     </div>
 
     <div class="casino-grid">
@@ -582,6 +586,108 @@
         <div class="ch-list" id="minesHistory"></div>
       </div>
 
+      <!-- PLINKO -->
+      <div class="casino-card plinko-card casino-panel" data-casino-panel="plinko" role="tabpanel">
+        <div class="cc-head">
+          <div class="cc-title">
+            <span class="cc-kicker">GRA 05 · ZRĘCZNOŚĆ</span>
+            <h3>🎯 Plinko</h3>
+          </div>
+          <span class="tag">8 RZĘDÓW</span>
+        </div>
+        <p class="muted">Kulka spada w dół, odbijając się od kołków. Im dalej od środka, tym wyższy mnożnik — ale i mniejsza szansa. Wybierz poziom ryzyka i stawkę.</p>
+
+        <div class="plinko-risk" id="plinkoRisk">
+          <button class="plinko-risk-btn" data-plinko-risk="low">🟢 Niskie</button>
+          <button class="plinko-risk-btn active" data-plinko-risk="mid">🟡 Średnie</button>
+          <button class="plinko-risk-btn" data-plinko-risk="high">🔴 Wysokie</button>
+        </div>
+
+        <div class="plinko-board-wrap">
+          <div class="plinko-board" id="plinkoBoard">
+            <div class="plinko-ball" id="plinkoBall"></div>
+            <div class="plinko-bins" id="plinkoBins"></div>
+          </div>
+          <div class="plinko-lock show" id="plinkoLock">Ustaw stawkę i kliknij „Upuść kulkę"</div>
+        </div>
+
+        <div class="casino-result" id="plinkoResult">Wybierz stawkę i upuść kulkę.</div>
+
+        <div class="plinko-bet-row">
+          <input type="number" id="plinkoBet" value="500" min="100" step="100" aria-label="Stawka w Plinko">
+          <button class="tb-btn" id="plinkoHalf">½</button>
+          <button class="tb-btn" id="plinko2x">2×</button>
+          <button class="tb-btn" id="plinkoMax">MAX</button>
+        </div>
+        <button class="btn primary plinko-drop-btn" id="plinkoDropBtn">🎯 Upuść kulkę</button>
+        <div class="plinko-meta">
+          <span>Najwyższy mnożnik: <b id="plinkoTopMult">10×</b></span>
+          <span>Kulek: <b id="plinkoBallsVal">1</b></span>
+          <span>Stawka: <b id="plinkoBetVal">🪙 500</b></span>
+        </div>
+        <div class="plinko-ups-head"><b>⚙️ Ulepszenia Plinko</b><span>tylko ta gra</span></div>
+        <div class="plinko-ups" id="plinkoUps"></div>
+        <div class="ch-list" id="plinkoHistory"></div>
+      </div>
+
+      <!-- WHEEL / RULETKA -->
+      <div class="casino-card wheel-card casino-panel" data-casino-panel="wheel" role="tabpanel">
+        <div class="cc-head">
+          <div class="cc-title">
+            <span class="cc-kicker">GRA 06 · OBRÓT</span>
+            <h3>🎡 Kółko fortuny</h3>
+          </div>
+          <span class="tag">16 PÓL</span>
+          <button class="wheel-help-btn" id="wheelHelpBtn" aria-expanded="false">❓ Jak grać / zdobywać?</button>
+        </div>
+        <p class="muted">Kręć kołem i celuj w najwyższy mnożnik. 16 pól, szybki obrót i natychmiastowy wynik — im wyższa stawka, tym większa wygrana lub strata.</p>
+
+        <div class="wheel-guide" id="wheelGuide" hidden>
+          <div class="wg-head"><b>📖 Poradnik — jak grać i jak zdobywać wszystko</b><button class="icon-btn" id="wheelGuideClose" aria-label="Zamknij poradnik">✕</button></div>
+          <div class="wg-grid">
+            <div class="wg-card"><span>🎡</span><div><b>Jak grać w Ruletkę</b><p>Ustaw stawkę (min. 100 🪙), wybierz ryzyko (<b>🟢 Niskie / 🟡 Średnie / 🔴 Wysokie</b>) i kliknij „Zakręć kołem". Koło ma 16 pól — wyższe ryzyko daje większe mnożniki, ale więcej słabych pól. Wynik <b>1× lub wyżej</b> to wygrana, poniżej 1× — częściowy zwrot. Przycisk <b>🔁 Auto</b> kręci automatycznie, aż go wyłączysz lub zabraknie monet. To gra dla zabawy, nie „pewny zarobek".</p></div></div>
+            <div class="wg-card"><span>🪙</span><div><b>Skąd brać monety</b><p>Darmowy przycisk 🎁 Bonus, sprzedaż skinów z ekwipunku, otwieranie skrzynek, codzienne i tygodniowe misje, kontrakty Bazaru, Happy Hour, nagrody za eventy, idle, łupy z bossów i wygrane w kasynie.</p></div></div>
+            <div class="wg-card"><span>💎</span><div><b>Skąd brać diamenty</b><p>Darmowa ścieżka Sezonu daje <b>30 💎 na poziomie 5</b> i <b>50 💎 na poziomie 10</b>. Karnet Mistrza dodaje 30 💎. Ścieżka Premium zwraca 110 💎. Można też wymienić monety: <b>250 000 🪙 = 1 💎</b>, maks. 20 na sezon. Diamenty zostają na kolejne sezony.</p></div></div>
+            <div class="wg-card"><span>🩸</span><div><b>Dusze i klucze bossów</b><p>Dusze wypadają za każdą wygraną z bossa (więcej w kampanii i Boss Rush). Klucze Żniwiarza daje Żniwiarz gwarantowanie, reszta bossów z 18% szansą, a dodatkowy za pełny Rush. Wydajesz je w <b>Sklepie Bossów</b> w oknie bossów — na walizki, reroll misji i perk „Władca Areny".</p></div></div>
+            <div class="wg-card"><span>🏆</span><div><b>Liga, EXP i rangi</b><p>Wygrane w Ruletce i innych grach kasyna liczą się do tygodniowej Ligi kasyna oraz dają EXP do rang CS2. Awans na wyższą rangę daje darmową skrzynkę. Statystyki, osiągnięcia i album zapełniają się ze wszystkich systemów gry.</p></div></div>
+            <div class="wg-card"><span>🧳</span><div><b>Walizki i skrzynki</b><p>Walizki kupujesz u botów (lub za 🩸🔑 w Sklepie Bossów) i otwierasz je w Ekwipunku. Limitowane skrzynki eventowe zdobywasz z eventów, a Skrzynkę Sezonową z premium Sezonu albo jako nagrodę za Boss Rush.</p></div></div>
+          </div>
+        </div>
+
+        <div class="wheel-risk" id="wheelRisk">
+          <button class="wheel-risk-btn" data-wheel-risk="low">🟢 Niskie</button>
+          <button class="wheel-risk-btn active" data-wheel-risk="mid">🟡 Średnie</button>
+          <button class="wheel-risk-btn" data-wheel-risk="high">🔴 Wysokie</button>
+        </div>
+
+        <div class="wheel-stage" id="wheelStage">
+          <div class="wheel-glow" aria-hidden="true"></div>
+          <div class="wheel-sparks" id="wheelSparks" aria-hidden="true"></div>
+          <div class="wheel-marker" aria-hidden="true"></div>
+          <div class="wheel" id="wheel">
+            <div class="wheel-rotor" id="wheelRotor"></div>
+          </div>
+          <div class="wheel-center" id="wheelCenter"><small>WYNIK</small><b>?</b></div>
+        </div>
+
+        <div class="casino-result" id="wheelResult">Ustaw stawkę i zakręć kołem.</div>
+
+        <div class="wheel-controls">
+          <input type="number" id="wheelBet" value="500" min="100" step="100" aria-label="Stawka w Ruletce">
+          <button class="tb-btn" id="wheelHalf">½</button>
+          <button class="tb-btn" id="wheel2x">2×</button>
+          <button class="tb-btn" id="wheelMax">MAX</button>
+          <button class="tb-btn wheel-auto" id="wheelAutoBtn" title="Auto-obroty">🔁 Auto</button>
+        </div>
+        <button class="btn primary wheel-spin-btn" id="wheelSpinBtn">🎡 Zakręć kołem</button>
+        <div class="wheel-meta">
+          <span>Najwyższy mnożnik: <b id="wheelTopMult">4×</b></span>
+          <span>Stawka: <b id="wheelBetVal">🪙 500</b></span>
+        </div>
+        <div class="wheel-stats" id="wheelStats"></div>
+        <div class="ch-list" id="wheelHistory"></div>
+      </div>
+
       <!-- LIGA KASYNA -->
       <div class="casino-card league-card casino-panel" data-casino-panel="league" role="tabpanel">
         <div class="cc-head">
@@ -591,9 +697,14 @@
           </div>
           <span class="tag">Darmowa liga</span>
         </div>
-        <p class="muted">Wygrane z coinflipa, Crashu, kości i Mines trafiają do tygodniowego rankingu. Liga jest darmowa — liczy się tylko wynik. Po zakończeniu tygodnia odbierzesz nagrodę za swoje miejsce.</p>
+        <p class="muted">Wygrane z coinflipa, Crashu, kości, Mines, Plinko i Ruletki trafiają do tygodniowego rankingu. Liga jest darmowa — liczy się tylko wynik. Po zakończeniu tygodnia odbierzesz nagrodę za swoje miejsce.</p>
         <div id="casinoLeaguePanel"></div>
       </div>
+    </div>
+
+    <!-- UPGRADER -->
+    <div class="casino-card upg-card casino-panel" id="upgPanel" data-casino-panel="upgrade" role="tabpanel">
+      <div id="upgBody"></div>
     </div>
 
     <div class="casino-note">
@@ -620,6 +731,12 @@
       Eventy efektów kupisz też w Sklepie.
     </div>
   </section>
+
+  <section class="view" id="view-season">
+    <h2 class="sec-title">🏆 Sezon <span class="line"></span><span class="muted">8 tygodni · darmowa i diamentowa ścieżka nagród</span></h2>
+    <div id="seasonBody"></div>
+  </section>
+
 </main>
 </div>
 
@@ -856,6 +973,8 @@
 <script src="js/daily.js"></script>
 <script src="js/casino.js"></script>
 <script src="js/events.js"></script>
+<script src="js/season.js"></script>
+<script src="js/upgrader.js"></script>
 <script src="js/app.js"></script>
 <script src="js/settings.js"></script>
 </body>

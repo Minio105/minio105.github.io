@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 /* =======================================================================
    1. DANE
@@ -13,7 +13,7 @@ const TIER = {
   gloves:     {name:"🧤 Rękawice",          color:"#ff9f1c", hue:32},
   relic:      {name:"✦ Relikt",             color:"#ffe9a8", hue:48}
 };
-const RATIO    = {mil:1, restricted:3.6, classified:13, covert:47, special:170, gloves:700, relic:650};
+const RATIO    = {mil:1, restricted:3.6, classified:13, covert:47, special:85, gloves:700, relic:650};
 const EV_MULT  = 0.80;   // globalnie mniej monet z dropów (było 1.05)
 const SELL_RATE= 0.70;   // globalnie niższy odsprzedaż (było 0.90)
 
@@ -42,8 +42,17 @@ function softNerfOdds(o){
 /* Noże ("kosy") są rzadsze, ale warte więcej. Współczynnik RATIO_EFF wyrównuje
    wartość, więc średni zwrot ze skrzynki (EV) zostaje bez zmian — po prostu
    rzadziej lecą noże, a gdy już lecą, są cenniejsze. */
-const KNIFE_DAMP = 0.5;   // noże globalnie rzadsze (było 0.6)
+const KNIFE_DAMP = 0.25;  // noże globalnie DUŻO rzadsze (było 0.5)
 const RATIO_EFF  = Object.assign({}, RATIO, { special: RATIO.special / KNIFE_DAMP });
+
+/* Dokładne, „loteryjne” szanse na nóż — niezależne od wag w c.odds. */
+const KNIFE_ODDS_NORMAL = 1e-5;   // 1 na 100 000
+const KNIFE_ODDS_RARE   = 1e-6;   // 1 na 1 000 000 (skrzynki specjalne)
+function knifeTarget(c){
+  if(c.troll || c.noItems) return null;
+  if(!c.items || !(c.items.special||[]).length) return null;
+  return (c.mega||c.elite||c.ultra||c.cosmic||c.secret) ? KNIFE_ODDS_RARE : KNIFE_ODDS_NORMAL;
+}
 
 /* =======================================================================
    1a. ✨ EFEKTY NA BRONIACH — rzadkie wykończenia podbijające wartość
@@ -52,7 +61,7 @@ const RATIO_EFF  = Object.assign({}, RATIO, { special: RATIO.special / KNIFE_DAM
    wypadło). Efekt mnoży wartość przedmiotu, więc taki drop sprzedaje się
    za dużo więcej, a na karcie widać jego odznakę i poświatę.
    Droższe tiery mają trochę większą szansę na błysk (FX_TIER_BOOST).
-   Łączna szansa na jakikolwiek efekt ≈ 3,2% (bez boostu tieru).
+   Łączna szansa na jakikolwiek efekt ≈ 2,7% (bez boostu tieru).
    ======================================================================= */
 const FX = [
   {id:"neon",    icon:"💡", name:"Neonowy",    color:"#38e08a", chance:0.0160, mult:1.8,  glow:"świecące krawędzie"},
@@ -77,6 +86,12 @@ const EVENT_FX = [
 ];
 const EVENT_FX_BY_ID = {};
 EVENT_FX.forEach(f=>EVENT_FX_BY_ID[f.id]=f);
+
+/* Efekty globalnie trochę rzadsze (lekka korekta — mnożniki bez zmian). */
+const FX_GLOBAL_MULT = 0.85;
+FX.forEach(f=>{ f.chance = Math.round(f.chance*FX_GLOBAL_MULT*1e6)/1e6; });
+EVENT_FX.forEach(f=>{ f.chance = Math.round(f.chance*FX_GLOBAL_MULT*1e6)/1e6; });
+
 function eventFxActive(){
   return eventFxList().length > 0;
 }
@@ -1234,6 +1249,75 @@ const BOT_CASES = [
                   ["Bayonet","Stalowe Ostrze","knife"],["Nóż Skeleton","Klinga","knife"]] } }
 ];
 
+/* 🧳 Kilka nowych walizek — dodawane do puli bazaru przed filtrowaniem. */
+const EXTRA_SUITCASES = [
+  { id:"suit_relics", name:"Walizka Reliktów", price:4000000, color:"#c084fc", icon:"🏺", botOnly:true, suitcase:true, noBattle:true,
+    sub:"Zapomniane skarby, naklejki i relikty z grobowców botów.",
+    odds:{mil:.520, restricted:.250, classified:.120, covert:.060, special:.020, relic:.030},
+    items:{
+      mil:       [["MP9","Stara Etykieta","smg"],["P250","Papirusowy Nadruk","pistol"],["Galil AR","Kopuła","rifle"],
+                  ["Nova","Sarkofag","shotgun"],["Tec-9","Hieroglif","pistol"]],
+      restricted:[["AK-47","Złota Maska","rifle"],["AWP","Oko Horusa","awp"],["M4A1-S","Relikwiarz","rifle"],
+                  ["USP-S","Amulet","pistol"],["SG 553","Kamień","rifle"]],
+      classified:[["AK-47","Klątwa Skarbu","rifle"],["AWP","Faraon","awp"],["M4A4","Zapomniany","rifle"],
+                  ["P90","Labirynt","smg"],["R8 Revolver","Wyrok","revolver"]],
+      covert:    [["AWP","Ostatni Faraon","awp"],["AK-47","Skarb Wieku","rifle"],["M4A1-S","Złota Tablica","rifle"],
+                  ["Desert Eagle","Pieczęć","pistol"]],
+      special:   [["Karambit","Relikt","knife"],["Nóż Motylkowy","Faraon","knife"],["Nóż Talon","Hieroglif","knife"],
+                  ["Bayonet","Sarkofag","knife"]],
+      relic:     [["Naklejka: Oko Faraona","Złota Seria","sticker"],["Ozdoba: Skarbiec","Bursztyn","charm"],
+                  ["Naklejka: Król Grobów","Relikt","sticker"],["Ozdoba: Wieczny Kamień","Szafir","charm"],
+                  ["Nóż Relikwiarz","Ostatni Egzemplarz","knife"]] } },
+
+  { id:"suit_kos", name:"Walizka Kos", price:3500000, color:"#f43f5e", icon:"🗡️", botOnly:true, suitcase:true, noBattle:true,
+    sub:"Noże, brzytwy i ostrza — najbardziej nożowa walizka w bazarze.",
+    odds:{mil:.450, restricted:.250, classified:.150, covert:.100, special:.050},
+    items:{
+      mil:       [["MP9","Kosik","smg"],["P250","Dłoń Sztyletu","pistol"],["Galil AR","Rysa","rifle"],
+                  ["Nova","Cięcie","shotgun"],["Tec-9","Brzytwa","pistol"]],
+      restricted:[["AK-47","Karambitowy","rifle"],["AWP","Długi Sztylet","awp"],["M4A1-S","Zagięta Klinga","rifle"],
+                  ["USP-S","Rytualny","pistol"],["MP7","Ostrze Dłoni","smg"]],
+      classified:[["AK-47","Mistrz Ostrza","rifle"],["AWP","Ostatnie Cięcie","awp"],["M4A4","Stalowy Pazur","rifle"],
+                  ["P90","Sztylet Nocy","smg"],["R8 Revolver","Klinga","revolver"]],
+      covert:    [["AWP","Sztylet Króla","awp"],["AK-47","Ostrze Nad Ostrza","rifle"],["M4A1-S","Klinga Absolutu","rifle"],
+                  ["Desert Eagle","Pazur","pistol"]],
+      special:   [["Karambit","Kos","knife"],["Nóż Motylkowy","Brzytwa","knife"],["Nóż Talon","Pazur","knife"],
+                  ["Bayonet","Sztylet","knife"],["Nóż Skeleton","Kos","knife"],["Nóż Ursus","Ostrze","knife"]] } },
+
+  { id:"suit_collector", name:"Walizka Kolekcjonera", price:6000000, color:"#fbbf24", icon:"💎", botOnly:true, suitcase:true, noBattle:true,
+    sub:"Pierwsze edycje, unikaty i muzealne okazy dla wybranych.",
+    odds:{mil:.400, restricted:.250, classified:.180, covert:.120, special:.030, relic:.020},
+    items:{
+      mil:       [["MP9","Kolekcja","smg"],["P250","Egzemplarz","pistol"],["Galil AR","Rzadkość","rifle"],
+                  ["Nova","Muzeum","shotgun"],["Tec-9","Szafka","pistol"]],
+      restricted:[["AK-47","Pierwsza Edycja","rifle"],["AWP","Złota Ramka","awp"],["M4A1-S","Limitowana","rifle"],
+                  ["USP-S","Podpis","pistol"],["AUG","Katalog","rifle"]],
+      classified:[["AK-47","Unikat","rifle"],["AWP","Arcydzieło","awp"],["M4A4","Skrzynia Skarbów","rifle"],
+                  ["P90","Numerowany","smg"],["R8 Revolver","Autograf","revolver"]],
+      covert:    [["AWP","Ostatni Egzemplarz","awp"],["AK-47","Muzealny","rifle"],["M4A1-S","Złota Ramka","rifle"],
+                  ["Desert Eagle","Kolekcjoner","pistol"]],
+      special:   [["Karambit","Kolekcja","knife"],["Nóż Motylkowy","Unikat","knife"],["Nóż Talon","Arcydzieło","knife"],
+                  ["Bayonet","Pierwsza Edycja","knife"]],
+      relic:     [["Naklejka: Złota Ramka","Limitowana","sticker"],["Ozdoba: Podpis","Kolekcjoner","charm"],
+                  ["Naklejka: Muzeum","Unikat","sticker"]] } },
+
+  { id:"suit_neon", name:"Walizka Neonowa", price:2000000, color:"#22d3ee", icon:"🔮", botOnly:true, suitcase:true, noBattle:true,
+    sub:"Świetlne wykończenia i laserowe ostrza prosto z klubu.",
+    odds:{mil:.550, restricted:.250, classified:.120, covert:.060, special:.020},
+    items:{
+      mil:       [["MP9","Neon","smg"],["P250","Światło","pistol"],["Galil AR","Laser","rifle"],
+                  ["Nova","Fluor","shotgun"],["Tec-9","Blask","pistol"]],
+      restricted:[["AK-47","Neonowy","rifle"],["AWP","Świetlna","awp"],["M4A1-S","Refleks","rifle"],
+                  ["USP-S","Fluorescencja","pistol"],["MP7","Dioda","smg"]],
+      classified:[["AK-47","Dyskoteka","rifle"],["AWP","Różowy Neon","awp"],["M4A4","Świecący","rifle"],
+                  ["P90","Stroboskop","smg"],["R8 Revolver","Lampa","revolver"]],
+      covert:    [["AWP","Neonowa Noc","awp"],["AK-47","Elektryczny","rifle"],["M4A1-S","Światło Nocy","rifle"],
+                  ["Desert Eagle","Rozbłysk","pistol"]],
+      special:   [["Karambit","Neon","knife"],["Nóż Motylkowy","Neonowa","knife"],["Nóż Talon","Blask","knife"],
+                  ["Bayonet","Fluorescencja","knife"]] } }
+];
+BOT_CASES.push(...EXTRA_SUITCASES);
+
 const BOT_REGULAR_CASES = BOT_CASES.filter(c=>!c.suitcase);
 const BOT_SUITCASES = BOT_CASES.filter(c=>c.suitcase);
 
@@ -1713,6 +1797,23 @@ const EVENT_CASES = [
       covert:    [["AWP","God Mode","awp"],["AK-47","Root","rifle"],["M4A4","Admin","rifle"]],
       special:   [["Karambit","Root","knife"],["Nóż Motylkowy","God Mode","knife"],["Nóż Talon","Banhammer","knife"]]
     } }
+
+,  { id:"season_limited", name:"Skrzynka Sezonowa", price:250000, color:"#22d3ee", icon:"🏆",
+    eventOnly:true, noBattle:true,
+    sub:"Nagroda za ukończenie sezonu. Unikalne skiny, których nie ma nigdzie indziej.",
+    odds:{mil:.100, restricted:.300, classified:.320, covert:.250, special:.030},
+    items:{
+      mil:       [["MP9","Sezonowy Pył","smg"],["P250","Odznaka Sezonu","pistol"],["Galil AR","Premiera","rifle"],
+                  ["Nova","Puchar","shotgun"],["Tec-9","Medal","pistol"]],
+      restricted:[["AK-47","Mistrz Sezonu","rifle"],["AWP","Złoty Sezon","awp"],["M4A1-S","Trofeum","rifle"],
+                  ["USP-S","Pierścień","pistol"],["AUG","Sztandar","rifle"]],
+      classified:[["AK-47","Korona Sezonu","rifle"],["AWP","Wieczny Laur","awp"],["M4A4","Hala Sław","rifle"],
+                  ["P90","Parada","smg"],["R8 Revolver","Salut","revolver"]],
+      covert:    [["AWP","Champion","awp"],["AK-47","Złota Era","rifle"],["M4A1-S","Nieśmiertelny","rifle"],
+                  ["Desert Eagle","Tytuł","pistol"]],
+      special:   [["Karambit","Sezonowy","knife"],["Nóż Motylkowy","Laur","knife"],["Nóż Talon","Mistrzowski","knife"],
+                  ["Bayonet","Puchar","knife"]]
+     } },
 ];
 
 CASES.push(...BOT_CASES, ...MEGA_CASES, ...ELITE_CASES, ...ULTRA_CASES, ...COSMIC_CASES, ...COSMIC_MID_CASES, ...COSMIC_STEP_CASES, ...EVENT_CASES);
@@ -1751,6 +1852,7 @@ const IDLE_STEP   = 0.20;   // +20% monet za czas gry
 const KOH_STEP    = 0.010;  // +1% szczęścia w Królowej góry
 const TRADE_STEP  = 0.020;  // -2% cen u botów
 const FXHUNT_STEP = 0.10;   // +10% szansy na efekt
+const MAGNET_STEP = 0.06;   // +6% szansy na efekt (perk „Magnes", mnoży się z Łowcą)
 const PATCH_STEP  = 0.05;   // -5% ceny kosmetyków
 const BASECASE    = 25;     // najtańsza skrzynka (do ratunku)
 
@@ -1801,7 +1903,7 @@ const UPGRADES = [
   { id:"clover", icon:"🍀", name:"Długi kwiat", max:8,
     desc:"Wydłuża działanie czterolistnej koniczyny. Każde trafienie daje dłuższe okno na noże i lepsze bronie.",
     costs:[40000,120000,350000,900000,2200000,5500000,14000000,35000000],
-    fmt:l => "koniczyna działa "+Math.round((CLOVER_DUR+CLOVER_STEP*l)/1000)+" s" },
+    fmt:l => "koniczyna działa "+hms(CLOVER_DUR+CLOVER_STEP*l) },
   { id:"battle", icon:"⚔️", name:"Wojownik", max:10,
     desc:"Zwiększa wartość przedmiotów, które wygrywasz w bitwie. Nie zmienia szansy na wygraną — walki są uczciwe, a wygrane coraz cenniejsze.",
     costs:[30000,90000,250000,700000,1800000,4800000,12000000,30000000,75000000,180000000],
@@ -1822,6 +1924,10 @@ const UPGRADES = [
     desc:"Zwiększa szansę, że zdobycz dostanie rzadki efekt ✨, który mnoży jej wartość.",
     costs:[250000,700000,2000000,5500000,15000000,40000000,100000000,250000000],
     fmt:l => l ? "+"+Math.round(FXHUNT_STEP*l*100)+"% szansy na efekt" : "podstawowa szansa na efekt" },
+  { id:"magnet", icon:"🧲", name:"Magnes", max:10,
+    desc:"Przyciąga rzadkie efekty do nowych dropów. Działa razem z ✨ Łowcą błysków — oba perki mnożą szansę na efekt (np. 1,8× × 1,6× = 2,88×).",
+    costs:[400000,1100000,3000000,8000000,21000000,55000000,140000000,350000000,900000000,2300000000],
+    fmt:l => l ? "+"+Math.round(MAGNET_STEP*l*100)+"% szansy na efekt (z Łowcą: ×"+((1+FXHUNT_STEP*upLvl("fxhunt"))*(1+MAGNET_STEP*l)).toFixed(2)+")" : "bez magnetyzmu" },
   { id:"patch", icon:"🎨", name:"Zniżka na patche", max:5,
     desc:"Obniża cenę kosmetyków kupowanych w dziale Statystyki.",
     costs:[500000,2000000,7000000,25000000,80000000],
@@ -1842,10 +1948,10 @@ const upMaxTotal = () => UPGRADES.reduce((a,u)=>a+u.max,0);
 
 /* --- "oficjalne" szanse skrzynki: noże rzadsze, ich udział dzielony na resztę --- */
 /* Minimalne, prawie niezauważalne przycięcie szans na lepsze tiery. */
-const TOP_TIER_DAMP = 0.94;   // dobre tiery globalnie rzadsze (było 0.99)
+const TOP_TIER_DAMP = 0.72;   // dobre tiery globalnie rzadsze (było 0.94)
 const TOP_TIER_DAMP_SET = new Set(["classified","covert","special","gloves","relic"]);
 /* Dodatkowe, bardzo małe przycięcie samych noży. */
-const KNIFE_EXTRA_DAMP = 0.98;
+const KNIFE_EXTRA_DAMP = 0.92;
 const BASE_ODDS_CACHE = new Map();
 function baseOdds(c){
   let o = BASE_ODDS_CACHE.get(c.id);
@@ -1858,6 +1964,14 @@ function baseOdds(c){
     sum += o[t];
   }
   for(const t of TIERS) o[t] = o[t]/sum;
+  /* szansa na nóż jest sztywna (1/100k albo 1/1M) — reszta tierów
+     dostaje zwolnione miejsce proporcjonalnie, suma zostaje równa 1 */
+  const kt = knifeTarget(c);
+  if(kt && o.special > 0 && o.special !== kt){
+    const scale = (1-kt)/(1-o.special);
+    for(const t of TIERS) if(t !== "special") o[t] *= scale;
+    o.special = kt;
+  }
   BASE_ODDS_CACHE.set(c.id, o);
   return o;
 }
@@ -1886,7 +2000,9 @@ function oddsFor(c){
 }
 
 /* --- pozostałe efekty ulepszeń --- */
-const sellRate     = () => (SELL_RATE + SELL_STEP*upLvl("sell") + (typeof worldEventSellBonus === "function" ? worldEventSellBonus() : 0))
+const sellRate     = () => (SELL_RATE + SELL_STEP*upLvl("sell")
+  + (typeof worldEventSellBonus === "function" ? worldEventSellBonus() : 0)
+  + (typeof miniSellBonus === "function" ? miniSellBonus() : 0))
   * (typeof shopHappySellMult === "function" ? shopHappySellMult() : 1);
 const bonusCd      = () => Math.max(4000, 20000 - SPEED_STEP*upLvl("speed"));
 const couponChance = () => COUPON_STEP*upLvl("coupon");

@@ -28,7 +28,7 @@ function oddsLegend(c){
     if(p<=0) return "";
     const nm = t==="special" ? "★ Noże" : t==="gloves" ? "🧤 Rękawice" : t==="relic" ? "✦ Relikty" : TIER[t].name;
     return `<span data-tier="${t}" data-mark="${TIER_MARK[t]||t[0].toUpperCase()}" style="--tc:${TIER[t].color};color:${TIER[t].color}"><i class="dot dot-${t}" style="background:${TIER[t].color}"></i>
-      <span style="color:var(--dim)">${nm} ${p<0.1?p.toFixed(2):p.toFixed(1)}%</span></span>`;
+      <span style="color:var(--dim)">${nm} ${p<0.01 && p>0 ? "1 na "+fmt(Math.round(100/p)) : p<0.1 ? p.toFixed(2)+"%" : p.toFixed(1)+"%"}</span></span>`;
   }).join("");
 }
 /* Ranga skrzynki liczona z ceny — nowe skrzynki od razu dostają właściwą oprawę.
@@ -40,6 +40,21 @@ function caseTier(c){
   if(c.price >=   50000) return "epic";
   if(c.price >=    3000) return "rare";
   return "common";
+}
+/* Skrzynki z własnym, ręcznie napisanym wyglądem w CSS — nie ruszamy ich.
+   Pozostałe dostają jeden z 16 wzorów „dodatków” na tej samej, kwadratowej
+   bryle: nity, obwody, runy, paski, gwiazdy, iskry, skanery itd. Bryła
+   zostaje klasyczna — zmienia się tylko detail i faktura. */
+const CUSTOM_CASE_SKINS = new Set([
+  "start","sand","urban","midnight","prism","spectral","toxic","chroma","frost","dragon","void","volcano","royal","celestial","abyss",
+  "smuggler","gambler","quad","quint","sext","sept","oct","non","quantum","eternity","singularity","aurora","nebula","vortex","titan","eclipse"
+]);
+function caseVisualClass(c){
+  /* Trolle (i inne skrzynki bez puli broni) mają własny, czysty wygląd —
+     nakładanie na nie „dodatków” zasłaniało emotkę i wyglądało kiepsko. */
+  if(c.troll || c.noItems || c.suitcase || c.eventOnly) return "";
+  if(CUSTOM_CASE_SKINS.has(c.id)) return "";
+  return "deco-"+(1 + (hash("caseDeco|"+c.id) % 16));
 }
 /* kratka ozdób: 5 miejsc w warstwie za skrzynką i 5 przed nią */
 const DEKO = n => `<i></i>`.repeat(n);
@@ -56,9 +71,13 @@ const SHOP_FILTERS = [
 let shopFilter = "all";
 
 /* ⚡ Hurtowe otwieranie: ×10 / ×100 / ×1000 / ×10000 / MAX.
-   MAX liczy się z monet i zapasu, ale ma twardy limit 10 000 na jedno
-   kliknięcie — tyle przedmiotów da się bezpiecznie utrzymać w zapisie. */
+   Przycisk ×10000 ma twardy limit zapisu. MAX wydaje CAŁĄ kasę (i zapas) —
+   gdy przekracza bezpieczny limit, nadwyżka dropów jest automatycznie
+   sprzedawana, a w ekwipunku zostaje tylko BULK_KEEP najlepszych sztuk. */
 const BULK_HARD_CAP = 10000;
+const BULK_KEEP = 10000;         // ile najlepszych skinów zostaje przy MAX > 10k
+const BULK_MAX_SAFE = 1000000;   // twardy sufit dla ekstremalnych kont (stabilność)
+const BULK_STREAM_CHUNK = 5000;
 const BULK_COUNTS = [10, 100, 1000, 10000, "max"];
 const BULK_RESULT_CARDS = 24;
 function bulkUnit(c){ return Math.max(1, Math.round(c.price * (1 - bulkRate()))); }
@@ -69,8 +88,8 @@ function bulkCost(c, n){
 }
 function bulkMaxFor(c){
   const stock = caseStock(c.id);
-  if(c.botOnly) return Math.min(BULK_HARD_CAP, stock);
-  return Math.min(BULK_HARD_CAP, stock + Math.floor(numFrom(state.coins) / bulkUnit(c)));
+  if(c.botOnly) return stock;
+  return stock + Math.min(BULK_MAX_SAFE, Math.floor(numFrom(state.coins) / bulkUnit(c)));
 }
 function bulkLabel(n){ return n === "max" ? "MAX" : "×"+n; }
 function bulkTitle(c, n){
@@ -79,7 +98,8 @@ function bulkTitle(c, n){
     const maxN = bulkMaxFor(c);
     if(maxN <= 0) return "Brak monet lub zapasu";
     const cost = bulkCost(c, maxN);
-    return "Maksymalnie "+fmt(maxN)+" na raz (limit "+fmt(BULK_HARD_CAP)+")"+(cost ? " · 🪙 "+fmt(cost)+" łącznie" : " · z zapasu, bez opłat");
+    return "MAX — cała kasa: "+fmt(maxN)+" skrzynek"+(cost ? " · 🪙 "+fmt(cost)+" łącznie" : " · z zapasu, bez opłat")
+      + (maxN > BULK_HARD_CAP ? " · najlepsze "+fmt(BULK_KEEP)+" zostają, reszta auto-sprzedaż" : " · wszystkie dropy trafiają do ekwipunku");
   }
   const actual = c.botOnly ? Math.min(n, stock) : n;
   if(actual <= 0) return "Brak zapasu";
@@ -134,7 +154,7 @@ function shopHintHTML(){
   if(lk) active.push("🎯 Szczęście "+lk+"/"+UP_BY_ID.luck.max);
   const kn = upLvl("knives");
   if(kn) active.push("🔪 Łowca Noży "+kn+"/"+UP_BY_ID.knives.max);
-  if(cloverActive()) active.push("🍀 Koniczyna "+Math.ceil(cloverLeft()/1000)+" s — "+cloverDesc());
+  if(cloverActive()) active.push("🍀 Koniczyna "+hms(cloverLeft())+" — "+cloverDesc());
   const fxEv = fxEventPool().filter(f=>fxEventActive(f.id));
   if(fxEv.length) active.push("🎰 Eventy efektów: "+fxEv.map(f=>f.icon+" "+mmss(Math.max(0,numFrom(state.fxEvents[f.id])-Date.now()))).join(" · ")+" — +"+Math.round(FX_EVENT_LUCK*fxEv.length*100)+"% luck");
   if(autoOpen) active.push("🤖 Auto: "+esc(autoOpen.name)+" — "+autoOpen.n+" "+plural(autoOpen.n,"otwarcie","otwarcia","otwarć"));
@@ -234,7 +254,7 @@ function renderShop(force){
     const tier = caseTier(c);
     const st = caseStock(c.id);
     const aOn = !!autoOpen && autoOpen.id===c.id, aUnl = autoUnlocked();
-    return `<div class="case-card tier-${tier}${c.mega?" mega":""}${c.elite?" elite":""}${c.ultra?" ultra":""}${c.eventOnly?" event":""}" data-skin="${c.id}" style="--cc:${c.color};animation-delay:${i*70}ms" data-case="${c.id}" tabindex="0" role="group" aria-label="${esc(c.name)} — Enter otwiera">
+    return `<div class="case-card tier-${tier}${c.mega?" mega":""}${c.elite?" elite":""}${c.ultra?" ultra":""}${c.eventOnly?" event":""} ${caseVisualClass(c)}" data-skin="${c.id}" style="--cc:${c.color};animation-delay:${i*70}ms" data-case="${c.id}" tabindex="0" role="group" aria-label="${esc(c.name)} — Enter otwiera">
       <span class="case-tag">${c.troll ? "TROLL · JACKPOT" : c.eventOnly ? "EVENT · LIMITOWANA" : c.suitcase ? "🧳 WALIZKA · RZADKA" : c.cosmic ? "COSMIC · "+TIER_NAME[tier] : c.ultra ? "ULTRA · "+TIER_NAME[tier] : c.mega ? "MEGA · "+TIER_NAME[tier] : c.elite ? "ELITA · "+TIER_NAME[tier] : c.botOnly ? "Tylko u botów" : TIER_NAME[tier]}</span>
       <div class="crate">
         <div class="deko back">${DEKO(5)}</div>
@@ -338,7 +358,7 @@ function showLoot(caseId){
     </span></div>` : "") +
     `<div class="loot-bonus"><i class="lb-ico">🍀</i><span class="lb-txt">
       <b>Czterolistna koniczyna — szansa ${(CLOVER_CHANCE*100).toFixed(1)}%</b>
-      Wypada <em>dodatkowo</em> przy otwarciu skrzynki (także hurtowo) i na ${Math.round(cloverDur()/1000)} s
+      Wypada <em>dodatkowo</em> przy otwarciu skrzynki (także hurtowo) i na ${hms(cloverDur())}
       daje większe szanse na noże i dobre bronie: ${cloverDesc()}.
     </span></div>` +
     `<div class="loot-bonus lb-fx"><i class="lb-ico">✨</i><span class="lb-txt">
@@ -403,7 +423,13 @@ const BOT_FACTOR = {   // [min, max] mnożnik ceny względem normalnej wartości
 };
 /* 🧳 Walizki są rzadkie — szansa rośnie z poziomem reputacji u danego bota. */
 const BOT_SUITCASE_CHANCE = [0.025, 0.04, 0.06, 0.09, 0.13, 0.18];
-const BOT_SUITCASE_WEIGHT = { suit_gloves:40, suit_blades:60 };
+const BOT_SUITCASE_WEIGHT = { suit_gloves:26, suit_blades:28, suit_relics:16, suit_kos:14, suit_collector:9, suit_neon:7 };
+/* 💎 Diamantowa oferta — gwarantowana rzadka walizka za diamenty + monety.
+   Pojawia się rzadko i nie zależy od reputacji (diamenty są walutą sezonową). */
+const BOT_DIAMOND_CHANCE = [0.02, 0.025, 0.03, 0.035, 0.04, 0.05];
+const BOT_DIAMOND_SUITCASES = { suit_relics:8, suit_kos:10, suit_collector:12 };
+const BOT_DIAMOND_COIN_MULT = 0.5;
+const BOT_DIAMOND_LIMIT = 2;   // max 2 zakupy na sezon
 const BOT_CACHE = {tag:"", list:[]};
 /* Reputacja u każdego bota rośnie za zakupy. Kolejne poziomy dają rabat. */
 const BOT_REP_TIERS = [
@@ -842,6 +868,19 @@ function botOffers(){
       list.push({ id:"b"+tag+"_"+si+"_s", seller:s.id, kind:"case", caseId:c.id, base,
                   price:Math.max(1, Math.round(roundNice(base*f) * trade)), max:1, suitcase:true });
     }
+    /* 💎 diamantowa oferta — rzadka walizka, cena w monetach + diamenty */
+    const dChance = BOT_DIAMOND_CHANCE[rep.level] || 0;
+    if(rndF() < dChance){
+      const ids = Object.keys(BOT_DIAMOND_SUITCASES);
+      const cid = ids[(rndF()*ids.length)|0];
+      const c = BOT_SUITCASES.find(x=>x.id===cid);
+      if(c){
+        const coinPrice = Math.max(1, Math.round(roundNice(c.price*BOT_DIAMOND_COIN_MULT) * trade));
+        list.push({ id:"b"+tag+"_"+si+"_d", seller:s.id, kind:"case", caseId:c.id,
+                    base:c.price, price:coinPrice, max:1, suitcase:true,
+                    diamond:BOT_DIAMOND_SUITCASES[cid], diamondOffer:true });
+      }
+    }
   });
   BOT_CACHE.tag = tag; BOT_CACHE.list = list;
   return list;
@@ -1152,6 +1191,10 @@ function claimBazarContract(i){
   if(!def || m.claimed || m.prog < def.goal){ sfxErr(); return; }
   m.claimed = true;
   state.stats.bazarContracts = numFrom(state.stats.bazarContracts) + 1;
+  if(state.season){
+    state.season.contracts = numFrom(state.season.contracts) + 1;
+    if(typeof seasonCheckMaster === "function") seasonCheckMaster();
+  }
   if(!w.full && w.list.every(x=>x.claimed)){
     w.full = true;
     state.stats.bazarWeeks = numFrom(state.stats.bazarWeeks) + 1;
@@ -1180,17 +1223,25 @@ function botOfferHTML(o){
     const c = CASES.find(x=>x.id===o.caseId);
     if(!c) return "";
     const suit = !!c.suitcase;
-    return `<div class="bot-offer${sold?" sold":""}${suit?" suitcase":""}" style="--c:${c.color}${sold?";--c:#44506b":""}">
-      <div class="bo-art bo-case" style="--cc:${c.color}">${c.icon}</div>
+    const dm = !!o.diamondOffer;
+    const noDm = dm && numFrom(state.diamonds) < numFrom(o.diamond);
+    const full = dm && state.season && numFrom(state.season.dmSuits) >= BOT_DIAMOND_LIMIT;
+    const noGate = dm && typeof bossGatePassed === "function" && !bossGatePassed();
+    const blocked = sold || noDm || full || noGate;
+    const btn = blocked ? "—" : (dm ? "Kup · "+o.diamond+" 💎" : "Kup");
+    const btnTxt = noGate ? "🔒 R5" : full ? "LIMIT" : noDm ? "MAŁO 💎" : btn;
+    return `<div class="bot-offer${sold?" sold":""}${suit?" suitcase":""}${dm?" diamond":""}" style="--c:${dm?"#22d3ee":c.color}${sold?";--c:#44506b":""}">
+      <div class="bo-art bo-case" style="--cc:${dm?"#22d3ee":c.color}">${dm?"💎":c.icon}</div>
       <div class="bo-main">
-        <div class="bo-w">${suit ? "🧳 walizka · rzadka oferta" : c.botOnly ? "tylko u botów" : "skrzynka"}</div>
+        <div class="bo-w">${dm ? "💎 DIAMENTOWA OFERTA · gwarantowana walizka"+(noGate?" · 🔒 rozdział 5":"") : suit ? "🧳 walizka · rzadka oferta" : c.botOnly ? "tylko u botów" : "skrzynka"}</div>
         <div class="bo-n">${esc(c.name)}</div>
         <div class="bo-meta"><span class="bo-price" title="${priceTitle}">🪙 ${fmtShort(price)}</span>
           <span class="bo-base">🪙 ${fmtShort(o.base)}</span>${deal}${repTag}
+          ${dm ? `<span class="bo-diamond">${o.diamond} 💎</span>` : ""}
           ${suit ? '<span class="bo-suit">RZADKA</span>' : ""}
-          <span class="${stockCls}">${stockTxt}</span></div>
+          <span class="${stockCls}">${dm && state.season ? (numFrom(state.season.dmSuits)+"/"+BOT_DIAMOND_LIMIT+" sezon") : stockTxt}</span></div>
       </div>
-      <button class="bo-buy" data-botbuy="${o.id}" ${sold?"disabled":""}>${sold?"—":"Kup"}</button>
+      <button class="bo-buy" data-botbuy="${o.id}" ${blocked?"disabled":""}>${btnTxt}</button>
     </div>`;
   }
   const t = TIER[o.tier];
@@ -1283,9 +1334,19 @@ function buyBotOffer(id){
   if(botLeft(off) <= 0){ sfxErr(); toast("Ten bot już wszystko sprzedał","bad"); return; }
   const price = botRepPrice(off);
   if(state.coins < price){ sfxErr(); toast("Za mało monet!","bad"); return; }
+  if(off.diamondOffer){
+    if(numFrom(state.diamonds) < numFrom(off.diamond)){ sfxErr(); toast("Za mało diamentów 💎","bad"); return; }
+    if(state.season && numFrom(state.season.dmSuits) >= BOT_DIAMOND_LIMIT){ sfxErr(); toast("Wykorzystałeś limit diamentowych walizek w tym sezonie","bad"); return; }
+    if(typeof bossGatePassed === "function" && !bossGatePassed()){ sfxErr(); toast("Diamantowa oferta wymaga ukończenia rozdziału 5 kampanii bossów","bad"); return; }
+  }
 
   const repChange = botAddRep(off.seller, 1);
   state.coins -= price;
+  if(off.diamondOffer){
+    state.diamonds = Math.max(0, numFrom(state.diamonds) - numFrom(off.diamond));
+    if(state.season) state.season.dmSuits = numFrom(state.season.dmSuits) + 1;
+    state.stats.botDiamonds = numFrom(state.stats.botDiamonds) + numFrom(off.diamond);
+  }
   state.stats.spent += price;
   state.stats.botBuys  = numFrom(state.stats.botBuys) + 1;
   state.stats.botSpent = numFrom(state.stats.botSpent) + price;
@@ -1298,9 +1359,9 @@ function buyBotOffer(id){
     state.stats.botCases = numFrom(state.stats.botCases) + 1;
     const c = CASES.find(x=>x.id===off.caseId);
     sfxCoin();
-    toast((c && c.suitcase ? "🧳 Kupiono <b>" : "📦 Kupiono <b>")+esc(c ? c.name : "skrzynkę")+"</b> — "+
+    toast((off.diamondOffer ? "💎 Kupiono diamentową walizkę <b>" : c && c.suitcase ? "🧳 Kupiono <b>" : "📦 Kupiono <b>")+esc(c ? c.name : "skrzynkę")+"</b> — "+
       (c && c.suitcase ? "czeka w <b>Ekwipunku</b>" : "czeka w zapasie w zakładce Skrzynki")+". "+
-      (c && c.suitcase ? "To rzadka walizka: otwórz ją, kiedy chcesz — po otwarciu zniknie, a kolejną upolujesz tylko u bota." : "To skrzynka jednorazowa: po otwarciu zniknie, a kolejną kupisz tylko u bota.")+
+      (off.diamondOffer ? "Gwarantowana rzadka walizka · wydano "+off.diamond+" 💎." : c && c.suitcase ? "To rzadka walizka: otwórz ją, kiedy chcesz — po otwarciu zniknie, a kolejną upolujesz tylko u bota." : "To skrzynka jednorazowa: po otwarciu zniknie, a kolejną kupisz tylko u bota.")+
       " · 🤝 reputacja +1","good");
   } else {
     const item = { uid:"b"+Date.now().toString(36)+Math.random().toString(36).slice(2,7),
@@ -1396,10 +1457,14 @@ let FX_EVENT_SIG = "";
    czasem trafi się coś droższego, czasem strata. Starter jest jednorazowy.
    ======================================================================= */
 const PACK_CODE_CHANCE = 0.01;
+const PACK_CODE_CHANCE_HIGH = 0.03;
+const PACK_ROTATE_MS = 3*60*60*1000;     // pakiety rotują co 3 godziny
+const STARTER_REFRESH_MS = 60*60*1000;   // starter odnawia się co 1 godzinę
+const PACK_ROTATE_SIZE = 4;              // starter + 4 losowe pakiety w rotacji
 const PACKS = [
-  { id:"starter", icon:"🎁", name:"Pakiet startowy", badge:"FREE · JEDNORAZOWY",
-    color:"#38e08a", price:0, once:true,
-    desc:"2 500 monet, Skrzynka Startowa i losowa broń z Pryzmatu. Jednorazowy zastrzyk na start." },
+  { id:"starter", icon:"🎁", name:"Pakiet startowy", badge:"FREE · CO 1H",
+    color:"#38e08a", price:0, once:true, refreshMs:STARTER_REFRESH_MS,
+    desc:"2 500 monet, Skrzynka Startowa i losowa broń z Pryzmatu. Odnawia się co godzinę." },
   { id:"bronie", icon:"🔫", name:"Pakiet broni", badge:"3 LOSOWE BRONIE",
     color:"#60a5fa", price:9000,
     desc:"Trzy bronie z Widma. Bez gwarancji zysku — czasem trafi się rzadszy model." },
@@ -1411,9 +1476,48 @@ const PACKS = [
     desc:"Broń z Chromy, skrzynka Chroma i mała (1%) szansa na rzadki kod. Dla lubiących ryzyko." },
   { id:"hazard", icon:"🎲", name:"Pakiet hazardzisty", badge:"WYSOKIE RYZYKO",
     color:"#f59e0b", price:15000,
-    desc:"Cztery bronie z Widma, głównie tanie — ale może wypaść nóż. Czasem wielka strata, czasem jackpot." }
+    desc:"Cztery bronie z Widma, głównie tanie — ale może wypaść nóż. Czasem wielka strata, czasem jackpot." },
+  { id:"snajper", icon:"🎯", name:"Pakiet snajpera", badge:"2 BRONIE Z CHROMY",
+    color:"#fb7185", price:12000,
+    desc:"Dwa losowe dropy z Chromy. Precyzyjnie, ale bez gwarancji zysku." },
+  { id:"ostrze", icon:"🗡️", name:"Pakiet ostrza", badge:"SZANSA NA NÓŻ",
+    color:"#f43f5e", price:45000,
+    desc:"Jeden drop z Widma z mocno przesuniętymi szansami na Covert i nóż." },
+  { id:"mieszany", icon:"🧩", name:"Pakiet mieszany", badge:"3 RÓŻNE DROPY",
+    color:"#38bdf8", price:25000,
+    desc:"Broń z Pryzmatu, broń z Widma i losowa skrzynka do zapasu." },
+  { id:"kody", icon:"🔑", name:"Pakiet kodów", badge:"KOD + BROŃ",
+    color:"#a78bfa", price:18000,
+    desc:"Broń z Miejskiej i 3% szansy na rzadki kod zamiast części zysku." },
+  { id:"szczescie", icon:"🍀", name:"Pakiet szczęścia", badge:"LEPSZE SZANSE",
+    color:"#facc15", price:50000,
+    desc:"Trzy dropy ze Smoka z wyraźnie lepszymi wagami — wciąż jednak bez gwarancji." },
+  { id:"figlarz", icon:"🤡", name:"Pakiet figlarza", badge:"MONETY + SKRZYNKA",
+    color:"#34d399", price:7000,
+    desc:"Losowa garść monet i Skrzynka Troll. Może zwrócić więcej, niż kosztował." }
 ];
 const PACK_BY_ID = Object.fromEntries(PACKS.map(p=>[p.id,p]));
+
+let PACK_ROT_CACHE = {cycle:-1, list:[]};
+function packCycle(){ return Math.floor(Date.now()/PACK_ROTATE_MS); }
+function activePacks(){
+  const cyc = packCycle();
+  if(PACK_ROT_CACHE.cycle !== cyc){
+    const pool = PACKS.filter(p=>p.id!=="starter");
+    const rnd = mulberry32(hash("packrot|"+cyc));
+    for(let i=pool.length-1;i>0;i--){
+      const j = Math.floor(rnd()*(i+1));
+      const t = pool[i]; pool[i] = pool[j]; pool[j] = t;
+    }
+    PACK_ROT_CACHE = {cycle:cyc, list:[PACK_BY_ID.starter, ...pool.slice(0,PACK_ROTATE_SIZE)]};
+  }
+  return PACK_ROT_CACHE.list;
+}
+function packRefreshLeft(p){
+  if(!p || !p.refreshMs) return 0;
+  const t = numFrom(state.packClaims && state.packClaims[p.id]);
+  return t ? Math.max(0, t + p.refreshMs - Date.now()) : 0;
+}
 
 const shopCycle = () => Math.floor(Date.now()/SHOP_TTL);
 function shopStockMap(){
@@ -1671,7 +1775,9 @@ function eventOfferHTML(o){
 
 function caseById(id){ return CASES.find(c=>c.id===id); }
 function packClaimed(p){
-  return !!(p && p.once && state.packClaims && state.packClaims[p.id]);
+  if(!p) return false;
+  if(p.refreshMs) return packRefreshLeft(p) > 0;
+  return !!(p.once && state.packClaims && state.packClaims[p.id]);
 }
 function packRandomCode(){
   const pool = CODES.filter(c=>c.rarity === "rare" && c.id !== "otchlan");
@@ -1704,6 +1810,32 @@ function packContents(p){
     const c = caseById("spectral");
     const w = {mil:70, restricted:22, classified:6, covert:1.5, special:.5};
     if(c) for(let i=0;i<4;i++) out.items.push(makeItem(c, pickWeighted(w, Math.random)));
+  } else if(p.id === "snajper"){
+    const c = caseById("chroma");
+    if(c) for(let i=0;i<2;i++) out.items.push(makeItem(c, pickTier(c)));
+  } else if(p.id === "ostrze"){
+    const c = caseById("spectral");
+    if(c) out.items.push(makeItem(c, pickWeighted({covert:80, special:20}, Math.random)));
+  } else if(p.id === "mieszany"){
+    const a = caseById("prism"), b = caseById("spectral");
+    if(a) out.items.push(makeItem(a, pickTier(a)));
+    if(b) out.items.push(makeItem(b, pickTier(b)));
+    const id = pickWeighted({prism:40, spectral:40, chroma:20}, Math.random);
+    if(caseById(id)) out.cases[id] = (out.cases[id]||0) + 1;
+  } else if(p.id === "kody"){
+    const c = caseById("urban");
+    if(c) out.items.push(makeItem(c, pickTier(c)));
+    if(Math.random() < PACK_CODE_CHANCE_HIGH){
+      const code = packRandomCode();
+      if(code) out.codes.push(code);
+    }
+  } else if(p.id === "szczescie"){
+    const c = caseById("dragon");
+    const w = {mil:20, restricted:30, classified:30, covert:18, special:2};
+    if(c) for(let i=0;i<3;i++) out.items.push(makeItem(c, pickWeighted(w, Math.random)));
+  } else if(p.id === "figlarz"){
+    out.coins = 300 + Math.floor(Math.random()*4700);
+    if(caseById("troll")) out.cases.troll = 1;
   }
   return out;
 }
@@ -1767,34 +1899,61 @@ function showPackResult(p,out){
     ${codeNote}
   </div>`;
 }
+function packHintHTML(){
+  const rotLeft = PACK_ROTATE_MS - (Date.now()%PACK_ROTATE_MS);
+  const stLeft = packRefreshLeft(PACK_BY_ID.starter);
+  return activePacks().length+" pakietów w rotacji · nowe za <b>"+mmss(rotLeft)+"</b> · starter "+
+    (stLeft ? "za <b>"+mmss(stLeft)+"</b>" : "<b>gotowy</b>")+" · losowa zawartość";
+}
 function packCardHTML(p){
-  const claimed = packClaimed(p), free = p.price === 0;
-  return `<div class="pack-card${free?" free":""}${claimed?" claimed":""}" style="--c:${p.color}">
-    <div class="pack-badge">${p.badge}${claimed ? " · ODEBRANY" : ""}</div>
+  const claimed = packClaimed(p), free = p.price === 0, left = packRefreshLeft(p);
+  const tag = free
+    ? (p.refreshMs ? (claimed ? "odnowi za "+mmss(left) : "darmowy co 1h") : (claimed ? "odebrany" : "raz na konto"))
+    : "bez limitu";
+  const btn = claimed
+    ? (p.refreshMs ? "⏳ "+mmss(left) : "✔ Odebrany")
+    : free ? "Odbierz za darmo" : "Kup i otwórz";
+  return `<div class="pack-card${free?" free":""}${claimed?" claimed":""}" data-pack-card="${p.id}" style="--c:${p.color}">
+    <div class="pack-badge">${p.badge}${claimed && !p.refreshMs ? " · ODEBRANY" : ""}</div>
     <div class="pack-head">
       <div class="pack-ico">${p.icon}</div>
       <div style="min-width:0"><div class="pack-name">${esc(p.name)}</div>
-        <div class="pack-sub">${free ? "prezent na start" : "losowy zestaw"}</div></div>
+        <div class="pack-sub">${free ? "prezent odnawialny" : "losowy zestaw"}</div></div>
     </div>
     <div class="pack-desc">${p.desc}</div>
     <div class="pack-meta"><span class="pack-price">${free ? "DARMOWY" : "🪙 "+fmtShort(p.price)}</span>
-      <span class="pack-tag">${free ? (claimed ? "odebrany" : "raz na konto") : "bez limitu"}</span></div>
-    <button class="pack-buy" data-pack="${p.id}" ${claimed?"disabled":""}>${claimed ? "✔ Odebrany" : free ? "Odbierz za darmo" : "Kup i otwórz"}</button>
+      <span class="pack-tag" data-pack-tag="${p.id}">${tag}</span></div>
+    <button class="pack-buy" data-pack="${p.id}" data-pack-btn="${p.id}" ${claimed?"disabled":""}>${btn}</button>
   </div>`;
 }
 function renderPacks(){
   const g = $("#packGrid");
   if(!g) return;
-  g.innerHTML = PACKS.map(packCardHTML).join("");
+  g.innerHTML = activePacks().map(packCardHTML).join("");
   g.classList.add("ready");
   const h = $("#packHint");
-  if(h) h.innerHTML = "5 rodzajów · starter jednorazowy · losowa zawartość";
+  if(h) h.innerHTML = packHintHTML();
+}
+function updatePackTimers(){
+  const st = PACK_BY_ID.starter, left = packRefreshLeft(st);
+  const tag = document.querySelector('[data-pack-tag="starter"]');
+  if(tag) tag.textContent = left ? "odnowi za "+mmss(left) : "darmowy co 1h";
+  const btn = document.querySelector('[data-pack-btn="starter"]');
+  if(btn){
+    btn.textContent = left ? "⏳ "+mmss(left) : "Odbierz za darmo";
+    btn.disabled = left > 0;
+  }
+  const card = document.querySelector('[data-pack-card="starter"]');
+  if(card) card.classList.toggle("claimed", left > 0);
+  const h = $("#packHint");
+  if(h) h.innerHTML = packHintHTML();
 }
 function buyPack(id){
   const p = PACK_BY_ID[id];
   if(!p) return;
+  if(!activePacks().some(x=>x.id===id)){ sfxErr(); toast("Ten pakiet nie jest dostępny w tej rotacji","bad"); return; }
   state.packClaims = (state.packClaims && typeof state.packClaims === "object" && !Array.isArray(state.packClaims)) ? state.packClaims : {};
-  if(p.once && packClaimed(p)){ sfxErr(); toast("Ten pakiet został już odebrany","bad"); return; }
+  if(p.once && packClaimed(p)){ sfxErr(); toast(p.refreshMs ? "Starter odnowi się za "+mmss(packRefreshLeft(p)) : "Ten pakiet został już odebrany","bad"); return; }
   if(state.coins < p.price){ sfxErr(); toast("Za mało monet na ten pakiet","bad"); return; }
 
   if(p.price){
@@ -1814,7 +1973,7 @@ function buyPack(id){
   out.codes.forEach(def=>{ addCode(def.id, 1); state.stats.codeDrops = numFrom(state.stats.codeDrops) + 1; });
   state.stats.packBuys = numFrom(state.stats.packBuys) + 1;
   state.stats.packSpent = numFrom(state.stats.packSpent) + p.price;
-  if(p.once) state.packClaims[p.id] = true;
+  if(p.once) state.packClaims[p.id] = p.refreshMs ? Date.now() : true;
 
   markDirty(); save({kind:"pack"});
   sfxCoin();
@@ -2068,6 +2227,7 @@ $("#view-market").addEventListener("click", e=>{
   if(b) buyShopOffer(b.dataset.shopbuy, b.dataset.promo === "1");
 });
 let SHOP_HAPPY_UI_TAG = shopHappyTag();
+let PACK_UI_CYCLE = packCycle();
 setInterval(()=>{
   const happyTag = shopHappyTag();
   if(happyTag !== SHOP_HAPPY_UI_TAG){
@@ -2077,6 +2237,13 @@ setInterval(()=>{
     else if(currentView === "inv" && typeof renderInv === "function") renderInv();
   }
   if(currentView !== "market") return;
+  const pc = packCycle();
+  if(pc !== PACK_UI_CYCLE){
+    PACK_UI_CYCLE = pc;
+    renderPacks();
+  } else {
+    updatePackTimers();
+  }
   if(SHOP_CACHE.rendered !== shopCacheKey()) renderMarket();
   else shopTick();
 }, 1000);
@@ -2090,8 +2257,10 @@ function renderUp(){
   const done = upTotal(), all = upMaxTotal();
   const lk = upLvl("luck");
   const upDisc = typeof upDiscountText === "function" ? upDiscountText() : "";
+  const sbText = typeof sellBoostText === "function" ? sellBoostText() : "";
   $("#upHint").innerHTML = "Kupione poziomy: <b>"+done+" / "+all+"</b> &nbsp;·&nbsp; 🔪 Łowca Noży podnosi szansę na ★ &nbsp;·&nbsp; 🎯 Szczęście działa tylko na Ciebie" +
-    (upDisc ? " &nbsp;·&nbsp; <b style='color:#fbbf24'>"+upDisc+"</b>" : "");
+    (upDisc ? " &nbsp;·&nbsp; <b style='color:#fbbf24'>"+upDisc+"</b>" : "") +
+    (sbText ? " &nbsp;·&nbsp; <b style='color:#34d399'>"+sbText+"</b>" : "");
   const badge = $("#upCount");
   if(badge){ badge.textContent = done ? String(done) : ""; badge.style.display = done ? "" : "none"; }
   $("#bonusBtn").title = "Darmowe monety co " + Math.round(bonusCd()/1000) + " s";
@@ -2331,6 +2500,75 @@ function bulkItemDrops(c, count){
   return {wins, cloverHits, codeDrops};
 }
 
+/* MAX powyżej bezpiecznego limitu: otwiera WSZYSTKO, ale zamiast dokładać
+   setki tysięcy przedmiotów do zapisu, po każdej paczce zostawia BULK_KEEP
+   najcenniejszych, a resztę natychmiast sprzedaje. Dzięki temu cała kasa
+   zostaje wydana, a ekwipunek i localStorage pozostają bezpieczne. */
+function bulkMaxStream(c, count, done){
+  const keep = [];
+  let idx = 0, cloverHits = 0, soldN = 0, soldCoins = 0;
+  const codeDrops = [];
+  const troll = !!c.troll;
+  /* Pasek postępu — bez tego długie MAX-otwieranie wygląda jak zawieszenie gry. */
+  const overlay = document.createElement("div");
+  overlay.className = "bulk-progress";
+  overlay.innerHTML = `<div class="bp-box"><b class="bp-title">⚡ MAX · otwieranie skrzynek</b>
+    <div class="bp-bar"><i></i></div><span class="bp-txt">0 / ${fmt(count)}</span></div>`;
+  document.body.appendChild(overlay);
+  const bar = overlay.querySelector("i"), txt = overlay.querySelector(".bp-txt");
+
+  function step(){
+    const end = Math.min(count, idx + BULK_STREAM_CHUNK);
+    const batch = [];
+    for(; idx < end; idx++){
+      if(troll){ trollDrop(c, true); continue; }
+      const win = makeItem(c, pickTier(c));
+      if(rollClover()) cloverHits++;
+      const code = rollCodeDrop(true);
+      if(code){ win.codeDrop = code; codeDrops.push(code); }
+      noteDrop(win); albumRegister(win);
+      batch.push(win);
+    }
+    if(!troll){
+      const pool = batch.concat(keep).sort((a,b)=>numFrom(b.value)-numFrom(a.value));
+      keep.length = 0;
+      for(let i=0;i<Math.min(BULK_KEEP,pool.length);i++) keep.push(pool[i]);
+      const sold = pool.slice(BULK_KEEP);
+      let chunkSold = 0;
+      for(const it of sold){ const price=itemSell(it); state.coins+=price; soldCoins+=price; chunkSold+=price; soldN++; }
+      if(sold.length){
+        state.stats.earned += chunkSold;
+        state.stats.sold += sold.length;
+        trackHappySale(sold);
+        missionTrack("sell", sold.length);
+        missionTrack("sellvalue", chunkSold);
+      }
+    }
+    const pct = Math.round(idx/count*100);
+    if(bar) bar.style.width = pct+"%";
+    if(txt) txt.textContent = fmt(idx)+" / "+fmt(count)+" · "+pct+"%";
+    if(idx < count){ setTimeout(step, 0); return; }
+
+    overlay.remove();
+    if(cloverHits){
+      missionTrack("clover", cloverHits);
+      if(typeof updateClover === "function") updateClover();
+      sfxClover();
+      toast("🍀 <b>Koniczyna ×"+cloverHits+"!</b> Wypadła przy MAX-otwieraniu.","good");
+    }
+    if(codeDrops.length){
+      codeDrops.forEach(d=>addCode(d.id, 1));
+      state.stats.codeDrops = numFrom(state.stats.codeDrops) + codeDrops.length;
+      if(typeof renderCodeBadge === "function") renderCodeBadge();
+    }
+    if(!troll && keep.length) state.inv = keep.slice().reverse().concat(state.inv);
+    markDirty(); save({kind:"drop"}); checkAchievements();
+    spinning = false;
+    done({wins:keep.slice(0,BULK_RESULT_CARDS), kept:keep.length, soldN, soldCoins});
+  }
+  setTimeout(step, 0);
+}
+
 function openMany(caseId, requested){
   if(spinning) return;
   const c = CASES.find(x=>x.id===caseId);
@@ -2385,6 +2623,20 @@ function openMany(caseId, requested){
   missionTrack("spend", cost);
   if(cloverActive()) missionTrack("cloveropen", count);
 
+  /* MAX powyżej limitu licuje się w tle z paskiem postępu — bez zawieszania gry. */
+  if(count > BULK_HARD_CAP){
+    spinning = true;
+    if(useStock) toast("📦 <b>"+useStock+"×</b> z zapasu — bez opłat","good");
+    if(freeN) toast("🎟️ <b>Kupony!</b> " + freeN + " z " + rest + " płatnych otwarć darmowych","good");
+    bulkMaxStream(c, count, stream=>{
+      toast("⚡ <b>MAX:</b> otwarto "+fmt(count)+" skrzynek · w ekwipunku "+fmt(stream.kept)
+        +" najlepszych · sprzedano "+fmt(stream.soldN)+" za 🪙 "+fmtShort(stream.soldCoins),"good");
+      renderBalance(); renderShop(); renderBots(); renderInv(); renderStats();
+      showResult(stream.wins, false);
+    });
+    return;
+  }
+
   let wins;
   if(c.troll){
     wins = [];
@@ -2395,10 +2647,9 @@ function openMany(caseId, requested){
   } else {
     wins = bulkItemDrops(c, count).wins;
   }
-
   if(useStock) toast("📦 <b>"+useStock+"×</b> z zapasu — bez opłat","good");
   if(freeN) toast("🎟️ <b>Kupony!</b> " + freeN + " z " + rest + " płatnych otwarć darmowych","good");
-  renderBalance(); renderShop(); renderBots(); renderInv();
+  renderBalance(); renderShop(); renderBots(); renderInv(); renderStats();
   showResult(wins, false);
 }
 

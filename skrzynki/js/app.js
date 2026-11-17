@@ -4,7 +4,7 @@
    🧭 PREFERENCJE INTERFEJSU — ostatni widok i filtry po odświeżeniu
    ======================================================================= */
 const UI_PREF_KEY = "caseOpenerUi_v1";
-const UI_VIEWS = ["shop","bots","market","codes","inv","stats","up","battle","album","daily","casino","events"];
+const UI_VIEWS = ["shop","bots","market","codes","inv","stats","up","battle","album","daily","casino","events","season"];
 function readUiPrefs(){
   try{
     const raw = localStorage.getItem(UI_PREF_KEY);
@@ -50,6 +50,7 @@ setInterval(()=>{ if(dirty) save(); }, 4000);
 setInterval(()=>{
   checkDailyRoll();      // 🎯 misje przechodzą na nowy dzień też bez przeładowania
   checkWeeklyRoll();     // 📅 a tygodniowe na nowy tydzień co 7 dni
+  seasonEnsure();        // 🏆 nowy sezon co 8 tygodni (tylko ścieżka się resetuje)
   updateDailyHint();
   updateWeeklyHint();
   // siatka bezpieczeństwa: jeśli zapis zniknął/uszkodził się, odbudowujemy go
@@ -107,6 +108,7 @@ const BOSSES = [
 
 let activeBossFight = null;
 let bossViewMode = "quick";
+let bossRushRun = null;   // {step, wins} — tylko w sesji, nie w zapisie
 
 /* 👑 KAMPANIA BOSSÓW — rozdziały, etapy i modyfikatory.
    Królowa Góry jest pierwszym rozdziałem; dalej otwiera się Otchłań. */
@@ -130,12 +132,124 @@ const BOSS_CAMPAIGN = [
     ]
   }
 ];
+/* 🩸 Dusze Bossów i 🔑 Klucze Żniwiarza — waluta i surowiec tylko z bossów. */
+const BOSS_SOUL_KEY_CHANCE = 0.18;
+const BOSS_PERK_DROP_MULT = 1.25;
+function bossSoulReward(f){
+  const chapter = f.campaign ? Math.min(5, f.campaign.chapterIndex||1) : 1;
+  return 1 + chapter + (f.rush ? 2 : 0) + (state.bossPerk ? 1 : 0);
+}
+function bossKeyReward(b, f){
+  let n = (b.id === "boss_reaper" || Math.random() < BOSS_SOUL_KEY_CHANCE) ? 1 : 0;
+  if(f.rush && f.rushFinal) n += 1;
+  return n;
+}
+const BOSS_SHOP = [
+  {id:"suit", icon:"🧳", name:"Walizka Reliktów", desc:"Rzadka walizka z bazaru — gwarantowana, bez reputacji.", souls:10, keys:1},
+  {id:"season", icon:"🏆", name:"Skrzynka Sezonowa", desc:"Unikalne skiny z sezonu. Wymaga ukończenia rozdziału 5.", souls:15, keys:1, gate:true},
+  {id:"reroll", icon:"🔄", name:"Reroll misji tygodniowej", desc:"Zamienia jedną nieodebraną misję tygodniową bez limitu.", souls:5, keys:0},
+  {id:"perk", icon:"👑", name:"Perk: Władca Areny", desc:"Trwale: +1 🩸 za każdego bossa i +25% wartości jego łupu.", souls:25, keys:2}
+];
+function bossGatePassed(){
+  if(!state.bossCampaign || !state.bossCampaign.cleared) return false;
+  const ch5 = BOSS_CAMPAIGN[4];
+  return !!ch5 && ch5.stages.every(st=>state.bossCampaign.cleared[st.id]);
+}
+
 const BOSS_MOD_INFO = {
   limit:{icon:"⏳", name:"Limit tur", desc:"Musisz pokonać bossa w ograniczonej liczbie tur."},
   reversed:{icon:"🔀", name:"Odwrócone szczęście", desc:"Ciężkie ciosy mają tylko 25% szans, a boss częściej używa specjalnych ataków."},
   noheal:{icon:"🚫", name:"Zakaz ulepszeń", desc:"Mikstura i regeneracja są zablokowane."},
-  bossRage:{icon:"🔥", name:"Szał bossa", desc:"Boss zadaje o 30% więcej obrażeń."}
+  bossRage:{icon:"🔥", name:"Szał bossa", desc:"Boss zadaje o 30% więcej obrażeń."},
+  armor:{icon:"🛡️", name:"Pancerz bossa", desc:"Twoje obrażenia są zmniejszone o 40%."},
+  drain:{icon:"🩸", name:"Wampiryzm", desc:"Boss leczy się 15% zadanych Ci obrażeń."},
+  curse:{icon:"☠️", name:"Klątwa", desc:"Twoje maksymalne HP i atak są obniżone."},
+  overload:{icon:"⚡", name:"Przeładowanie", desc:"Boss częściej używa wzmocnionych skillów."},
+  noCrit:{icon:"💫", name:"Stępione ostrze", desc:"Krytyki są prawie niemożliwe, a ciężki cios jest słaby."}
 };
+/* =======================================================================
+   👑 ROZDZIAŁY 3–10 — kampania rośnie do 30 etapów.
+   Każdy rozdział ma własny mnożnik HP/ataku/stawki i coraz bardziej
+   brutalne modyfikatory. Ostatnie rozdziały skalują się też do realnej
+   siły gracza (monety + wartość skinów), więc nawet gracz z gigantycznym
+   kontem nie wygra ich jednym kliknięciem.
+   ======================================================================= */
+const CAMPAIGN_EXTRA = [
+  {name:"Sanktuarium",       icon:"🕯️", color:"#f59e0b", hp:14,   atk:1.5, stake:40,      rew:45,      bonus:2e9,   mods:[["limit"],["reversed"],["bossRage"]], rounds:[9,0,0]},
+  {name:"Pustynia Popiołu",  icon:"🏜️", color:"#b45309", hp:32,   atk:1.9, stake:150,     rew:180,     bonus:8e9,   mods:[["bossRage","armor"],["limit","reversed"],["noheal","drain"]], rounds:[0,8,0]},
+  {name:"Lodowy Piekielnik", icon:"❄️", color:"#38bdf8", hp:70,   atk:2.3, stake:600,     rew:800,     bonus:3e10,  mods:[["armor","curse"],["reversed","overload"],["limit","bossRage","drain"]], rounds:[0,0,7]},
+  {name:"Wulkaniczny Trzon", icon:"🌋", color:"#ef4444", hp:150,  atk:2.8, stake:2500,    rew:3500,    bonus:1.2e11, mods:[["bossRage","overload"],["noheal","armor"],["limit","reversed","curse"]], rounds:[0,0,7]},
+  {name:"Niebiańska Otchłań",icon:"🌌", color:"#818cf8", hp:320,  atk:3.4, stake:10000,   rew:15000,   bonus:5e11,  mods:[["reversed","drain","curse"],["limit","bossRage","armor"],["noheal","overload","noCrit"]], rounds:[0,8,0]},
+  {name:"Czaszka Wszechświata",icon:"💀",color:"#a855f7", hp:700, atk:4.0, stake:50000,   rew:80000,   bonus:2e12,  mods:[["armor","drain","overload"],["limit","reversed","noCrit"],["bossRage","curse","noheal"]], rounds:[0,7,0]},
+  {name:"Ostatni Sąd",       icon:"⚖️", color:"#f43f5e", hp:1500, atk:4.8, stake:250000,  rew:400000,  bonus:1e13,  mods:[["limit","bossRage","armor","drain"],["reversed","noheal","overload","curse"],["limit","reversed","noheal","bossRage","armor","drain","curse","overload","noCrit"]], rounds:[8,0,6]},
+  {name:"Tron Ciemności",    icon:"♾️", color:"#ff2d55", hp:3500, atk:5.5, stake:1200000, rew:2000000, bonus:5e13,  mods:[["armor","drain","curse","overload"],["limit","reversed","noheal","bossRage","noCrit"],["limit","reversed","noheal","bossRage","armor","drain","curse","overload","noCrit"]], rounds:[0,7,6]}
+];
+const CAMPAIGN_BOSS_IDS = ["boss_golem","boss_dragon","boss_reaper"];
+const CAMPAIGN_CASE_IDS = ["smuggler","sticker","gambler","reaper"];
+const CAMPAIGN_STAGE_TITLES = ["Strażnik","Władca","Finał"];
+CAMPAIGN_EXTRA.forEach((cfg, i)=>{
+  const chapterNo = i + 3;
+  const stages = cfg.mods.map((mods, s)=>{
+    const modsTxt = mods.map(id=>bossModInfo(id).name).join(" + ");
+    return {
+      id:"c"+chapterNo+"s"+(s+1),
+      bossId:CAMPAIGN_BOSS_IDS[s % CAMPAIGN_BOSS_IDS.length],
+      name:cfg.name+": "+CAMPAIGN_STAGE_TITLES[s],
+      desc:"Rozdział "+chapterNo+". Modyfikatory: "+modsTxt+".",
+      mods:mods.slice(),
+      /* limit tur jest hojny — walka trwa dziesiątki rund */
+      maxRounds:cfg.rounds[s] ? 200 : 0,
+      bonus:Math.round(cfg.bonus * (1 + s*0.6)),
+      caseId:CAMPAIGN_CASE_IDS[(chapterNo + s) % CAMPAIGN_CASE_IDS.length],
+      hpMult:cfg.hp * (1 + s*0.35),
+      atkMult:cfg.atk,
+      stakeMult:cfg.stake,
+      rewardMult:cfg.rew
+    };
+  });
+  BOSS_CAMPAIGN.push({
+    id:"chapter_"+chapterNo, name:cfg.name, icon:cfg.icon, color:cfg.color,
+    desc:"Rozdział "+chapterNo+" z 10. "+cfg.name+". Bossowie znacznie silniejsi niż w poprzednich rozdziałach.",
+    stages
+  });
+});
+BOSS_CAMPAIGN.forEach((ch,i)=>{ ch.index = i+1; ch.stages.forEach(st=>{ st.chapterIndex = i+1; }); });
+
+/* Dynamiczna skala trudności — late game nie jest jednym kliknięciem.
+   Bazowa siła rozdziału rośnie wykładniczo, a nadwyżka majątku gracza
+   jest w dużej mierze kompensowana (ale nie całkiem — progres ma sens). */
+function bossStagePowerScale(chapterIndex, p){
+  if(chapterIndex <= 2) return 1;   // pierwsze rozdziały zostają przyjazne
+  const ref = 120000 * Math.pow(1.85, Math.max(0, chapterIndex-1));
+  const raw = Math.max(0.2, Math.min(60, p.dmg / ref));
+  return Math.pow(raw, 0.82);
+}
+function bossScaledBoss(base, stage, chapterIndex, p){
+  const scale = stage ? bossStagePowerScale(chapterIndex, p) : 1;
+  const hpMult = stage && stage.hpMult ? stage.hpMult : 1;
+  const atkMult = stage && stage.atkMult ? stage.atkMult : 1;
+  const stakeMult = stage && stage.stakeMult ? stage.stakeMult : 1;
+  const rewardMult = stage && stage.rewardMult ? stage.rewardMult : 1;
+  /* Minimalna liczba tur walki rośnie z rozdziałem — majątek nie pozwala
+     zabić bossa jednym kliknięciem. */
+  const targetHits = stage ? Math.min(60, 6 + chapterIndex * 4) : 0;
+  const hpByPower = targetHits ? p.dmg * targetHits : 0;
+  const hpBase = base.hp * hpMult * scale;
+  const hp = Math.max(1, Math.floor(targetHits ? Math.min(hpBase, hpByPower * 1.15) : hpBase));
+  /* stawka rośnie z rozdziałem, ale nigdy nie zabiera więcej niż 8% kieszeni
+     — dzięki temu późne rozdziały są trudne walką, a nie samym wpisowym */
+  const rawStake = base.stake * stakeMult;
+  const stake = Math.max(1, Math.floor(Math.min(rawStake, Math.max(base.stake, numFrom(state.coins) * 0.08))));
+  const rawReward = base.reward * rewardMult;
+  const reward = Math.floor(Math.min(rawReward, Math.max(base.reward, stake * 5)));
+  return Object.assign({}, base, {
+    hp,
+    attackPower: Math.min(0.9, base.attackPower * atkMult),
+    stake,
+    reward,
+    drop: Object.assign({}, base.drop, { value: Math.floor(Math.min(base.drop.value * rewardMult, reward * 2)) })
+  });
+}
 function bossCampaignStage(stageId){
   for(const ch of BOSS_CAMPAIGN){
     const st = ch.stages.find(x=>x.id===stageId);
@@ -232,6 +346,81 @@ function closeBossModal() {
   activeBossFight = null;
 }
 
+function bossShopBuy(id){
+  const it = BOSS_SHOP.find(x=>x.id===id);
+  if(!it) return;
+  if(numFrom(state.bossSouls) < it.souls || numFrom(state.bossKeys) < it.keys){ sfxErr(); toast("Za mało 🩸 / 🔑","bad"); return; }
+  if(it.gate && !bossGatePassed()){ sfxErr(); toast("Najpierw ukończ rozdział 5 kampanii.","bad"); return; }
+  if(it.id==="perk" && state.bossPerk){ sfxErr(); return; }
+  state.bossSouls -= it.souls;
+  state.bossKeys -= it.keys;
+  if(it.id==="suit" || it.id==="season"){
+    const cid = it.id==="suit" ? "suit_relics" : "season_limited";
+    state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+    state.caseStock[cid] = numFrom(state.caseStock[cid]) + 1;
+    const c = CASES.find(x=>x.id===cid);
+    toast(`🛒 Kupiono <b>${c ? c.name : cid}</b> — czeka w zapasie/Ekwipunku.`,"good");
+  } else if(it.id==="reroll"){
+    let done = false;
+    if(state.weekly && Array.isArray(state.weekly.list) && typeof mkWeekMission === "function"){
+      const idx = state.weekly.list.findIndex(m=>!m.claimed);
+      if(idx>=0){
+        const old = state.weekly.list[idx];
+        state.weekly.list[idx] = mkWeekMission(old.kind, old.diff);
+        done = true;
+        if(typeof renderDaily === "function") renderDaily();
+      }
+    }
+    if(!done){ state.bossSouls += it.souls; state.bossKeys += it.keys; sfxErr(); toast("Nie ma misji do wymiany — zwracam surowce.","bad"); return; }
+    toast("🔄 Misja tygodniowa wymieniona za duszę bossa.","good");
+  } else if(it.id==="perk"){
+    state.bossPerk = true;
+    toast("👑 <b>Władca Areny</b> aktywny — więcej dusz i cenniejszy łup.","good");
+  }
+  sfxCoin(); markDirty(); save(); renderBalance(); renderShop(); renderStats(); renderBossList();
+}
+
+function bossShopHTML(){
+  const souls = numFrom(state.bossSouls), keys = numFrom(state.bossKeys);
+  const gate = bossGatePassed();
+  const items = BOSS_SHOP.map(it=>{
+    const can = souls >= it.souls && keys >= it.keys && (!it.gate || gate) && !(it.id==="perk" && state.bossPerk);
+    const owned = it.id==="perk" && state.bossPerk;
+    return `<div class="bsh-item${owned?" owned":""}">
+      <div class="bsh-ico">${it.icon}</div>
+      <div class="bsh-main"><b>${it.name}</b><small>${it.desc}</small></div>
+      <div class="bsh-cost">🩸 ${it.souls}${it.keys ? " · 🔑 "+it.keys : ""}</div>
+      <button class="mini-btn" data-bossshop="${it.id}" ${can?"":"disabled"}>${owned?"✔":it.gate&&!gate?"🔒 R5":can?"Kup":"—"}</button>
+    </div>`;
+  }).join("");
+  return `<div class="boss-shop">
+    <div class="bsh-head"><span>🩸 SKLEP BOSSÓW</span><div><b>🩸 ${fmt(souls)}</b> dusz · <b>🔑 ${fmt(keys)}</b> kluczy</div></div>
+    ${items}
+  </div>`;
+}
+
+function renderBossRushHTML(){
+  const best = numFrom(state.stats.bossRushBest);
+  const clears = numFrom(state.stats.bossRushClears);
+  const souls = numFrom(state.bossSouls), keys = numFrom(state.bossKeys);
+  const perk = !!state.bossPerk;
+  const steps = BOSSES.map((b,i)=>`<span class="rush-step">${i+1}. ${b.icon} ${b.name}</span>`).join("");
+  return `
+    <div class="boss-rush-panel">
+      <div class="br-head"><span>🔥</span><div><b>BOSS RUSH</b><small>3 bossów pod rząd · rosnąca trudność · nagroda tylko za pełne przejście</small></div></div>
+      <div class="br-steps">${steps}</div>
+      <div class="br-meta">
+        <span>Najlepszy wynik: <b>${best} / 3</b></span>
+        <span>Full clearów: <b>${clears}</b></span>
+        <span>Dusze: <b>🩸 ${fmt(souls)}</b></span>
+        <span>Klucze: <b>🔑 ${fmt(keys)}</b></span>
+      </div>
+      <div class="br-note">Każdy kolejny boss ma więcej HP i mocniejszy atak. Porażka przerywa bieg — ale dusze z wygranych walk zostają.</div>
+      <button class="btn primary br-start" data-bossrush-start>🔥 Rozpocznij Boss Rush</button>
+      ${perk ? '<div class="br-perk">✔ Perk „Władca Areny" aktywny — +1 🩸 i +25% wartości łupu z bossów</div>' : ""}
+    </div>`;
+}
+
 function renderBossList() {
   if(typeof hideRecordFx === "function") hideRecordFx();
   const title = $("#bossModalTitle");
@@ -242,7 +431,17 @@ function renderBossList() {
   const tabs = `<div class="boss-mode-tabs">
     <button class="boss-mode-tab ${bossViewMode==="quick"?"active":""}" data-bossmode="quick">⚔️ Szybka walka</button>
     <button class="boss-mode-tab ${bossViewMode==="campaign"?"active":""}" data-bossmode="campaign">👑 Kampania</button>
+    <button class="boss-mode-tab ${bossViewMode==="rush"?"active":""}" data-bossmode="rush">🔥 Boss Rush</button>
   </div>`;
+
+  if (bossViewMode === "rush") {
+    body.innerHTML = tabs + renderBossRushHTML();
+    body.querySelectorAll("[data-bossmode]").forEach(btn => {
+      btn.addEventListener("click", () => { bossViewMode = btn.dataset.bossmode; renderBossList(); });
+    });
+    body.querySelector("[data-bossrush-start]")?.addEventListener("click", startBossRush);
+    return;
+  }
 
   if (bossViewMode === "campaign") {
     body.innerHTML = tabs + bossCampaignHTML();
@@ -271,6 +470,7 @@ function renderBossList() {
         Kampania dodaje <b>modyfikatory</b> i dodatkowe nagrody.
       </div>
     </div>
+    ${bossShopHTML()}
     <div class="boss-select-grid">
   `;
 
@@ -314,19 +514,46 @@ function renderBossList() {
       if (bid) startBossFight(bid);
     });
   });
+  body.querySelectorAll("[data-bossshop]").forEach(btn => {
+    btn.addEventListener("click", () => bossShopBuy(btn.dataset.bossshop));
+  });
 }
 
-function startBossFight(bossId, campaignStage) {
-  const b = BOSSES.find(x => x.id === bossId);
-  if (!b) return;
+function startBossRush(){
+  const totalStake = BOSSES.reduce((a,b)=>a+b.stake,0);
+  if(state.coins < totalStake){
+    sfxErr();
+    toast(`Boss Rush wymaga 🪙 ${fmt(totalStake)} na 3 walki.`, "bad");
+    return;
+  }
+  bossRushRun = {step:0, wins:0};
+  startBossFight(BOSSES[0].id, null, {rush:true, step:0});
+}
+
+function startBossFight(bossId, campaignStage, opts) {
+  opts = opts || {};
+  const baseBoss = BOSSES.find(x => x.id === bossId);
+  if (!baseBoss) return;
   if (campaignStage) bossViewMode = "campaign";
+  if (opts.rush) bossViewMode = "rush";
+  const p = calcPlayerCombatStats();
+  const chapterIndex = campaignStage ? (campaignStage.chapterIndex || 1) : 0;
+  let b = bossScaledBoss(baseBoss, campaignStage, chapterIndex, p);
+  const rushStep = Math.max(0, numFrom(opts.step));
+  if (opts.rush){
+    b = Object.assign({}, b, {
+      hp: Math.floor(b.hp * (1 + 0.4*rushStep)),
+      attackPower: Math.min(0.95, b.attackPower * (1 + 0.18*rushStep)),
+      reward: Math.floor(b.reward * (1 + 0.5*rushStep))
+    });
+  }
   if (state.coins < b.stake) {
     sfxErr();
     toast(`Za mało monet na walkę z ${b.icon} ${b.name} (🪙 ${fmt(b.stake)})`, "bad");
     return;
   }
 
-  // Pobranie wpisowego
+  // Pobranie wpisowego (już przeskalowanego)
   state.coins -= b.stake;
   state.stats.spent += b.stake;
   state.stats.battles++;
@@ -335,22 +562,28 @@ function startBossFight(bossId, campaignStage) {
   renderBalance();
   save();
 
-  const p = calcPlayerCombatStats();
   const mods = campaignStage && Array.isArray(campaignStage.mods) ? campaignStage.mods.slice() : [];
   const modText = mods.length
     ? " Modyfikatory: " + mods.map(id=>{ const m=bossModInfo(id); return m.icon+" "+m.name; }).join(", ") + "."
     : "";
+  /* ☠️ klątwa obniża parametr graczowi jeszcze przed walką */
+  const cursed = mods.indexOf("curse") >= 0;
+  const playerMaxHp = cursed ? Math.max(1, Math.floor(p.maxHp * 0.75)) : p.maxHp;
+  const playerDmg = cursed ? Math.max(1, Math.floor(p.dmg * 0.85)) : p.dmg;
   activeBossFight = {
     boss: b,
     bossHp: b.hp,
     bossMaxHp: b.hp,
-    playerHp: p.maxHp,
-    playerMaxHp: p.maxHp,
-    playerDmg: p.dmg,
+    playerHp: playerMaxHp,
+    playerMaxHp,
+    playerDmg,
     round: 1,
     defending: false,
     critReady: false,
     campaign: campaignStage || null,
+    rush: opts.rush === true,
+    rushStep,
+    rushFinal: opts.rush === true && rushStep >= BOSSES.length-1,
     mods,
     maxRounds: campaignStage && campaignStage.maxRounds ? campaignStage.maxRounds : 0,
     log: [
@@ -488,9 +721,9 @@ function handlePlayerAction(actionType) {
     logText = `<span class="player-hit">🗡️ Wyprowadzasz atak i zadajesz <b>${fmt(playerDamage)}</b> obrażeń!</span>`;
     sfxTick();
   } else if (actionType === "heavy") {
-    const heavyChance = bossMod(f, "reversed") ? 0.25 : 0.75;
+    const heavyChance = bossMod(f, "noCrit") ? 0.4 : bossMod(f, "reversed") ? 0.25 : 0.75;
     if (Math.random() < heavyChance) {
-      const variance = 1.6 + Math.random() * 0.4;
+      const variance = bossMod(f, "noCrit") ? (1.1 + Math.random() * 0.2) : (1.6 + Math.random() * 0.4);
       playerDamage = Math.floor(f.playerDmg * variance);
       logText = `<span class="special-action">💥 Potężne uderzenie krytyczne za <b>${fmt(playerDamage)}</b> obrażeń!</span>`;
       sfxCoin();
@@ -512,6 +745,10 @@ function handlePlayerAction(actionType) {
     sfxClover();
   }
 
+  if (playerDamage > 0 && bossMod(f, "armor")) {
+    playerDamage = Math.floor(playerDamage * 0.6);
+    logText = logText.replace("</b>", "</b> <small>(🛡️ pancerz)</small>");
+  }
   if (playerDamage > 0) {
     f.bossHp = Math.max(0, f.bossHp - playerDamage);
     const bossCard = $("#bossCardSide");
@@ -545,20 +782,29 @@ function handleBossTurn() {
   let finalDmg = rawBossDmg;
 
   let bossLog = "";
-  const isSpecial = Math.random() < (bossMod(f, "reversed") ? 0.5 : 0.3);
+  const isSpecial = Math.random() < (bossMod(f, "overload") ? 0.55 : bossMod(f, "reversed") ? 0.5 : 0.3);
 
   if (f.defending) {
     finalDmg = Math.floor(finalDmg * 0.4);
     bossLog = `<span class="boss-hit">🛡️ Zablokowano cios bossa! Otrzymujesz tylko <b>${fmt(finalDmg)}</b> obrażeń.</span>`;
   } else if (isSpecial) {
-    finalDmg = Math.floor(finalDmg * 1.4);
+    finalDmg = Math.floor(finalDmg * (bossMod(f, "overload") ? 1.65 : 1.4));
     bossLog = `<span class="special-action">🔥 ${b.name} używa potężnego skilla i uderza za <b>${fmt(finalDmg)}</b> obrażeń!</span>`;
     sfxErr();
   } else {
     bossLog = `<span class="boss-hit">⚔️ ${b.name} atakuje i zadaje Ci <b>${fmt(finalDmg)}</b> obrażeń.</span>`;
   }
 
+  /* nawet najsilniejszy skill nie zabija w jednej turze — zawsze min. 3 ciosy */
+  finalDmg = Math.min(finalDmg, Math.max(1, Math.floor(f.playerMaxHp * 0.45)));
   f.playerHp = Math.max(0, f.playerHp - finalDmg);
+  if (bossMod(f, "drain") && finalDmg > 0 && f.bossHp < f.bossMaxHp) {
+    const heal = Math.min(f.bossMaxHp - f.bossHp, Math.floor(finalDmg * 0.15));
+    if (heal > 0) {
+      f.bossHp += heal;
+      bossLog += ` <span class="status">🩸 ${b.name} leczy się <b>${fmt(heal)} HP</b>.</span>`;
+    }
+  }
   f.round++;
   f.log.push(bossLog);
   updateArenaBars();
@@ -613,6 +859,14 @@ function handleBossVictory() {
   state.bossKills = state.bossKills || {};
   state.bossKills[b.id] = true;
 
+  /* 🩸 🔑 unikalne surowce — tylko z bossów */
+  const souls = bossSoulReward(f);
+  const keys = bossKeyReward(b, f);
+  state.bossSouls = numFrom(state.bossSouls) + souls;
+  state.bossKeys = numFrom(state.bossKeys) + keys;
+  state.stats.bossSoulsEarned = numFrom(state.stats.bossSoulsEarned) + souls;
+  state.stats.bossKeysFound = numFrom(state.stats.bossKeysFound) + keys;
+
   let campaignBonus = 0, campaignCase = null, campaignFirst = false;
   if (f.campaign) {
     if (!state.bossCampaign || typeof state.bossCampaign !== "object") state.bossCampaign = { cleared:{} };
@@ -649,7 +903,7 @@ function handleBossVictory() {
       n: b.drop.n,
       art: b.drop.art || "knife",
       tier: "relic",
-      value: b.drop.value,
+      value: Math.round(b.drop.value * (state.bossPerk ? BOSS_PERK_DROP_MULT : 1)),
       ts: Date.now()
     };
     addToInv(dropItem);
@@ -685,6 +939,51 @@ function handleBossVictory() {
     const rec = recordDropFor([dropItem]);
     if(rec) setTimeout(()=>{ if($("#bossOverlay").classList.contains("show")) showRecordFx(rec); }, 900);
   }
+  toast(`👹 <b>${b.name} pokonany!</b> +${souls} 🩸${keys ? " · +"+keys+" 🔑" : ""}`, "good");
+
+  /* 🔥 Boss Rush — międzyetap albo nagroda za pełne przejście */
+  let rushBonusCoins = 0, rushBonusSouls = 0, rushBonusKeys = 0, rushCase = null;
+  if (f.rush && bossRushRun) {
+    bossRushRun.wins++;
+    const reached = bossRushRun.wins;
+    state.stats.bossRushBest = Math.max(numFrom(state.stats.bossRushBest), reached);
+    if (!f.rushFinal) {
+      const next = BOSSES[f.rushStep+1];
+      const rb = $("#bossModalBody");
+      if (rb) {
+        rb.innerHTML = `<div class="rush-intermission">
+          <div class="ri-ico">🔥</div>
+          <h3>BOSS ${reached} / 3 POKONANY!</h3>
+          <p>${b.icon} ${b.name} poległ. Następny: <b>${next.icon} ${next.name}</b> — trudniejszy i groźniejszy.</p>
+          <div class="ri-gain">🩸 +${souls}${keys ? " · 🔑 +"+keys : ""} · 🪙 +${fmt(b.reward)}</div>
+          <button class="btn primary" id="rushNext">⚔️ Walcz dalej</button>
+          <button class="btn" id="rushQuit">Zakończ bieg</button>
+        </div>`;
+        $("#rushNext")?.addEventListener("click", ()=>startBossFight(next.id, null, {rush:true, step:f.rushStep+1}));
+        $("#rushQuit")?.addEventListener("click", ()=>{ bossRushRun=null; renderBossList(); });
+      }
+      markDirty(); save();
+      return;
+    }
+    /* FULL CLEAR */
+    rushBonusCoins = Math.floor(BOSSES.reduce((a,x)=>a+x.reward,0) * 0.5);
+    rushBonusSouls = 8;
+    rushBonusKeys = 1;
+    state.coins += rushBonusCoins;
+    state.stats.earned = numFrom(state.stats.earned) + rushBonusCoins;
+    state.bossSouls = numFrom(state.bossSouls) + rushBonusSouls;
+    state.bossKeys = numFrom(state.bossKeys) + rushBonusKeys;
+    state.stats.bossSoulsEarned = numFrom(state.stats.bossSoulsEarned) + rushBonusSouls;
+    state.stats.bossKeysFound = numFrom(state.stats.bossKeysFound) + rushBonusKeys;
+    state.stats.bossRushClears = numFrom(state.stats.bossRushClears) + 1;
+    state.caseStock = (state.caseStock && typeof state.caseStock === "object" && !Array.isArray(state.caseStock)) ? state.caseStock : {};
+    state.caseStock.season_limited = numFrom(state.caseStock.season_limited) + 1;
+    rushCase = CASES.find(c=>c.id==="season_limited") || null;
+    bossRushRun = null;
+    sfxWin("special");
+    confetti(["#ffd54a","#f59e0b","#ef4444","#ffffff"]);
+    toast("🔥 <b>BOSS RUSH UKOŃCZONY!</b> +8 🩸 · +1 🔑 · Skrzynka Sezonowa!","good");
+  }
 
   const body = $("#bossModalBody");
   if (body) {
@@ -698,6 +997,8 @@ function handleBossVictory() {
         <div style="font-size:22px;font-weight:900;color:var(--acc);margin:8px 0">
           🪙 +${fmt(b.reward)} monet
         </div>
+        <div class="boss-soul-gain">🩸 +${souls} duszy${keys ? ` &nbsp;·&nbsp; 🔑 +${keys} klucz` : ""}</div>
+        ${rushBonusCoins ? `<div class="boss-rush-win">🔥 FULL RUSH · 🪙 +${fmt(rushBonusCoins)} · 🩸 +${rushBonusSouls} · 🔑 +${rushBonusKeys}${rushCase ? " · 📦 "+esc(rushCase.name) : ""}</div>` : ""}
         ${campaignBonus ? `<div class="boss-campaign-win">👑 Bonus kampanii: <b>🪙 +${fmt(campaignBonus)}</b>${campaignCase ? " + 📦 "+esc(campaignCase.name) : ""}</div>` : ""}
         ${f.campaign && !campaignFirst ? `<div class="muted" style="font-size:11px">Etap powtórzony — bonus kampanii przyznawany jest tylko za pierwsze przejście.</div>` : ""}
         ${dropItem ? `
@@ -728,6 +1029,7 @@ function handleBossDefeat(reason) {
   const reasonText = reason === "limit"
     ? "⏳ Limit tur minął, zanim zdołałeś pokonać bossa."
     : "Twoje punkty zdrowia spadły do zera.";
+  if (f.rush && bossRushRun) bossRushRun = null;
 
   state.battles.unshift({
     win: false,
@@ -763,13 +1065,13 @@ function handleBossDefeat(reason) {
           ${reasonText} Wpisowe w wysokości <b>🪙 ${fmt(b.stake)}</b> przepadło. Wzbogać ekwipunek i spróbuj ponownie!
         </p>
         <div style="display:flex;gap:10px;margin-top:12px">
-          <button class="btn primary" id="bossDefTry">${f.campaign ? "Powtórz etap" : "Spróbuj ponownie"}</button>
+          <button class="btn primary" id="bossDefTry">${f.rush ? "🔥 Nowy Boss Rush" : f.campaign ? "Powtórz etap" : "Spróbuj ponownie"}</button>
           <button class="btn" id="bossDefClose">Zamknij</button>
         </div>
       </div>
     `;
     const retryStage = f.campaign;
-    $("#bossDefTry")?.addEventListener("click", () => retryStage ? startBossFight(retryStage.bossId, retryStage) : renderBossList());
+    $("#bossDefTry")?.addEventListener("click", () => f.rush ? startBossRush() : retryStage ? startBossFight(retryStage.bossId, retryStage) : renderBossList());
     $("#bossDefClose")?.addEventListener("click", () => closeBossModal());
   }
 }

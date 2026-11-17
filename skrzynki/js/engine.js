@@ -39,6 +39,12 @@ function fmtShort(n){
   }
   return neg + fmt(a);
 }
+/* Licznik zawsze z godzinami, minutami i sekundami: 7:23:05. */
+function hms(ms){
+  const s = Math.max(0, Math.ceil(ms/1000));
+  const h = Math.floor(s/3600), m = Math.floor(s%3600/60), sec = s%60;
+  return h+":"+String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+}
 
 /* =======================================================================
    3. GRAFIKA BRONI (wielowarstwowe "skiny")
@@ -401,7 +407,9 @@ function fxEventPrice(f){
    Event efektu podbija wagę wybranego efektu, a każdy aktywny event dodaje
    +FX_EVENT_LUCK do ogólnej szansy na jakikolwiek efekt. */
 function rollFx(tier){
-  const boost = (FX_TIER_BOOST[tier] || 1) * (1 + FXHUNT_STEP*upLvl("fxhunt"));   // ✨ Łowca błysków
+  const boost = (FX_TIER_BOOST[tier] || 1)
+    * (1 + FXHUNT_STEP*upLvl("fxhunt"))    // ✨ Łowca błysków
+    * (1 + MAGNET_STEP*upLvl("magnet"));   // 🧲 Magnes
   const pool = fxEventPool();
   const baseTotal = pool.reduce((a,f)=>a + f.chance*boost, 0);
   const active = fxEventCount();
@@ -467,17 +475,22 @@ let state = {
   stats:{opened:0, spent:0, earned:0, sold:0, knives:0, gloves:0, relics:0, rescues:0, battles:0, battleWins:0, clovers:0, albums:0, fx:{}, fxTotal:0, best:null, cases:{},
     codeDrops:0, codeRedeems:0, codeBuys:0, trollOpened:0, trollWins:0, shopBuys:0, shopSpent:0, shopCases:0, packBuys:0, packSpent:0,
     happyBuys:0, happySells:0, happySaved:0, happyEarned:0,
-    blackBuys:0, blackSpent:0, blackBestDeal:0,
-    bazarContracts:0, bazarWeeks:0, suitcaseOpens:0},
+    blackBuys:0, blackSpent:0, blackBestDeal:0, botDiamonds:0,
+    bazarContracts:0, bazarWeeks:0, suitcaseOpens:0, seasons:0, seasonLevels:0,
+    bossSoulsEarned:0, bossKeysFound:0, bossRushClears:0, bossRushBest:0,
+    wheelSpins:0, wheelWins:0, wheelBest:0, wheelWagered:0, wheelPaid:0},
   up: UP_ZERO(),
   crashUp:{engine:0, stability:0, shield:0},
+  plinkoUp:{balls:0, bins:0, boost:0},
   album:{}, albumClaimed:{}, missions:null, weekly:null, bazarWeekly:null, achievements:{}, cosmetics:{}, bossKills:{}, idleKnifeClaimed:false, idleSec:0,
   caseStock:{}, botSalt:0, botBought:{}, botRefreshAt:0, botUnlocked:{}, botRep:{}, blackBought:{},
   shopSalt:0, shopBought:{}, shopRefreshAt:0, packClaims:{},
   codes:{}, codeRedeemed:{}, codeBought:{},
   dailyCase:null, login:null,
-  fav:{}, botContracts:{}, casinoLeague:null, bossCampaign:{cleared:{}}, eventClaims:{},
-  expBoostUntil:0, upDiscountUntil:0, upDiscountPct:0, freeSpins:0,
+  fav:{}, botContracts:{}, casinoLeague:null, bossCampaign:{cleared:{}}, eventClaims:{}, upgrader:{done:0, wins:0, losses:0, spent:0, bestMult:0},
+  diamonds:0, season:null,
+  bossSouls:0, bossKeys:0, bossPerk:false,
+  expBoostUntil:0, upDiscountUntil:0, upDiscountPct:0, sellBoostUntil:0, sellBoostPct:0, freeSpins:0,
   sound:true, volume:1, fast:false, perfMode:false, fxParticles:true, screenShake:true, uiAnim:true, colorblind:false, reduceMotion:false,
   bonusAt:0, rescueAt:0, cloverUntil:0, fxEvents:{}, battleCase:"start", battleSize:1,
   autoTurbo:false, autoLimit:0, exp:0, rank:1
@@ -558,12 +571,26 @@ function mergeFrom(other){
   m.shopCases = Math.max(numFrom(m.shopCases), numFrom(s.shopCases));
   m.packBuys = Math.max(numFrom(m.packBuys), numFrom(s.packBuys));
   m.packSpent = Math.max(numFrom(m.packSpent), numFrom(s.packSpent));
-  ["happyBuys","happySells","happySaved","happyEarned","blackBuys","blackSpent","blackBestDeal","bazarContracts","bazarWeeks","suitcaseOpens"]
+  ["happyBuys","happySells","happySaved","happyEarned","blackBuys","blackSpent","blackBestDeal","botDiamonds","bazarContracts","bazarWeeks","suitcaseOpens","bossSoulsEarned","bossKeysFound","bossRushClears","bossRushBest","wheelSpins","wheelWins","wheelWagered","wheelPaid"]
     .forEach(k=>{ m[k] = Math.max(numFrom(m[k]), numFrom(s[k])); });
+  m.wheelBest = Math.max(Number(m.wheelBest)||0, Number(s.wheelBest)||0); // mnożnik zmiennoprzecinkowy
+  const ou = other.stats && other.stats.upgrader ? other.stats.upgrader : null;
+  if(ou){
+    m.upgrader = m.upgrader || {done:0,wins:0,losses:0,spent:0,bestMult:0};
+    ["done","wins","losses","spent","bestMult"].forEach(k=>{ m.upgrader[k] = Math.max(numFrom(m.upgrader[k]), numFrom(ou[k])); });
+  }
   /* ⚙️ ulepszenia Crash — przy dwóch kartach zostaje wyższy poziom */
   const ocu = normalizeCrashUp(other.crashUp);
   state.crashUp = normalizeCrashUp(state.crashUp);
   CRASH_UP_KEYS.forEach(k=>{ state.crashUp[k] = Math.max(state.crashUp[k], ocu[k]); });
+  const opu = other.plinkoUp && typeof other.plinkoUp === "object" ? other.plinkoUp : {};
+  state.plinkoUp = state.plinkoUp || {balls:0,bins:0,boost:0};
+  ["balls","bins","boost"].forEach(k=>{ state.plinkoUp[k] = Math.max(numFrom(state.plinkoUp[k]), numFrom(opu[k])); });
+  state.diamonds = Math.max(numFrom(state.diamonds), numFrom(other.diamonds));
+  state.bossSouls = Math.max(numFrom(state.bossSouls), numFrom(other.bossSouls));
+  state.bossKeys = Math.max(numFrom(state.bossKeys), numFrom(other.bossKeys));
+  state.bossPerk = state.bossPerk || other.bossPerk === true;
+  if(typeof seasonMerge === "function") seasonMerge(other.season);
   const osb = (other.shopBought && typeof other.shopBought === "object" && !Array.isArray(other.shopBought)) ? other.shopBought : {};
   state.shopBought = (state.shopBought && typeof state.shopBought === "object" && !Array.isArray(state.shopBought)) ? state.shopBought : {};
   Object.keys(osb).forEach(k=>{ state.shopBought[k] = Math.max(numFrom(state.shopBought[k]), numFrom(osb[k])); });
@@ -604,6 +631,8 @@ function mergeFrom(other){
   state.expBoostUntil = Math.max(numFrom(state.expBoostUntil), numFrom(other.expBoostUntil));
   state.upDiscountUntil = Math.max(numFrom(state.upDiscountUntil), numFrom(other.upDiscountUntil));
   state.upDiscountPct = Math.max(numFrom(state.upDiscountPct), numFrom(other.upDiscountPct));
+  state.sellBoostUntil = Math.max(numFrom(state.sellBoostUntil), numFrom(other.sellBoostUntil));
+  state.sellBoostPct = Math.max(numFrom(state.sellBoostPct), numFrom(other.sellBoostPct));
   state.freeSpins = Math.max(numFrom(state.freeSpins), numFrom(other.freeSpins));
   /* 🏆 liga kasyna — przy dwóch oknach zostaje wyższy wynik */
   if(other.casinoLeague && typeof other.casinoLeague === "object"){
@@ -702,10 +731,16 @@ function mergeFrom(other){
   }
   const ol = other.login;
   if(ol && typeof ol.last === "string"){
+    const ot = Math.max(0, numFrom(ol.total !== undefined ? ol.total : ol.streak));
+    const ob = Math.max(ot, numFrom(ol.best));
+    const om = [7,14,30].reduce((a,d)=>ot>=d?d:a, 0);
     if(!state.login || !state.login.last || ol.last > state.login.last){
-      state.login = {last:ol.last, streak:Math.max(0,Math.min(7,numFrom(ol.streak)))};
+      state.login = {last:ol.last, streak:Math.max(0,Math.min(7,numFrom(ol.streak))), total:ot, best:ob, milestone:Math.max(om, numFrom(ol.milestone))};
     } else if(ol.last === state.login.last){
       state.login.streak = Math.max(numFrom(state.login.streak), Math.max(0,Math.min(7,numFrom(ol.streak))));
+      state.login.total = Math.max(numFrom(state.login.total), ot);
+      state.login.best = Math.max(numFrom(state.login.best), ob);
+      state.login.milestone = Math.max(numFrom(state.login.milestone), om, numFrom(ol.milestone));
     }
   }
   return added;
@@ -766,7 +801,7 @@ function snapshot(){
   return { v:3, tab:TAB_ID, rev:saveRev, ts:Date.now(),
     coins:state.coins, inv:state.inv, recent:state.recent, stats:state.stats,
     battles:state.battles, battleCase:state.battleCase, battleSize:state.battleSize,
-    up:state.up, crashUp:normalizeCrashUp(state.crashUp),
+    up:state.up, crashUp:normalizeCrashUp(state.crashUp), plinkoUp:state.plinkoUp || {balls:0,bins:0,boost:0},
     sound:state.sound, volume:state.volume, fast:state.fast,
     perfMode:state.perfMode, fxParticles:state.fxParticles,
     screenShake:state.screenShake, uiAnim:state.uiAnim,
@@ -774,6 +809,8 @@ function snapshot(){
     bonusAt:state.bonusAt, rescueAt:state.rescueAt,
     autoTurbo:state.autoTurbo === true, autoLimit:autoLimitSan(state.autoLimit),
     exp:numFrom(state.exp), rank:numFrom(state.rank)||1,
+    diamonds:numFrom(state.diamonds), season:state.season || null,
+    bossSouls:numFrom(state.bossSouls), bossKeys:numFrom(state.bossKeys), bossPerk:state.bossPerk === true,
     cloverUntil:state.cloverUntil||0,
     fxEvents:state.fxEvents || {},
     album:state.album, albumClaimed:state.albumClaimed, missions:state.missions, weekly:state.weekly, bazarWeekly:state.bazarWeekly, achievements:state.achievements, cosmetics:state.cosmetics, bossKills:state.bossKills,
@@ -786,7 +823,7 @@ function snapshot(){
     casinoLeague:state.casinoLeague || null, bossCampaign:state.bossCampaign || {cleared:{}},
     eventClaims:state.eventClaims || {},
     expBoostUntil:numFrom(state.expBoostUntil), upDiscountUntil:numFrom(state.upDiscountUntil),
-    upDiscountPct:numFrom(state.upDiscountPct), freeSpins:numFrom(state.freeSpins),
+    upDiscountPct:numFrom(state.upDiscountPct), sellBoostUntil:numFrom(state.sellBoostUntil), sellBoostPct:numFrom(state.sellBoostPct), freeSpins:numFrom(state.freeSpins),
     shopSalt:state.shopSalt, shopBought:state.shopBought, shopRefreshAt:state.shopRefreshAt,
     packClaims:state.packClaims || {} };
 }
@@ -923,6 +960,11 @@ function load(){
   state.autoLimit = autoLimitSan(d.autoLimit);  // ⏹ limit otwarć (0 = bez limitu)
   state.exp = numFrom(d.exp);
   state.rank = numFrom(d.rank) || 1;
+  state.diamonds = numFrom(d.diamonds);
+  state.bossSouls = numFrom(d.bossSouls);
+  state.bossKeys = numFrom(d.bossKeys);
+  state.bossPerk = d.bossPerk === true;
+  seasonLoad(d);
   albumLoad(d);                    // 📖 album kolekcji (migruje stare zapisy)
   missionsLoad(d);                 // 🎯 misje dzienne (nowe, gdy zmienił się dzień)
   weeklyLoad(d);
@@ -932,6 +974,12 @@ function load(){
   const known = new Set(UPGRADES.map(u=>u.id));
   Object.keys(state.up).forEach(k=>{ if(!known.has(k)) delete state.up[k]; });   // usuwa wycofane perki
   state.crashUp = normalizeCrashUp(d.crashUp);   // ⚙️ tylko Crash
+  const dpu = d.plinkoUp && typeof d.plinkoUp === "object" ? d.plinkoUp : {};
+  state.plinkoUp = {
+    balls: Math.max(0, Math.min(4, numFrom(dpu.balls))),
+    bins: Math.max(0, Math.min(3, numFrom(dpu.bins))),
+    boost: Math.max(0, Math.min(5, numFrom(dpu.boost)))
+  };
   if(typeof state.stats.rescues !== "number") state.stats.rescues = 0;
   if(typeof state.stats.clovers !== "number") state.stats.clovers = 0;
   if(typeof state.stats.battles !== "number") state.stats.battles = 0;
@@ -995,6 +1043,8 @@ function load(){
   state.expBoostUntil = numFrom(d.expBoostUntil);
   state.upDiscountUntil = numFrom(d.upDiscountUntil);
   state.upDiscountPct = Math.max(0, Math.min(90, numFrom(d.upDiscountPct)));
+  state.sellBoostUntil = numFrom(d.sellBoostUntil);
+  state.sellBoostPct = Math.max(0, Math.min(90, numFrom(d.sellBoostPct)));
   state.freeSpins = numFrom(d.freeSpins);
   /* skrzynki botów są jednorazowe — stary zapis mógł mieć flagę „odblokowana”,
      ale jej nie używamy: po otwarciu trzeba kupić kolejną u bota. */
@@ -1015,12 +1065,17 @@ function load(){
   state.codeRedeemed = loadCodeMap(d.codeRedeemed, false);
   state.codeBought = loadCodeMap(d.codeBought, true);
   ["codeDrops","codeRedeems","codeBuys"].forEach(k=>{ if(typeof state.stats[k] !== "number") state.stats[k] = 0; });
+  const du = d.stats && d.stats.upgrader;
+  state.stats.upgrader = du && typeof du === "object"
+    ? {done:numFrom(du.done), wins:numFrom(du.wins), losses:numFrom(du.losses), spent:numFrom(du.spent), bestMult:numFrom(du.bestMult)}
+    : {done:0, wins:0, losses:0, spent:0, bestMult:0};
   state.idleKnifeClaimed = d.idleKnifeClaimed === true;
   state.idleSec = numFrom(d.idleSec);
   ["botBuys","botSpent","botCases","stockOpened","bestDeal","trollOpened","trollWins","shopBuys","shopSpent","shopCases","packBuys","packSpent",
-   "happyBuys","happySells","happySaved","happyEarned","blackBuys","blackSpent","blackBestDeal","bazarContracts","bazarWeeks","suitcaseOpens"].forEach(k=>{
+   "happyBuys","happySells","happySaved","happyEarned","blackBuys","blackSpent","blackBestDeal","botDiamonds","bazarContracts","bazarWeeks","suitcaseOpens","bossSoulsEarned","bossKeysFound","bossRushClears","bossRushBest","wheelSpins","wheelWins","wheelWagered","wheelPaid"].forEach(k=>{
     if(typeof state.stats[k] !== "number") state.stats[k] = 0;
   });
+  state.stats.wheelBest = Math.max(0, Number(d.stats && d.stats.wheelBest) || 0);
   saveRev = d.rev|0; knownRev = saveRev;
   lastSaveAt = Number(d.ts) || 0;
   lastSavedCoins = state.coins;
@@ -1218,4 +1273,5 @@ function switchView(v){
   if(v==="codes") renderCodes();
   if(v==="casino"){ renderCoinflip(); renderCasinoProfile(); }
   if(v==="events" && typeof renderEvents === "function") renderEvents();
+  if(v==="season" && typeof renderSeason === "function") renderSeason();
 }

@@ -440,6 +440,9 @@ function renderStats(){
   if((s.packBuys|0) > 0)
     boxes.push(["🎁 Pakiety", fmt(numFrom(s.packBuys))+" otwarć",
       "wydano 🪙 "+fmtShort(numFrom(s.packSpent))+" · starter: "+(state.packClaims && state.packClaims.starter ? "odebrany" : "czeka"), false]);
+  if(s.upgrader && numFrom(s.upgrader.done) > 0)
+    boxes.push(["⚗️ Skin Upgrader", fmt(numFrom(s.upgrader.done))+" prób · "+fmt(numFrom(s.upgrader.wins))+" ✔ / "+fmt(numFrom(s.upgrader.losses))+" ✖",
+      "najlepszy mnożnik ×"+numFrom(s.upgrader.bestMult)+" · wydano 🪙 "+fmtShort(numFrom(s.upgrader.spent)), false]);
   const fxEvStat = fxEventPool().filter(f=>fxEventActive(f.id));
   boxes.push(["🎰 Eventy efektów", fxEvStat.length ? fxEvStat.length+" aktywne" : "brak",
     fxEvStat.length
@@ -650,8 +653,8 @@ function cloverHit(){
   missionTrack("clover",1);
   sfxClover();
   confetti(["#4ade80","#a8f0c0","#22c55e","#ffd700"]);
-  toast("🍀 <b>Czterolistna koniczyna!</b> Przez "+Math.round(cloverDur()/1000)+
-        " s masz większe szanse na noże i dobre bronie — " + cloverDesc(), "good");
+  toast("🍀 <b>Czterolistna koniczyna!</b> Przez "+hms(cloverDur())+
+        " masz większe szanse na noże i dobre bronie — " + cloverDesc(), "good");
   updateClover();
 }
 
@@ -666,7 +669,7 @@ function updateClover(){
     pill.dataset.on = on ? "1" : "0";
     pill.classList.toggle("show", on);
     if(on){
-      pill.title = "🍀 Czterolistna koniczyna — " + cloverDesc() + " · wypada ze skrzynek (szansa " + (CLOVER_CHANCE*100).toFixed(1) + "%), działa " + Math.round(cloverDur()/1000) + " s";
+      pill.title = "🍀 Czterolistna koniczyna — " + cloverDesc() + " · wypada ze skrzynek (szansa " + (CLOVER_CHANCE*100).toFixed(1) + "%), działa " + hms(cloverDur());
       save();                 // utrwalone od razu, żeby bonus nie zginął przy odświeżeniu
     }
     renderShop();             // paski szans w sklepie pokazują realny stan
@@ -674,7 +677,7 @@ function updateClover(){
   if(!on) return;
   const left = cloverLeft();
   const t = $("#cloverTime"), b = $("#cloverBar");
-  if(t) t.textContent = Math.ceil(left/1000)+"s";
+  if(t) t.textContent = hms(left);
   if(b) b.style.width = Math.min(100, 100*left/cloverDur())+"%";
 }
 setInterval(updateClover, 250);

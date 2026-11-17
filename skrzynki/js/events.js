@@ -76,6 +76,44 @@ const WORLD_EVENTS = [
     sell: 0.35, value: 0.15, luck: 0.10,
     fx: ["xmas", "hallow", "ny", "easter"],
     weight: 1, dur: 20 * WE_MIN
+  },
+  {
+    id: "sniper_mode", name: "Tryb Snajpera", icon: "🎯", color: "#fb7185",
+    desc: "Celownik na rzadkie dropy. Efekty premium wpadają częściej.",
+    short: "+12% luck · +10% wartości · efekty premium",
+    luck: 0.12, value: 0.10,
+    fx: ["diamond", "rainbow", "cosmic"],
+    weight: 2, dur: 20 * WE_MIN
+  },
+  {
+    id: "market_fever", name: "Gorączka Rynku", icon: "📈", color: "#22c55e",
+    desc: "Kupcy płacą jak szaleni — sprzedaż i wartość rosną jednocześnie.",
+    short: "+30% sprzedaży · +12% wartości",
+    sell: 0.30, value: 0.12, weight: 2, dur: 25 * WE_MIN
+  },
+  {
+    id: "album_fever", name: "Gorączka Albumów", icon: "📖", color: "#38bdf8",
+    desc: "Każdy skin ma dziś większą szansę być unikatem.",
+    short: "+8% luck · +15% wartości · efekty klasyczne",
+    luck: 0.08, value: 0.15,
+    fx: ["neon", "gold", "diamond"],
+    weight: 2, dur: 25 * WE_MIN
+  },
+  {
+    id: "clover_rain", name: "Deszcz Koniczyny", icon: "🍀", color: "#4ade80",
+    desc: "Szczęście wisi w powietrzu — częstsze błyski i lepsze wartości.",
+    short: "+15% luck · +5% wartości",
+    luck: 0.15, value: 0.05,
+    fx: ["neon", "xmas", "gold"],
+    weight: 2, dur: 20 * WE_MIN
+  },
+  {
+    id: "midnight_glow", name: "Północny Błysk", icon: "🌙", color: "#818cf8",
+    desc: "Krótki, ale potężny event z efektami z nowej nocy.",
+    short: "+9% luck · +18% wartości · efekty nocne",
+    luck: 0.09, value: 0.18,
+    fx: ["ny", "cosmic", "rainbow"],
+    weight: 1, dur: 15 * WE_MIN
   }
 ];
 
@@ -151,6 +189,41 @@ const MINI_EVENTS = [
     id: "cheap_upgrade", name: "Tańsze ulepszenia", icon: "🧩", color: "#fbbf24",
     desc: "Mechanik z warsztatu dał ci zniżkę na wszystkie ulepszenia.",
     short: "−25% na ulepszenia przez 10 min", weight: 2, kind: "updiscount", pct: 25, ms: 10 * 60 * 1000
+  },
+  {
+    id: "sell_boost", name: "Lepszy Kurs", icon: "💱", color: "#34d399",
+    desc: "Kupcy na chwilę płacą więcej za Twoje skiny.",
+    short: "+20% sprzedaży przez 10 min", weight: 2, kind: "sellboost", pct: 20, ms: 10 * 60 * 1000
+  },
+  {
+    id: "big_coin", name: "Złoty Bilet", icon: "🎟️", color: "#ffd700",
+    desc: "Ktoś zostawił bilet z nagrodą. Monety same wpadają do kieszeni.",
+    short: "+dobre monety", weight: 2, kind: "coins", pct: 0.004, min: 500, max: 12000
+  },
+  {
+    id: "xp_bonus", name: "Dawka Doświadczenia", icon: "📘", color: "#60a5fa",
+    desc: "Nauka przez otwieranie skrzynek — tym razem wyjątkowo owocna.",
+    short: "+8 EXP", weight: 2, kind: "exp", amount: 8
+  },
+  {
+    id: "mini_clover", name: "Koniczynowy Zaułek", icon: "🍀", color: "#a3e635",
+    desc: "Dobra wróżyć — koniczyna zostaje trochę dłużej.",
+    short: "+2–4 min koniczyny", weight: 2, kind: "clover", minMs: 2 * 60 * 1000, maxMs: 4 * 60 * 1000
+  },
+  {
+    id: "rare_case_drop", name: "Rzadka Paczka", icon: "📦", color: "#f472b6",
+    desc: "Kurier przywiózł skrzynkę z lepszej półki.",
+    short: "+1 skrzynka do 5K", weight: 1, kind: "case", maxPrice: 5000
+  },
+  {
+    id: "long_double_exp", name: "Podwójne EXP+", icon: "⚡", color: "#a78bfa",
+    desc: "Dłuższa wersja podwójnego doświadczenia.",
+    short: "×2 EXP przez 10 min", weight: 1, kind: "expboost", ms: 10 * 60 * 1000, mult: 2
+  },
+  {
+    id: "small_updiscount", name: "Zniżka Warsztatowa", icon: "🔧", color: "#fbbf24",
+    desc: "Mała zniżka na ulepszenia, zanim skończy się prawdziwy event.",
+    short: "−15% na ulepszenia przez 8 min", weight: 2, kind: "updiscount", pct: 15, ms: 8 * 60 * 1000
   }
 ];
 
@@ -498,6 +571,13 @@ function upDiscountText(){
   const pct = Math.round(upDiscountPct() * 100);
   return pct > 0 ? "−" + pct + "% na ulepszenia" : "";
 }
+function miniSellBonus(){
+  return numFrom(state.sellBoostUntil) > Date.now() ? Math.min(90, numFrom(state.sellBoostPct)) / 100 : 0;
+}
+function sellBoostText(){
+  const pct = Math.round(miniSellBonus() * 100);
+  return pct > 0 ? "+" + pct + "% sprzedaży" : "";
+}
 function miniEventReward(def){
   if(def.kind === "clover"){
     const ms = Math.round((def.minMs + Math.random() * (def.maxMs - def.minMs)) / 1000) * 1000;
@@ -526,6 +606,14 @@ function miniEventReward(def){
     state.upDiscountPct = Math.max(numFrom(state.upDiscountPct), pct);
     if(typeof renderUp === "function") renderUp();
     return "−" + pct + "% na ulepszenia przez " + Math.round(ms / 60000) + " min";
+  }
+  if(def.kind === "sellboost"){
+    const ms = Math.max(60000, numFrom(def.ms) || 10 * 60 * 1000);
+    const pct = Math.max(1, Math.min(90, def.pct | 0));
+    state.sellBoostUntil = Math.max(Date.now(), numFrom(state.sellBoostUntil)) + ms;
+    state.sellBoostPct = Math.max(numFrom(state.sellBoostPct), pct);
+    if(typeof renderUp === "function") renderUp();
+    return "+" + pct + "% sprzedaży przez " + Math.round(ms / 60000) + " min";
   }
   if(def.kind === "coins"){
     const gain = miniEventCoins(def);
@@ -591,7 +679,7 @@ function miniEventPanelHTML(now){
   return '<div class="world-card mini-card">' +
     '<div class="mini-head"><div><div class="wa-kicker">✨ MINI EVENTY</div><h3>Drobne bonusy co 3–8 min</h3></div>' +
     '<span class="mini-badge">' + (left > 0 ? "za " + weMmss(left) : "lada chwila") + '</span></div>' +
-    '<p class="muted">Nic wielkiego — koniczyna, monety, EXP, darmowy spin, tańsze ulepszenia albo uszkodzona skrzynka. Ale zawsze coś.</p>' +
+    '<p class="muted">Nic wielkiego — koniczyna, monety, EXP, darmowy spin, tańsze ulepszenia, lepszy kurs sprzedaży albo uszkodzona skrzynka. Ale zawsze coś.</p>' +
     '<div class="mini-list">' + chips + '</div>' +
     '<div class="mini-hist">' + histHTML + '</div>' +
     '</div>';

@@ -44,6 +44,7 @@ function addExp(amount, sourceLabel){
   const mult = typeof expBuffMult === "function" ? expBuffMult() : 1;
   const gain = Math.max(1, Math.round(amount * mult));
   state.exp = (state.exp || 0) + gain;
+  if(typeof seasonAddXp === "function") seasonAddXp(gain);
   state.rank = state.rank || 1;
   const oldRank = RANKS.find(r => r.id === state.rank) || RANKS[0];
   const newRank = getPlayerRank(state.exp);
@@ -111,8 +112,9 @@ function casinoHistoryHTML(list, empty){
 
 let casinoSubtab = "cf";
 function setCasinoTab(tab){
-  const valid = ["cf", "crash", "dice", "mines", "league"];
+  const valid = ["cf", "crash", "dice", "mines", "plinko", "wheel", "league", "upgrade"];
   if(!valid.includes(tab)) tab = "cf";
+  if(typeof wheelAuto !== "undefined" && tab !== "wheel") wheelAuto = false;
   casinoSubtab = tab;
   $$("#casinoSubTabs [data-casino-tab]").forEach(btn=>{
     const on = btn.dataset.casinoTab === tab;
@@ -126,7 +128,10 @@ function setCasinoTab(tab){
   if(tab === "crash"){ renderCrashHistory(); renderCrashUpgrades(); }
   if(tab === "dice"){ renderDiceMeta(); renderDiceHistory(); }
   if(tab === "mines") renderMines();
+  if(tab === "plinko"){ renderPlinko(); renderPlinkoUps(); }
+  if(tab === "wheel") renderWheel();
   if(tab === "league") renderCasinoLeague();
+  if(tab === "upgrade" && typeof renderUpgrader === "function") renderUpgrader();
 }
 
 /* =======================================================================
@@ -713,6 +718,416 @@ function runDice(){
 }
 
 /* =======================================================================
+   PLINKO — KULKA, KOŁKI, MNOŻNIKI (lekka wersja)
+   ======================================================================= */
+const PLINKO_RISK_SHAPE = {
+  low:  {center:0.60, edge:1.8},
+  mid:  {center:0.30, edge:4.5},
+  high: {center:0.10, edge:8.0}
+};
+const PLINKO_UPGRADES = [
+  {id:"balls", icon:"⚪", name:"Wielokulka", max:4,
+   costs:[50000,200000,800000,3000000],
+   desc:"Rozbija stawkę na więcej kulek naraz. Więcej trafień, mniejsza zmienność — stawka całkowita się nie zmienia.",
+   fmt:l => (l+1)+" kulka"+(l?"i":"")+" na rzut"},
+  {id:"bins", icon:"📐", name:"Więcej przegród", max:3,
+   costs:[120000,500000,2000000],
+   desc:"Dodaje 2 przegrody i 2 rzędy kołków. Szersza plansza = więcej skrajnych mnożników.",
+   fmt:l => (9+2*l)+" przegród"},
+  {id:"boost", icon:"🚀", name:"Dopalacz", max:5,
+   costs:[80000,300000,1200000,5000000,20000000],
+   desc:"Zwiększa wypłatę z każdej wygranej kulki o 3% na poziom. Działa tylko w Plinko.",
+   fmt:l => l ? "+"+(l*3)+"% wypłaty" : "standardowa wypłata"}
+];
+const PLINKO_UP_BY_ID = Object.fromEntries(PLINKO_UPGRADES.map(u=>[u.id,u]));
+let plinkoRisk = "mid";
+let plinkoBusy = false;
+let plinkoHistory = [];
+let plinkoRAF = 0;
+
+function plinkoUpLvl(id){ return Math.max(0, Math.min(PLINKO_UP_BY_ID[id].max, numFrom(state.plinkoUp && state.plinkoUp[id]))); }
+function plinkoBalls(){ return 1 + plinkoUpLvl("balls"); }
+function plinkoBins(){ return 9 + 2*plinkoUpLvl("bins"); }
+function plinkoRows(){ return plinkoBins() - 1; }
+function plinkoSpacing(){ return 100 / plinkoBins(); }
+function plinkoMults(){
+  const n = plinkoBins(), mid = (n-1)/2;
+  const s = PLINKO_RISK_SHAPE[plinkoRisk] || PLINKO_RISK_SHAPE.mid;
+  const out = [];
+  for(let i=0;i<n;i++){
+    const d = Math.abs(i-mid)/mid;
+    out.push(Math.max(0.05, Math.round((s.center + (s.edge-s.center)*Math.pow(d,1.8))*100)/100));
+  }
+  return out;
+}
+function renderPlinkoUps(){
+  const grid = $("#plinkoUps");
+  if(!grid) return;
+  grid.innerHTML = PLINKO_UPGRADES.map(u=>{
+    const lvl = plinkoUpLvl(u.id), maxed = lvl >= u.max;
+    const price = maxed ? 0 : u.costs[lvl];
+    const can = !maxed && state.coins >= price;
+    const pips = Array.from({length:u.max},(_,k)=>`<i class="${k<lvl?"on":""}"></i>`).join("");
+    return `<div class="plinko-up${maxed?" maxed":""}">
+      <div class="pu-head"><span>${u.icon}</span><b>${u.name}</b></div>
+      <div class="pu-lvl">${lvl} / ${u.max} ${pips}</div>
+      <div class="pu-desc">${u.desc}</div>
+      <div class="pu-foot">${maxed
+        ? '<span class="pu-max">✔ MAX</span>'
+        : `<span class="pu-price${can?" ok":""}">🪙 ${fmtShort(price)}</span><button class="mini-btn" data-plinko-up="${u.id}" ${can?"":"disabled"}>Ulepsz</button>`}</div>
+    </div>`;
+  }).join("");
+}
+function buyPlinkoUpgrade(id){
+  const u = PLINKO_UP_BY_ID[id];
+  if(!u || plinkoBusy) return;
+  const lvl = plinkoUpLvl(id);
+  if(lvl >= u.max){ sfxErr(); return; }
+  const price = u.costs[lvl];
+  if(state.coins < price){ sfxErr(); toast("Za mało monet na ulepszenie Plinko!","bad"); return; }
+  state.coins -= price;
+  state.plinkoUp = state.plinkoUp || {balls:0,bins:0,boost:0};
+  state.plinkoUp[id] = lvl + 1;
+  if(typeof missionTrack === "function") missionTrack("upgrade", 1);
+  sfxCoin(); renderBalance(); renderPlinko(); renderPlinkoUps();
+  toast(`⚙️ <b>${u.name}</b> → poziom ${lvl+1} · ${u.fmt(lvl+1)}`,"good");
+  casinoSave();
+}
+function renderPlinkoBoard(){
+  const board = $("#plinkoBoard");
+  if(!board) return;
+  const rows = plinkoRows(), spacing = plinkoSpacing();
+  let pegs = "";
+  for(let r=0; r<rows; r++){
+    for(let i=0; i<=r; i++){
+      const x = 50 + (i - r/2) * spacing;
+      const y = 12 + r * (62/rows);
+      pegs += `<i class="plinko-peg" style="left:${x}%;top:${y}%"></i>`;
+    }
+  }
+  const bins = plinkoMults().map(m=>{
+    const cls = m >= 3 ? "hot" : m >= 1 ? "mid" : "cold";
+    return `<div class="plinko-bin ${cls}"><b>${casinoMult(m)}</b></div>`;
+  }).join("");
+  board.innerHTML = pegs + `<div class="plinko-bins">${bins}</div>`;
+}
+function renderPlinkoMeta(){
+  $$("#plinkoRisk [data-plinko-risk]").forEach(btn=>{
+    const on = btn.dataset.plinkoRisk === plinkoRisk;
+    btn.classList.toggle("active", on);
+    btn.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  const top = Math.max.apply(null, plinkoMults());
+  const topEl = $("#plinkoTopMult"); if(topEl) topEl.textContent = casinoMult(top);
+  const input = $("#plinkoBet");
+  const betEl = $("#plinkoBetVal");
+  if(betEl) betEl.textContent = "🪙 " + fmt(casinoInputNum(input ? input.value : 500));
+  const ballsEl = $("#plinkoBallsVal");
+  if(ballsEl) ballsEl.textContent = String(plinkoBalls());
+  /* naprawa: nakładka nie może zasłaniać kulki w trakcie rzutu */
+  const lock = $("#plinkoLock");
+  if(lock) lock.classList.remove("show");
+}
+function renderPlinkoHistory(){
+  const h = $("#plinkoHistory");
+  if(h) h.innerHTML = casinoHistoryHTML(plinkoHistory, "Ostatnie rzuty Plinko pojawią się tutaj.");
+}
+function renderPlinko(){
+  renderPlinkoBoard();
+  renderPlinkoMeta();
+  renderPlinkoHistory();
+}
+function plinkoSetBet(kind){
+  const input = $("#plinkoBet"); if(!input || plinkoBusy) return;
+  let v = casinoInputNum(input.value);
+  if(kind === "half") v = Math.max(100, Math.floor(v/2));
+  else if(kind === "2x") v = v*2;
+  else if(kind === "max") v = Math.max(100, numFrom(state.coins));
+  input.value = String(Math.max(100, v));
+  renderPlinkoMeta();
+}
+function plinkoFinish(results, bet, perBall){
+  const totalMult = results.reduce((a,r)=>a+r.mult, 0);
+  const boost = 1 + 0.03*plinkoUpLvl("boost");
+  const payout = Math.round(bet * totalMult / results.length * boost);
+  const won = payout > 0;
+  const best = results.reduce((a,r)=>r.mult>a.mult?r:a, results[0]);
+  const detail = results.length === 1
+    ? `przegroda <b>${best.bin+1}</b> · ${best.rights}× w prawo`
+    : `${results.length} kulek · najlepsza <b>${casinoMult(best.mult)}</b>`;
+  if(won){
+    state.coins += payout;
+    state.stats.earned = numFrom(state.stats.earned) + payout;
+    addExp(Math.max(10, Math.floor(bet/3000)), "plinko_win");
+    sfxWin(best.mult >= 3 ? "special" : "covert");
+    confetti(best.mult >= 3 ? ["#ffd700","#f59e0b","#ffffff"] : ["#38e08a","#ffffff"]);
+    casinoSetResult("#plinkoResult", `✅ ${detail}. Łączny mnożnik <b>${casinoMult(totalMult/results.length*boost)}</b> → wygrywasz <b>🪙 ${fmt(payout)}</b>.`, "win");
+    toast(`🎯 <b>PLINKO WYGRANA!</b> ${detail} · +🪙 ${fmt(payout)}`, "good");
+    missionTrack("casino_win", payout);
+    if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("plinko", payout);
+  } else {
+    addExp(Math.max(5, Math.floor(bet/5000)), "plinko_loss");
+    sfxErr();
+    casinoSetResult("#plinkoResult", `💀 ${detail}. Brak wypłaty — tracisz <b>🪙 ${fmt(bet)}</b>.`, "loss");
+    toast(`🎯 <b>PLINKO PRZEGRANA.</b> ${detail} · −🪙 ${fmt(bet)}`, "bad");
+  }
+  plinkoHistory.unshift({ win:won, label: casinoMult(totalMult/results.length*boost), title: detail.replace(/<[^>]+>/g,"") });
+  plinkoHistory = plinkoHistory.slice(0, 8);
+  plinkoBusy = false;
+  const board = $("#plinkoBoard");
+  if(board) board.querySelectorAll(".plinko-ball").forEach(b=>b.remove());
+  renderPlinkoMeta(); renderPlinkoHistory(); renderBalance(); renderCasinoProfile(); casinoSave();
+}
+function runPlinko(){
+  if(plinkoBusy) return;
+  const input = $("#plinkoBet");
+  const bet = Math.max(100, casinoInputNum(input ? input.value : 500));
+  if(state.coins < bet){ sfxErr(); toast("Za mało monet na rzut!", "bad"); return; }
+  plinkoBusy = true;
+  state.coins -= bet;
+  state.stats.spent = numFrom(state.stats.spent) + bet;
+  casinoSave(); renderBalance(); renderPlinkoMeta();
+  casinoSetResult("#plinkoResult", `🎯 ${plinkoBalls()} kulka spada…`, "rolling");
+  sfxWhoosh();
+
+  const rows = plinkoRows(), spacing = plinkoSpacing(), mults = plinkoMults();
+  const paths = [];
+  for(let b=0;b<plinkoBalls();b++){
+    let rights = 0;
+    const pts = [{x:50, y:4}];
+
+    for(let k=1;k<=rows;k++){
+      rights += Math.random() < 0.5 ? 0 : 1;
+      pts.push({x: 50 + (rights - k/2)*spacing, y: 12 + (k-1)*(62/rows) + 6});
+    }
+    paths.push({pts, bin:rights, mult:mults[rights], rights});
+  }
+
+  const low = state.perfMode || state.reduceMotion || state.fast || document.hidden;
+  if(low){ plinkoFinish(paths, bet, bet/paths.length); return; }
+
+  const board = $("#plinkoBoard");
+  if(board) board.querySelectorAll(".plinko-ball").forEach(el=>el.remove());
+  paths.forEach((p,i)=>{
+    const el = document.createElement("div");
+    el.className = "plinko-ball";
+    el.style.left = "50%"; el.style.top = "4%";
+    el.style.marginLeft = (-6.5 + (i - (paths.length-1)/2)*4)+"px";
+    if(board) board.appendChild(el);
+    p.el = el;
+  });
+  const dropBtn = $("#plinkoDropBtn"); if(dropBtn) dropBtn.disabled = true;
+  const start = performance.now(), dur = 1250;
+  const seg = dur / paths[0].pts.length;
+  const tick = now=>{
+    const t = Math.min(paths[0].pts.length-1, (now-start)/seg);
+    const i = Math.floor(t), f = t-i;
+    paths.forEach(p=>{
+      const a = p.pts[i], b = p.pts[Math.min(i+1, p.pts.length-1)];
+      if(p.el){ p.el.style.left = (a.x+(b.x-a.x)*f)+"%"; p.el.style.top = (a.y+(b.y-a.y)*f)+"%"; }
+    });
+    if(now-start < dur){ plinkoRAF = requestAnimationFrame(tick); return; }
+    if(plinkoRAF) cancelAnimationFrame(plinkoRAF); plinkoRAF = 0;
+    if(dropBtn) dropBtn.disabled = false;
+    plinkoFinish(paths, bet, bet/paths.length);
+  };
+  plinkoRAF = requestAnimationFrame(tick);
+  setTimeout(()=>{ if(plinkoBusy && plinkoRAF){ if(dropBtn) dropBtn.disabled=false; plinkoRAF=0; plinkoFinish(paths, bet, bet/paths.length); } }, dur+600);
+}
+
+/* =======================================================================
+   WHEEL — KÓŁKO FORTUNY (16 pól, szybki obrót, lekki CSS transform)
+   ======================================================================= */
+const WHEEL_RISK = {
+  low:  [1.8, 0.8, 0.9, 1, 0.8, 0.9, 1.4, 0.8, 0.9, 1, 0.8, 0.9, 1.6, 0.8, 0.9, 1],
+  mid:  [4, 0.2, 0.5, 1, 0.2, 0.5, 2, 0.2, 0.5, 1, 0.2, 0.5, 3, 0.2, 0.5, 1],
+  high: [5, 0.1, 0.1, 1, 0.1, 0.1, 2.5, 0.1, 0.1, 1, 0.1, 0.1, 4, 0.1, 0.1, 1]
+};
+const WHEEL_COLORS = ["#ef4444","#f59e0b","#22c55e","#38bdf8","#64748b"];
+const WHEEL_SHADES = {
+  "#ef4444":["#ff9a9a","#7f1d1d"],
+  "#f59e0b":["#ffd977","#8a4b05"],
+  "#22c55e":["#8ef0b4","#0f6b32"],
+  "#38bdf8":["#aee8ff","#155e85"],
+  "#64748b":["#d6dee9","#2b3648"]
+};
+let wheelBusy = false;
+let wheelHistory = [];
+let wheelRotation = 0;
+let wheelRisk = "mid";
+let wheelAuto = false;
+function wheelMults(){ return WHEEL_RISK[wheelRisk] || WHEEL_RISK.mid; }
+function wheelSeg(){ return 360 / wheelMults().length; }
+function wheelColor(m){
+  if(m >= 3) return WHEEL_COLORS[0];
+  if(m >= 2) return WHEEL_COLORS[1];
+  if(m >= 1) return WHEEL_COLORS[2];
+  if(m >= 0.5) return WHEEL_COLORS[3];
+  return WHEEL_COLORS[4];
+}
+function wheelShades(m){
+  return WHEEL_SHADES[wheelColor(m)] || ["#ffffff","#000000"];
+}
+function renderWheelRotor(){
+  const rotor = $("#wheelRotor");
+  if(!rotor) return;
+  const seg = wheelSeg(), mults = wheelMults();
+  const stops = [], labels = [];
+  mults.forEach((m,i)=>{
+    const a0 = i*seg, a1 = (i+1)*seg;
+    const base = wheelColor(m), sh = wheelShades(m);
+    /* wielowarstwowe szkliwo: ciemny brzeg → jasny refleks → kolor → refleks → brzeg */
+    stops.push(`${sh[1]} ${a0}deg`);
+    stops.push(`${sh[0]} ${a0+seg*0.14}deg`);
+    stops.push(`${base} ${a0+seg*0.42}deg`);
+    stops.push(`${base} ${a0+seg*0.58}deg`);
+    stops.push(`${sh[0]} ${a0+seg*0.86}deg`);
+    stops.push(`${sh[1]} ${a1}deg`);
+    labels.push(`<span class="wheel-label" style="--a:${a0+seg/2}deg;--c:${base};--r:${i}"><i></i>${casinoMult(m)}</span>`);
+  });
+  rotor.style.background = `conic-gradient(from 0deg,${stops.join(",")})`;
+  rotor.innerHTML = labels.join("");
+  const sparks = $("#wheelSparks");
+  if(sparks){
+    let s = "";
+    for(let i=0;i<12;i++) s += `<i style="--a:${i*30}deg"></i>`;
+    sparks.innerHTML = s;
+  }
+}
+function renderWheelMeta(){
+  const input = $("#wheelBet");
+  const bet = casinoInputNum(input ? input.value : 500);
+  const betEl = $("#wheelBetVal");
+  if(betEl) betEl.textContent = "🪙 " + fmt(bet);
+  const top = Math.max.apply(null, wheelMults());
+  const topEl = $("#wheelTopMult");
+  if(topEl) topEl.textContent = casinoMult(top);
+  const btn = $("#wheelSpinBtn");
+  if(btn) btn.disabled = wheelBusy || state.coins < Math.max(100, bet);
+  $$("#wheelRisk [data-wheel-risk]").forEach(b=>{
+    const on = b.dataset.wheelRisk === wheelRisk;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-pressed", on ? "true" : "false");
+  });
+  const auto = $("#wheelAutoBtn");
+  if(auto){ auto.classList.toggle("on", wheelAuto); auto.textContent = wheelAuto ? "⏹ Stop" : "🔁 Auto"; }
+  const s = state.stats;
+  const spins = numFrom(s.wheelSpins), wins = numFrom(s.wheelWins);
+  const rate = spins ? Math.round(100*wins/spins) : 0;
+  const st = $("#wheelStats");
+  if(st) st.innerHTML = `<span>Obrótów: <b>${fmt(spins)}</b></span><span>Wygrane: <b>${fmt(wins)}</b> (${rate}%)</span><span>Najlepszy: <b>${casinoMult(Number(s.wheelBest)||0)}</b></span>`;
+}
+function renderWheelHistory(){
+  const h = $("#wheelHistory");
+  if(h) h.innerHTML = casinoHistoryHTML(wheelHistory, "Ostatnie obroty koła pojawią się tutaj.");
+}
+function renderWheel(){
+  renderWheelRotor();
+  renderWheelMeta();
+  renderWheelHistory();
+  const center = $("#wheelCenter b");
+  if(center && !wheelBusy) center.textContent = "?";
+}
+function wheelSetBet(kind){
+  const input = $("#wheelBet");
+  if(!input || wheelBusy) return;
+  let v = casinoInputNum(input.value);
+  if(kind === "half") v = Math.max(100, Math.floor(v/2));
+  else if(kind === "2x") v = v*2;
+  else if(kind === "max") v = Math.max(100, numFrom(state.coins));
+  input.value = String(Math.max(100, v));
+  renderWheelMeta();
+}
+function wheelFinish(bet, idx, mult, payout){
+  const won = mult >= 1;
+  if(payout > 0){
+    state.coins += payout;
+    state.stats.earned = numFrom(state.stats.earned) + payout;
+  }
+  const s = state.stats;
+  s.wheelSpins = numFrom(s.wheelSpins) + 1;
+  s.wheelWagered = numFrom(s.wheelWagered) + bet;
+  s.wheelPaid = numFrom(s.wheelPaid) + payout;
+  s.wheelBest = Math.max(Number(s.wheelBest)||0, mult);
+  if(won) s.wheelWins = numFrom(s.wheelWins) + 1;
+  addExp(Math.max(won ? 10 : 5, Math.floor(bet / (won ? 3000 : 5000))), won ? "wheel_win" : "wheel_loss");
+  if(won){
+    missionTrack("casino_win", payout);
+    if(typeof casinoLeagueAdd === "function") casinoLeagueAdd("wheel", payout);
+    sfxWin(mult >= 3 ? "special" : "covert");
+    confetti(mult >= 3 ? ["#ffd700","#ef4444","#ffffff"] : ["#22c55e","#ffffff"]);
+  } else sfxErr();
+  const center = $("#wheelCenter b");
+  if(center) center.textContent = casinoMult(mult);
+  const stage = $("#wheelStage");
+  if(stage){
+    stage.classList.remove("win","lose");
+    void stage.offsetWidth;
+    stage.classList.add(won ? "win" : "lose");
+    setTimeout(()=>stage.classList.remove("win","lose"), 900);
+  }
+  const result = $("#wheelResult");
+  if(result){
+    result.className = "casino-result " + (won ? "win" : "loss");
+    result.innerHTML = won
+      ? `✅ Wylądowałeś na <b>${casinoMult(mult)}</b> — wygrywasz <b>🪙 ${fmt(payout)}</b>.`
+      : `💀 Wylądowałeś na <b>${casinoMult(mult)}</b> — tracisz <b>🪙 ${fmt(bet - payout)}</b>.`;
+  }
+  toast(won
+    ? `🎡 <b>WYGRANA!</b> ${casinoMult(mult)} · +🪙 ${fmt(payout)}`
+    : `🎡 <b>PRZEGRANA.</b> ${casinoMult(mult)} · −🪙 ${fmt(bet - payout)}`, won ? "good" : "bad");
+  wheelHistory.unshift({ win:won, label:casinoMult(mult), title:"Pole "+(idx+1)+" · stawka "+fmt(bet) });
+  wheelHistory = wheelHistory.slice(0, 8);
+  wheelBusy = false;
+  renderWheelMeta(); renderWheelHistory(); renderBalance(); renderCasinoProfile(); casinoSave();
+  if(wheelAuto && state.coins >= Math.max(100, bet)) setTimeout(()=>{ if(wheelAuto && !wheelBusy) runWheel(); }, 650);
+}
+function runWheel(){
+  if(wheelBusy) return;
+  const input = $("#wheelBet");
+  const bet = Math.max(100, casinoInputNum(input ? input.value : 500));
+  if(state.coins < bet){ sfxErr(); toast("Za mało monet na zakręcenie!", "bad"); return; }
+  wheelBusy = true;
+  state.coins -= bet;
+  state.stats.spent = numFrom(state.stats.spent) + bet;
+  casinoSave(); renderBalance(); renderWheelMeta();
+  const result = $("#wheelResult");
+  if(result){ result.className = "casino-result rolling"; result.innerHTML = "🎡 Koło się kręci…"; }
+  const center = $("#wheelCenter b");
+  if(center) center.textContent = "…";
+  const stage = $("#wheelStage");
+  if(stage) stage.classList.add("rolling");
+  sfxWhoosh();
+
+  const mults = wheelMults();
+  const seg = wheelSeg();
+  const idx = Math.floor(Math.random() * mults.length);
+  const mult = mults[idx];
+  const payout = Math.round(bet * mult);
+  const desired = ((-(idx*seg + seg/2)) % 360 + 360) % 360;
+  const current = ((wheelRotation % 360) + 360) % 360;
+  const delta = (desired - current + 360) % 360;
+  wheelRotation += 360*6 + delta;
+  const rotor = $("#wheelRotor");
+  const low = state.perfMode || state.reduceMotion || state.fast || document.hidden || !rotor;
+  if(low){
+    if(rotor) rotor.style.transform = "rotate("+wheelRotation+"deg)";
+    if(stage) stage.classList.remove("rolling");
+    wheelFinish(bet, idx, mult, payout);
+    return;
+  }
+  /* tykanie koła — kilka krótkich dźwięków tylko na początku obrotu */
+  for(let i=0;i<7;i++) setTimeout(()=>{ if(wheelBusy) sfxTick(); }, 90+i*95);
+  rotor.style.transition = "transform 2000ms cubic-bezier(.1,.72,.16,1)";
+  rotor.style.transform = "rotate("+wheelRotation+"deg)";
+  setTimeout(()=>{
+    rotor.style.transition = "";
+    if(stage) stage.classList.remove("rolling");
+    wheelFinish(bet, idx, mult, payout);
+  }, 2050);
+}
+
+/* =======================================================================
    MINES — PLANSZA 5 × 5
    ======================================================================= */
 const MINES_SIZE = 5;
@@ -1222,6 +1637,51 @@ function initCasinoEvents(){
     const inp = $("#diceBet");
     if(inp) inp.value = Math.max(100, Math.floor(casinoInputNum(inp.value) * 2));
   });
+  $("#plinkoRisk")?.addEventListener("click", e=>{
+    if(plinkoBusy) return;
+    const b = e.target.closest("[data-plinko-risk]");
+    if(!b) return;
+    plinkoRisk = b.dataset.plinkoRisk;
+    renderPlinko();
+  });
+  $("#plinkoHalf")?.addEventListener("click", ()=>plinkoSetBet("half"));
+  $("#plinko2x")?.addEventListener("click", ()=>plinkoSetBet("2x"));
+  $("#plinkoMax")?.addEventListener("click", ()=>plinkoSetBet("max"));
+  $("#plinkoDropBtn")?.addEventListener("click", runPlinko);
+  $("#wheelHalf")?.addEventListener("click", ()=>wheelSetBet("half"));
+  $("#wheel2x")?.addEventListener("click", ()=>wheelSetBet("2x"));
+  $("#wheelMax")?.addEventListener("click", ()=>wheelSetBet("max"));
+  $("#wheelBet")?.addEventListener("input", renderWheelMeta);
+  $("#wheelSpinBtn")?.addEventListener("click", runWheel);
+  $("#wheelAutoBtn")?.addEventListener("click", ()=>{
+    wheelAuto = !wheelAuto;
+    renderWheelMeta();
+    toast(wheelAuto ? "🔁 Auto-obroty włączone — kliknij STOP, aby zatrzymać." : "⏹ Auto-obroty wyłączone.", wheelAuto ? "good" : "");
+  });
+  $("#wheelRisk")?.addEventListener("click", e=>{
+    if(wheelBusy) return;
+    const b = e.target.closest("[data-wheel-risk]");
+    if(!b) return;
+    wheelRisk = b.dataset.wheelRisk;
+    renderWheelRotor(); renderWheelMeta();
+  });
+  $("#wheelHelpBtn")?.addEventListener("click", ()=>{
+    const g = $("#wheelGuide"), b = $("#wheelHelpBtn");
+    if(!g) return;
+    g.hidden = !g.hidden;
+    if(b) b.setAttribute("aria-expanded", g.hidden ? "false" : "true");
+  });
+  $("#wheelGuideClose")?.addEventListener("click", ()=>{
+    const g = $("#wheelGuide"), b = $("#wheelHelpBtn");
+    if(g) g.hidden = true;
+    if(b) b.setAttribute("aria-expanded", "false");
+  });
+  $("#plinkoUps")?.addEventListener("click", e=>{
+    const b = e.target.closest("[data-plinko-up]");
+    if(b) buyPlinkoUpgrade(b.dataset.plinkoUp);
+  });
+  $("#plinkoBet")?.addEventListener("input", renderPlinkoMeta);
+
   $("#diceMax")?.addEventListener("click", ()=>{
     const inp = $("#diceBet");
     if(inp) inp.value = Math.max(100, Math.floor(state.coins));
